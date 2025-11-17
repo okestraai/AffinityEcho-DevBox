@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fix for iOS Safari fixed position elements */
+@supports (-webkit-touch-callout: none) {
+  body {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Ensure body and html don't have overflow issues */
+html, body {
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* Force hardware acceleration for fixed elements on mobile */
+@media (max-width: 768px) {
+  nav[class*="fixed"] {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+}
