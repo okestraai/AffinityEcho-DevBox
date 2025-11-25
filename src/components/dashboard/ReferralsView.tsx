@@ -23,10 +23,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { ReferralPost as DBReferralPost } from '../../lib/supabase';
-import { CreateReferralModal } from './CreateReferralModal';
-import { UserProfileModal } from './UserProfileModal';
-import { ReferralCommentsModal } from './ReferralCommentsModal';
-import { ReferralDetailModal } from './ReferralDetailModal';
+import { CreateReferralModal } from '../Modals/CreateReferralModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
+import { ReferralCommentsModal } from '../Modals/ReferralCommentsModal';
+import { ReferralDetailModal } from '../Modals/ReferralDetailModal';
 import { SeedDataButton } from './SeedDataButton';
 import { seedReferralData } from '../../lib/seedData';
 

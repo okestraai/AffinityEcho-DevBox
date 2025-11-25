@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Clock, Users, Shield, Zap, AlertTriangle, Heart, MessageCircle, X, Hash, Tag, Globe, Building, Flame, Timer, Eye, Lock } from 'lucide-react';
-import { UserProfileModal } from './UserProfileModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 

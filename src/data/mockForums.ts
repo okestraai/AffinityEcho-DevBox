@@ -67,14 +67,92 @@ export const globalForums: Forum[] = [
     id: 'global-entrepreneurship',
     name: 'Entrepreneurship',
     description: 'Starting businesses, side hustles, and innovation',
-    icon: '🚀',
+    icon: '��',
     isGlobal: true,
     category: 'global',
     topicCount: 234,
     memberCount: 1456,
     lastActivity: '8m ago'
+  },
+  {
+    id: 'global-diversity-inclusion',
+    name: 'Diversity & Inclusion',
+    description: 'Building inclusive workplaces and celebrating differences',
+    icon: '🌈',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 312,
+    memberCount: 3421,
+    lastActivity: '5m ago'
+  },
+  {
+    id: 'global-tech-careers',
+    name: 'Tech Careers',
+    description: 'Career development, job hunting, and skill building',
+    icon: '💻',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 421,
+    memberCount: 4156,
+    lastActivity: '3m ago'
+  },
+  {
+    id: 'global-work-life-balance',
+    name: 'Work-Life Balance',
+    description: 'Managing stress, burnout, and maintaining wellness',
+    icon: '⚖️',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 278,
+    memberCount: 2934,
+    lastActivity: '12m ago'
+  },
+  {
+    id: 'global-women-in-tech',
+    name: 'Women in Tech',
+    description: 'Supporting and empowering women in technology',
+    icon: '👩‍💻',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 387,
+    memberCount: 3782,
+    lastActivity: '7m ago'
+  },
+  {
+    id: 'global-salary-negotiations',
+    name: 'Salary & Negotiations',
+    description: 'Compensation discussions, negotiation strategies, and pay equity',
+    icon: '💰',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 198,
+    memberCount: 2567,
+    lastActivity: '18m ago'
+  },
+  {
+    id: 'global-interview-prep',
+    name: 'Interview Preparation',
+    description: 'Interview tips, coding challenges, and success stories',
+    icon: '📝',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 445,
+    memberCount: 3921,
+    lastActivity: '4m ago'
+  },
+  {
+    id: 'global-mental-health',
+    name: 'Mental Health',
+    description: 'Open conversations about mental health and wellbeing',
+    icon: '🧠',
+    isGlobal: true,
+    category: 'global',
+    topicCount: 267,
+    memberCount: 2198,
+    lastActivity: '22m ago'
   }
 ];
+
 
 // Mock companies with their foundation forums
 export const companies: Company[] = [

@@ -23,7 +23,7 @@ import {
   Save
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { MentorshipProfileModal } from './MentorshipProfileModal';
+import { MentorshipProfileModal } from '../Modals/MentorshipProfileModal';
 
 // Logging utility for consistent formatting
 const log = (component: string, message: string, data?: any) => {

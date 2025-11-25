@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { mockTopics, mockUserProfiles, companies, globalForums } from '../../data/mockForums';
 import { Topic, Comment } from '../../types/forum';
-import { UserProfileModal } from './UserProfileModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
 
 export function TopicDetailPage() {
   const { topicId } = useParams<{ topicId: string }>();

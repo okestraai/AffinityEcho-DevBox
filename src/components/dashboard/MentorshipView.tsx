@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Target, Users, UserPlus, MessageCircle, Star, Clock, Award, Plus, Search, Filter } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { UserProfileModal } from './UserProfileModal';
-import { MentorshipRequestModal } from './MentorshipRequestModal';
-import { MentorshipProfileModal } from './MentorshipProfileModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
+import { MentorshipRequestModal } from '../Modals/MentorshipRequestModal';
+import { MentorshipProfileModal } from '../Modals/MentorshipProfileModal';
 import { FindMentorshipView } from './FindMentorshipView';
 
 // Logging utility for consistent formatting

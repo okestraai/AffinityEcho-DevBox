@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MessageCircle, Shield, Eye, EyeOff, Target, Plus, Users, Check, X, Clock, Send, Building, Briefcase, AlertCircle, CheckCircle } from 'lucide-react';
-import { MentorshipRequestModal } from './MentorshipRequestModal';
-import { UserProfileModal } from './UserProfileModal';
+import { MentorshipRequestModal } from '../Modals/MentorshipRequestModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';

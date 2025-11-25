@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, MessageCircle, TrendingUp, UserPlus, UserCheck, Shield, Info, Plus, Eye, ThumbsUp, Clock } from 'lucide-react';
-import { Forum, Topic } from '../../types/forum';
-import { mockTopics } from '../../data/mockForums';
-import { CreateTopicModal } from './CreateTopicModal';
+import { Forum, Topic } from '../../../types/forum';
+import { mockTopics } from '../../../data/mockForums';
+import { CreateTopicModal } from '../../Modals/CreateTopicModal';
 
 interface Props {
   forum: Forum;

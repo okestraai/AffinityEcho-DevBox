@@ -17,9 +17,9 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { UserProfileModal } from './UserProfileModal';
-import { MentorshipRequestModal } from './MentorshipRequestModal';
-import { MentorshipProfileModal } from './MentorshipProfileModal';
+import { UserProfileModal } from '../Modals/UserProfileModal';
+import { MentorshipRequestModal } from '../Modals/MentorshipRequestModal';
+import { MentorshipProfileModal } from '../Modals/MentorshipProfileModal';
 
 interface MentorProfile {
   id: string;
