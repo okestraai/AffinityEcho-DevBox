@@ -1,5 +1,4 @@
-// src/components/forums/forum/ForumTopicsMode.tsx
-
+// src/components/forums/forum/ForumTopicsMode.tsx - GLOBAL VIEW FIXED
 import {
   ArrowLeft,
   Search,
@@ -18,10 +17,12 @@ import {
   Eye,
   ThumbsUp,
   Heart as HeartIcon,
+  Globe,
 } from "lucide-react";
-import { CreateTopicModal } from "../../Modals/CreateTopicModal";
-import { TopicDetailModal } from "../../Modals/TopicDetailModal";
+import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
+import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
+import { formatLastActivity } from "../../../utils/forumUtils";
 
 export function ForumTopicsMode(props: any) {
   const {
@@ -55,16 +56,147 @@ export function ForumTopicsMode(props: any) {
     handleBackToCompany,
     handleBackToOverview,
     viewMode,
-    companies,
     globalForums,
+    foundationForums,
+    handleForumSelect,
   } = props;
 
+  const isGlobalView = viewMode === "global";
+
+  console.log(
+    "ForumTopicsMode - viewMode:",
+    viewMode,
+    "selectedForum:",
+    selectedForum
+  );
+  console.log("ForumTopicsMode - globalForums count:", globalForums?.length);
+
+  // If in global view mode and no forum selected, show all global forums
+  if (isGlobalView && !selectedForum) {
+    console.log("Showing global forums grid");
+    return (
+      <div className="max-w-6xl mx-auto">
+        {/* Global Forums Header */}
+        <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-8 mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={handleBackToOverview}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <Globe className="w-8 h-8 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Global Forums
+              </h1>
+              <p className="text-gray-600">
+                Connect with professionals worldwide
+              </p>
+            </div>
+          </div>
+
+          <div className="relative group">
+            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search global forums..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-16 pr-6 py-4 bg-gray-50/80 backdrop-blur-sm rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:bg-white outline-none transition-all border-2 border-gray-200 focus:border-purple-500 text-gray-900 placeholder-gray-500 font-medium hover:border-gray-300 text-lg"
+            />
+          </div>
+        </header>
+
+        {/* Global Forums Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {globalForums
+            .filter((forum: any) =>
+              searchTerm
+                ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  forum.description
+                    ?.toLowerCase()
+                    .includes(searchTerm.toLowerCase())
+                : true
+            )
+            .map((forum: any) => (
+              <button
+                key={forum.id}
+                onClick={() => handleForumSelect(forum.id)}
+                className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-3xl">{forum.icon}</span>
+                  <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {forum.name}
+                  </h3>
+                </div>
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  {forum.description}
+                </p>
+
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-lg font-bold text-blue-600">
+                      {forum.topic_count || 0}
+                    </div>
+                    <div className="text-xs text-blue-700 font-medium">
+                      Topics
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="text-lg font-bold text-purple-600">
+                      {forum.member_count || 0}
+                    </div>
+                    <div className="text-xs text-purple-700 font-medium">
+                      Members
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-xs font-bold text-green-600">
+                      {formatLastActivity(forum.last_activity)}
+                    </div>
+                    <div className="text-xs text-green-700 font-medium">
+                      Last
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
+                    View Forum
+                  </span>
+                </div>
+              </button>
+            ))}
+        </div>
+
+        {globalForums.filter((forum: any) =>
+          searchTerm
+            ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              forum.description
+                ?.toLowerCase()
+                .includes(searchTerm.toLowerCase())
+            : true
+        ).length === 0 && (
+          <div className="text-center py-12">
+            <Globe className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 text-lg">No forums found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Try a different search term
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Regular forum view with topics
   const isGlobalForum = viewMode === "global";
   const forum = isGlobalForum
     ? globalForums.find((f: any) => f.id === selectedForum)
-    : companies
-        .flatMap((c: any) => c.forums)
-        .find((f: any) => f.id === selectedForum);
+    : foundationForums.find((f: any) => f.id === selectedForum);
+
   if (!forum) return null;
 
   return (
@@ -84,10 +216,13 @@ export function ForumTopicsMode(props: any) {
             <p className="text-gray-600">{forum.description}</p>
             {!isGlobalForum && props.selectedCompany && (
               <p className="text-sm text-purple-600 font-medium">
-                {
-                  companies.find((c: any) => c.id === props.selectedCompany)
-                    ?.name
-                }
+                {props.selectedCompany}
+              </p>
+            )}
+            {isGlobalForum && (
+              <p className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                Global Forum
               </p>
             )}
           </div>
@@ -127,7 +262,7 @@ export function ForumTopicsMode(props: any) {
               <ChevronDown className="w-4 h-4" />
             )}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {[
               { value: "relevant", label: "Relevant", icon: BarChart3 },
               { value: "recent", label: "Recent", icon: Clock },
@@ -139,7 +274,7 @@ export function ForumTopicsMode(props: any) {
                 <button
                   key={o.value}
                   onClick={() => setSortBy(o.value as any)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all whitespace-nowrap ${
                     sortBy === o.value
                       ? "bg-purple-50 border-purple-200 text-purple-700"
                       : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -162,7 +297,7 @@ export function ForumTopicsMode(props: any) {
             <span className="text-sm font-medium text-gray-700">Topics</span>
           </div>
           <div className="text-3xl font-bold text-purple-600 group-hover:text-purple-700 transition-colors">
-            {forum.topicCount}
+            {forum.topicCount || forum.topic_count || 0}
           </div>
         </div>
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
@@ -171,7 +306,7 @@ export function ForumTopicsMode(props: any) {
             <span className="text-sm font-medium text-gray-700">Members</span>
           </div>
           <div className="text-3xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
-            {forum.memberCount}
+            {forum.memberCount || forum.member_count || 0}
           </div>
         </div>
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
@@ -191,7 +326,7 @@ export function ForumTopicsMode(props: any) {
             </span>
           </div>
           <div className="text-lg font-bold text-orange-600 group-hover:text-orange-700 transition-colors">
-            {forum.lastActivity}
+            {formatLastActivity(forum.lastActivity || forum.last_activity)}
           </div>
         </div>
       </div>
@@ -232,15 +367,6 @@ export function ForumTopicsMode(props: any) {
       {/* Topics List */}
       <div className="space-y-6">
         {paginatedTopics.topics.map((topic: any) => {
-          const topicForum = isGlobalForum
-            ? globalForums.find((f: any) => f.id === topic.forumId)
-            : companies
-                .flatMap((c: any) => c.forums)
-                .find((f: any) => f.id === topic.forumId);
-          const topicCompany = companies.find(
-            (c: any) => c.id === topic.companyId
-          );
-
           return (
             <div
               key={topic.id}
@@ -250,40 +376,27 @@ export function ForumTopicsMode(props: any) {
               <div className="relative z-10">
                 <div className="flex items-start gap-3 md:gap-4 mb-4">
                   <button
-                    onClick={() => handleUserClick(topic.author.id)}
+                    onClick={() => handleUserClick(topic.user_id)}
                     className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-lg md:text-xl shadow-sm border border-purple-200/50 flex-shrink-0 hover:bg-blue-200 transition-colors"
                   >
-                    {topic.author.avatar}
+                    {topic.user_profile?.avatar || "👤"}
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <button
-                        onClick={() => handleUserClick(topic.author.id)}
+                        onClick={() => handleUserClick(topic.user_id)}
                         className="text-sm text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-3 py-1.5 rounded-full border border-purple-200 hover:text-purple-800 transition-colors"
                       >
-                        {topic.author.username}
+                        {topic.user_profile?.username || "Anonymous"}
                       </button>
-                      <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full font-medium">
-                        {topicForum?.icon} {topicForum?.name}
-                      </span>
-                      {topicCompany && (
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full font-medium">
-                          {topicCompany.name}
-                        </span>
-                      )}
-                      {topic.scope === "global" && (
-                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium">
-                          Global
-                        </span>
-                      )}
-                      {topic.isPinned && (
+                      {topic.is_pinned && (
                         <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                           <Star className="w-3 h-3" /> Pinned
                         </span>
                       )}
                       <span className="text-gray-400 font-medium">•</span>
                       <span className="text-gray-500 font-medium">
-                        {getTimeAgo(topic.createdAt)}
+                        {getTimeAgo(topic.created_at)}
                       </span>
                     </div>
                     <button
@@ -295,7 +408,7 @@ export function ForumTopicsMode(props: any) {
                     <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed line-clamp-2 break-words">
                       {topic.content}
                     </p>
-                    {topic.tags.length > 0 && (
+                    {topic.tags && topic.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-4">
                         {topic.tags.slice(0, 3).map((tag: string) => (
                           <button
@@ -320,61 +433,75 @@ export function ForumTopicsMode(props: any) {
                     <button
                       onClick={(e) => handleReaction(topic.id, "seen", e)}
                       className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-green-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
-                        topic.userReactions.seen
+                        topic.userReactions?.seen
                           ? "text-green-600"
                           : "text-gray-500 hover:text-green-600"
                       }`}
                     >
                       <Eye className="w-4 h-4" />
-                      <span className="text-sm">{topic.reactions.seen}</span>
+                      <span className="text-sm">
+                        {topic.reactions?.seen ||
+                          topic.reaction_seen_count ||
+                          0}
+                      </span>
                     </button>
                     <button
                       onClick={(e) => handleReaction(topic.id, "validated", e)}
                       className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-blue-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
-                        topic.userReactions.validated
+                        topic.userReactions?.validated
                           ? "text-blue-600"
                           : "text-gray-500 hover:text-blue-600"
                       }`}
                     >
                       <ThumbsUp className="w-4 h-4" />
                       <span className="text-sm">
-                        {topic.reactions.validated}
+                        {topic.reactions?.validated ||
+                          topic.reaction_validated_count ||
+                          0}
                       </span>
                     </button>
                     <button
                       onClick={(e) => handleReaction(topic.id, "inspired", e)}
                       className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-yellow-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
-                        topic.userReactions.inspired
+                        topic.userReactions?.inspired
                           ? "text-yellow-600"
                           : "text-gray-500 hover:text-yellow-600"
                       }`}
                     >
                       <Star className="w-4 h-4" />
                       <span className="text-sm">
-                        {topic.reactions.inspired}
+                        {topic.reactions?.inspired ||
+                          topic.reaction_inspired_count ||
+                          0}
                       </span>
                     </button>
                     <button
                       onClick={(e) => handleReaction(topic.id, "heard", e)}
                       className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-purple-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
-                        topic.userReactions.heard
+                        topic.userReactions?.heard
                           ? "text-purple-600"
                           : "text-gray-500 hover:text-purple-600"
                       }`}
                     >
                       <HeartIcon className="w-4 h-4" />
-                      <span className="text-sm">{topic.reactions.heard}</span>
+                      <span className="text-sm">
+                        {topic.reactions?.heard ||
+                          topic.reaction_heard_count ||
+                          0}
+                      </span>
                     </button>
                     <button
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-1 md:gap-2 text-gray-500 hover:text-purple-600 transition-colors font-medium hover:bg-purple-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg"
                     >
                       <MessageCircle className="w-4 h-4" />
-                      <span className="text-sm">{topic.commentCount}</span>
+                      <span className="text-sm">
+                        {topic.commentCount || topic.comments_count || 0}
+                      </span>
                     </button>
                   </div>
                   <div className="text-xs md:text-sm text-gray-500 w-full md:w-auto mt-2 md:mt-0">
-                    Last activity {getTimeAgo(topic.lastActivity)}
+                    Last activity {getTimeAgo(topic.last_activity_at)}
                   </div>
                 </div>
               </div>
@@ -382,7 +509,6 @@ export function ForumTopicsMode(props: any) {
           );
         })}
 
-        {/* Pagination */}
         {/* Pagination */}
         {paginatedTopics.totalPages > 1 && (
           <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-2xl p-4 border border-gray-200 mt-6 gap-4">
@@ -457,6 +583,7 @@ export function ForumTopicsMode(props: any) {
       <CreateTopicModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onTopicCreated={props.handleTopicCreated}
         forumName={forum.name}
         companyId={isGlobalForum ? null : props.selectedCompany}
       />

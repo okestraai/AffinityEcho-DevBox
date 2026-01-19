@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-
   Mail,
   Lock,
   Eye,
@@ -19,7 +18,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-
 
 export function LoginScreen() {
   const { login, signup, socialLogin, forgotPassword, isLoading } = useAuth();
@@ -92,7 +90,7 @@ export function LoginScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-screen">
+        <div className="flex flex-col-reverse lg:flex-row lg:grid lg:grid-cols-2 gap-12 items-center min-h-screen">
           {/* Left Side - Branding & Features */}
           <div className="space-y-8">
             <div className="text-center lg:text-left">

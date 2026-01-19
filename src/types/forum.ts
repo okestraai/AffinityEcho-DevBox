@@ -102,3 +102,52 @@ export interface UserProfile {
     bio: string;
   };
 }
+
+
+export interface NookFilters {
+  // Filter options
+  urgency?: 'high' | 'medium' | 'low' | 'all';
+  scope?: 'company' | 'global' | 'all';
+  temperature?: 'hot' | 'warm' | 'cool' | 'all';
+  hashtag?: string;
+  
+  // Sorting
+  sortBy?: 'created_at' | 'last_activity_at' | 'members_count';
+  sortOrder?: 'asc' | 'desc';
+  
+  // Pagination
+  page?: number;
+  limit?: number;
+}
+
+export interface Nook {
+  id: string;
+  title: string;
+  description: string;
+  urgency: string;
+  scope: string;
+  temperature: string;
+  hashtags: string[];
+  members_count: number;
+  messages_count: number;
+  views_count: number;
+  last_activity_at: string;
+  expires_at: string;
+  timeLeft: string;
+  is_active: boolean;
+  is_locked: boolean;
+  created_at: string;
+}
+
+export interface NooksResponse {
+  success: boolean;
+  data: {
+    nooks: Nook[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}

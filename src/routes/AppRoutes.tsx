@@ -12,16 +12,15 @@ import { ChangePasswordPage } from '../components/auth/ChangePasswordPage';
 // Protected
 import { OnboardingFlow } from '../components/onboarding/OnboardingFlow';
 import { DashboardLayout } from '../layout/DashboardLayout';
-import { FeedsView } from '../components/dashboard/FeedsView';
+import { FeedsView } from '../components/dashboard/Feeds/FeedsView';
 import { ForumsView } from '../components/dashboard/Forum/ForumsView';
-import { TopicDetailPage } from '../components/dashboard/TopicDetailPage';
-import { NooksView } from '../components/dashboard/NooksView';
-import { MessagesView } from '../components/dashboard/MessagesView';
-import { ProfileView } from '../components/dashboard/ProfileView';
-import { MentorshipView } from '../components/dashboard/MentorshipView';
-import { FindMentorshipView } from '../components/dashboard/FindMentorshipView';
-import { ReferralsView } from '../components/dashboard/ReferralsView';
-import { ConnectionRequestsView } from '../components/dashboard/ConnectionRequestsView';
+import { TopicDetailPage } from '../components/dashboard/Forum/TopicDetailPage';
+import { NooksView } from '../components/dashboard/Nooks/NooksView';
+import { MessagesView } from '../components/dashboard/Message/MessagesView';
+import { ProfileView } from '../components/dashboard/Profile/ProfileView';
+import { MentorshipView } from '../components/dashboard/Mentorship/MentorshipView';
+import { FindMentorshipView } from '../components/dashboard/Mentorship/FindMentorshipView';
+
 
 import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './publicOnlyRoute';
@@ -67,8 +66,6 @@ const AppRoutes: React.FC = () => {
         <Route path="messages" element={<MessagesView />} />
         <Route path="mentorship" element={<MentorshipView />} />
         <Route path="find-mentorship" element={<FindMentorshipView />} />
-        <Route path="referrals" element={<ReferralsView />} />
-        <Route path="connections" element={<ConnectionRequestsView />} />
         <Route path="profile" element={<ProfileView />} />
       </Route>
 

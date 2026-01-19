@@ -1,20 +1,26 @@
-// src/components/forums/ForumsView.tsx
-import React, { useState, useMemo } from "react";
+// src/components/forums/ForumsView.tsx - FIXED VIEW ALL & JOIN/LEAVE UPDATES
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { ForumDetailView } from "./ForumDetailView";
+import { Topic, Forum } from "../../../types/forum";
 import {
-  companies,
-  globalForums,
-  mockTopics,
-  mockUserProfiles,
-} from "../../../data/mockForums";
-import { Topic, UserProfile } from "../../../types/forum";
+  GetLocalScopeMetrics,
+  GetGlobalScopeMetrics,
+  GetRecentDiscussions,
+  GetFoundationForums,
+  GetUserJoinedForums,
+  ForumTopicsReactions,
+  CreateForumTopicsComments,
+} from "../../../../api/forumApis";
+import { DecryptData } from "../../../../api/EncrytionApis";
 
 // Split Views
 import { OverviewMode } from "./OverviewMode";
 import { CompanyMode } from "./CompanyMode";
 import { ForumTopicsMode } from "./ForumTopicsMode";
+import { ForumViewSkeleton } from "../../../Helper/SkeletonLoader";
+import { showToast } from "../../../Helper/ShowToast";
 
 export function ForumsView() {
   const { user: currentUser } = useAuth();
@@ -25,29 +31,177 @@ export function ForumsView() {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [selectedForum, setSelectedForum] = useState<string | null>(null);
-  
+  const [lastClickTime, setLastClickTime] = useState(0);
   const [viewMode, setViewMode] = useState<
     "overview" | "company" | "forum" | "global" | "forumDetail"
   >("overview");
-  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfile | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(
+    null
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<"relevant" | "recent" | "popular" | "trending">("relevant");
-  const [timeFilter, setTimeFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [sortBy, setSortBy] = useState<
+    "relevant" | "recent" | "popular" | "trending"
+  >("relevant");
+  const [timeFilter, setTimeFilter] = useState<
+    "all" | "today" | "week" | "month"
+  >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
-  // const userCompany = companies.find(c => c.name === currentUser?.demographics.company);
 
-   const userCompany = companies.find(c => c.name === "Google");
+  // API State
+  const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
+  const [companyType, setCompanyType] = useState<string>("");
+  const [localMetrics, setLocalMetrics] = useState<any>(null);
+  const [globalMetrics, setGlobalMetrics] = useState<any>(null);
+  const [recentDiscussions, setRecentDiscussions] = useState<any[]>([]);
+  const [foundationForums, setFoundationForums] = useState<any[]>([]);
+  const [globalForums, setGlobalForums] = useState<any[]>([]);
+  const [userJoinedForums, setUserJoinedForums] = useState<any[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getCompanyDisplayName = () => {
+    if (!decryptedCompanyName) return null;
+
+    if (companyType?.toLowerCase() === "other") {
+      return "Others";
+    }
+
+    return decryptedCompanyName;
+  };
+
+  // Get company name for API calls
+  const getCompanyNameForApi = () => {
+    if (!decryptedCompanyName) return null;
+
+    // When company type is "other", use "Others" for API calls
+    if (companyType?.toLowerCase() === "other") {
+      return "Others";
+    }
+
+    return decryptedCompanyName;
+  };
+
+  // In the shared object:
+  const apiCompanyName = getCompanyNameForApi();
+  const userCompany = decryptedCompanyName
+    ? {
+        name: getCompanyDisplayName() || decryptedCompanyName,
+        actualName: decryptedCompanyName,
+        apiName: apiCompanyName,
+        forums: foundationForums,
+        displayName: getCompanyDisplayName(),
+        actualCompanyName: decryptedCompanyName,
+        companyType: companyType,
+      }
+    : null;
+
+  // Decrypt company name on mount
+  useEffect(() => {
+    const decryptCompanyName = async () => {
+      try {
+        if (currentUser?.company_encrypted) {
+          const result = await DecryptData({
+            encryptedData: currentUser.company_encrypted,
+          });
+          setDecryptedCompanyName(result.data.decryptedData);
+          setCompanyType(currentUser.company_type || "");
+        }
+      } catch (err) {
+        console.error("Error decrypting company name:", err);
+      }
+    };
+
+    decryptCompanyName();
+  }, [currentUser]);
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setInitialLoading(true);
+        setError(null);
+
+        // Always fetch global metrics
+        const globalData = await GetGlobalScopeMetrics();
+        setGlobalMetrics(globalData.data);
+        setGlobalForums(globalData.data.forums || []);
+
+        // Fetch company-specific data if company name is available
+        if (apiCompanyName) {
+          const [localData, foundationData, joinedData] = await Promise.all([
+            GetLocalScopeMetrics(apiCompanyName),
+            GetFoundationForums(apiCompanyName),
+            GetUserJoinedForums(apiCompanyName),
+          ]);
+
+          setLocalMetrics(localData.data);
+          setFoundationForums(foundationData.data.forums || []);
+          setUserJoinedForums(joinedData.data || []);
+        }
+      } catch (err: any) {
+        console.error("Error fetching initial data:", err);
+        setError(err.message || "Failed to load forum data");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [apiCompanyName]);
+
+  // Fetch recent discussions
+  useEffect(() => {
+    const fetchRecentDiscussions = async () => {
+      try {
+        if (!apiCompanyName && viewMode !== "global") return;
+
+        setTopicsLoading(true);
+
+        const filters: any = {
+          sortBy: sortBy,
+          timeFilter: timeFilter,
+          page: currentPage,
+          limit: 10,
+        };
+
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+
+        if (viewMode === "global") {
+          filters.isGlobal = true;
+        }
+
+        const data = await GetRecentDiscussions(apiCompanyName || "", filters);
+        setRecentDiscussions(data.data.topics || []);
+      } catch (err) {
+        console.error("Error fetching recent discussions:", err);
+      } finally {
+        setTopicsLoading(false);
+      }
+    };
+
+    if (!initialLoading) {
+      fetchRecentDiscussions();
+    }
+  }, [
+    apiCompanyName,
+    sortBy,
+    timeFilter,
+    searchTerm,
+    currentPage,
+    viewMode,
+    initialLoading,
+  ]);
 
   const handleUserClick = (userId: string) => {
     if (currentUser && userId === currentUser.id) return;
-    const profile = mockUserProfiles[userId];
-    if (profile) {
-      setSelectedUserProfile(profile);
-      setShowUserProfile(true);
-    }
+    setSelectedUserProfile({ id: userId });
+    setShowUserProfile(true);
   };
 
   const handleFollow = () => {};
@@ -56,69 +210,105 @@ export function ForumsView() {
 
   const TOPICS_PER_PAGE = 10;
 
-  const getFilteredAndSortedTopics = () => {
-    let topics = [...mockTopics];
+  const paginatedTopics = useMemo(() => {
+    return {
+      topics: recentDiscussions,
+      totalTopics: recentDiscussions.length,
+      totalPages: Math.ceil(recentDiscussions.length / TOPICS_PER_PAGE),
+    };
+  }, [recentDiscussions]);
 
-    if (viewMode === "company" && selectedCompany)
-      topics = topics.filter(t => t.companyId === selectedCompany);
-    if ((viewMode === "forum" || viewMode === "global") && selectedForum)
-      topics = topics.filter(t => t.forumId === selectedForum);
-    if (viewMode === "global")
-      topics = topics.filter(t => !t.companyId);
+  // ISOLATED REACTION HANDLER - Only updates the specific topic
+  const handleReaction = async (
+    topicId: string,
+    type: string,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
 
-    if (timeFilter !== "all") {
-      const now = Date.now();
-      const thresholds = { today: 86400000, week: 604800000, month: 2592000000 };
-      topics = topics.filter(t => now - t.createdAt.getTime() <= thresholds[timeFilter]);
-    }
+    try {
+      // Optimistically update UI immediately
+      setRecentDiscussions((prev) =>
+        prev.map((topic) => {
+          if (topic.id === topicId) {
+            const updatedReactions = { ...topic.reactions };
+            const reactionKey = `reaction_${type}_count`;
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      topics = topics.filter(t =>
-        t.title.toLowerCase().includes(term) ||
-        t.content.toLowerCase().includes(term) ||
-        t.tags.some(tag => tag.toLowerCase().includes(term))
+            // Toggle the reaction
+            if (topic.userReactions?.[type]) {
+              updatedReactions[type] = Math.max(
+                0,
+                (updatedReactions[type] || topic[reactionKey] || 0) - 1
+              );
+            } else {
+              updatedReactions[type] =
+                (updatedReactions[type] || topic[reactionKey] || 0) + 1;
+            }
+
+            return {
+              ...topic,
+              reactions: updatedReactions,
+              [reactionKey]: updatedReactions[type],
+              userReactions: {
+                ...topic.userReactions,
+                [type]: !topic.userReactions?.[type],
+              },
+            };
+          }
+          return topic;
+        })
+      );
+
+      // Make API call in background
+      await ForumTopicsReactions({
+        topicId,
+        reactionType: type,
+      });
+    } catch (error) {
+      console.error("Error adding reaction:", error);
+      showToast("Failed to update reaction", "error");
+
+      // Revert optimistic update on error
+      setRecentDiscussions((prev) =>
+        prev.map((topic) => {
+          if (topic.id === topicId) {
+            const updatedReactions = { ...topic.reactions };
+            const reactionKey = `reaction_${type}_count`;
+
+            // Revert the toggle
+            if (!topic.userReactions?.[type]) {
+              updatedReactions[type] = Math.max(
+                0,
+                (updatedReactions[type] || topic[reactionKey] || 0) - 1
+              );
+            } else {
+              updatedReactions[type] =
+                (updatedReactions[type] || topic[reactionKey] || 0) + 1;
+            }
+
+            return {
+              ...topic,
+              reactions: updatedReactions,
+              [reactionKey]: updatedReactions[type],
+              userReactions: {
+                ...topic.userReactions,
+                [type]: !topic.userReactions?.[type],
+              },
+            };
+          }
+          return topic;
+        })
       );
     }
-
-    const score = (t: Topic) =>
-      t.reactions.seen * 1 + t.reactions.validated * 2 + t.reactions.inspired * 3 +
-      t.reactions.heard * 2 + t.commentCount * 1.5;
-
-    const totalReactions = (t: Topic) => Object.values(t.reactions).reduce((a, b) => a + b, 0);
-
-    switch (sortBy) {
-      case "relevant": topics.sort((a, b) => score(b) - score(a)); break;
-      case "recent": topics.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime()); break;
-      case "popular": topics.sort((a, b) => totalReactions(b) - totalReactions(a)); break;
-      case "trending":
-        topics.sort((a, b) => {
-          const ha = Math.max((Date.now() - a.lastActivity.getTime()) / 3600000, 1);
-          const hb = Math.max((Date.now() - b.lastActivity.getTime()) / 3600000, 1);
-          return (totalReactions(b) + b.commentCount) / hb - (totalReactions(a) + a.commentCount) / ha;
-        });
-        break;
-    }
-    return topics;
-  };
-
-  const paginatedTopics = useMemo(() => {
-    const filtered = getFilteredAndSortedTopics();
-    const start = (currentPage - 1) * TOPICS_PER_PAGE;
-    return {
-      topics: filtered.slice(start, start + TOPICS_PER_PAGE),
-      totalTopics: filtered.length,
-      totalPages: Math.ceil(filtered.length / TOPICS_PER_PAGE),
-    };
-  }, [viewMode, selectedCompany, selectedForum, searchTerm, sortBy, timeFilter, currentPage]);
-
-  const handleReaction = (topicId: string, type: keyof Topic["reactions"], e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log("Reaction:", type, topicId);
   };
 
   const handleCompanySelect = (id: string) => {
-    setSelectedCompany(id);
+    // When company type is "other", use "Others" as the selected company
+    if (companyType?.toLowerCase() === "other") {
+      setSelectedCompany("Others");
+    } else {
+      setSelectedCompany(id);
+    }
     setViewMode("company");
     setSelectedForum(null);
     setCurrentPage(1);
@@ -151,25 +341,159 @@ export function ForumsView() {
     setViewMode("overview");
   };
 
-  const getTimeAgo = (date: Date) => {
-    const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  const getTimeAgo = (date: string | Date) => {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    const mins = Math.floor((Date.now() - dateObj.getTime()) / 60000);
     if (mins < 60) return `${mins}m ago`;
     if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
-  return `${Math.floor(mins / 1440)}d ago`;
+    return `${Math.floor(mins / 1440)}d ago`;
   };
 
-    const handleCommentClick = (topicId: string, e: React.MouseEvent) => {
+  const handleCommentClick = (topicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
+
+    // Prevent double-click within 300ms
+    const now = Date.now();
+    if (now - lastClickTime < 300) {
+      return;
+    }
+    setLastClickTime(now);
+
     setActiveCommentId(activeCommentId === topicId ? null : topicId);
   };
 
+  // ISOLATED COMMENT SUBMIT - Only updates the specific topic's comment count
   const handleCommentSubmit = async (topicId: string, comment: string) => {
-    console.log('Comment submitted for topic:', topicId, 'Comment:', comment);
-    setActiveCommentId(null);
+    try {
+      if (!comment.trim()) {
+        showToast("Comment cannot be empty", "error");
+        return;
+      }
+
+      // Optimistically update comment count
+      setRecentDiscussions((prev) =>
+        prev.map((topic) => {
+          if (topic.id === topicId) {
+            return {
+              ...topic,
+              commentCount:
+                (topic.commentCount || topic.comments_count || 0) + 1,
+              comments_count:
+                (topic.commentCount || topic.comments_count || 0) + 1,
+            };
+          }
+          return topic;
+        })
+      );
+
+      // Close the comment input
+      setActiveCommentId(null);
+
+      // Call the API to create a comment
+      await CreateForumTopicsComments({
+        topicId: topicId,
+        content: comment.trim(),
+        isAnonymous: true,
+      });
+
+      showToast("Comment posted successfully!", "success");
+    } catch (error: any) {
+      console.error("Error submitting comment:", error);
+      showToast(
+        error.response?.data?.message || "Failed to post comment",
+        "error"
+      );
+
+      // Revert optimistic update on error
+      setRecentDiscussions((prev) =>
+        prev.map((topic) => {
+          if (topic.id === topicId) {
+            return {
+              ...topic,
+              commentCount: Math.max(
+                0,
+                (topic.commentCount || topic.comments_count || 0) - 1
+              ),
+              comments_count: Math.max(
+                0,
+                (topic.commentCount || topic.comments_count || 0) - 1
+              ),
+            };
+          }
+          return topic;
+        })
+      );
+    }
   };
 
   const handleCommentCancel = () => {
     setActiveCommentId(null);
+  };
+
+  // Handler for viewing all global forums - FIXED
+  const handleViewAllGlobalForums = () => {
+    console.log("View all global forums clicked");
+    setViewMode("global");
+    setSelectedCompany(null);
+    setSelectedForum(null); // Clear selected forum to show the grid
+    setCurrentPage(1);
+  };
+
+  // HANDLER TO REFRESH FORUMS AFTER JOIN/LEAVE
+  const handleForumMembershipChange = async () => {
+    try {
+      console.log("Refreshing forums after membership change...");
+
+      // Refresh foundation forums and joined forums
+      if (apiCompanyName) {
+        const [foundationData, joinedData] = await Promise.all([
+          GetFoundationForums(apiCompanyName),
+          GetUserJoinedForums(apiCompanyName),
+        ]);
+
+        setFoundationForums(foundationData.data.forums || []);
+        setUserJoinedForums(joinedData.data || []);
+      }
+
+      // Also refresh global forums
+      const globalData = await GetGlobalScopeMetrics();
+      setGlobalForums(globalData.data.forums || []);
+
+      console.log("Forums refreshed successfully");
+    } catch (err) {
+      console.error("Error refreshing forums:", err);
+    }
+  };
+
+  // HANDLER TO REFRESH TOPICS AFTER CREATING NEW TOPIC
+  const handleTopicCreated = async () => {
+    try {
+      console.log("Refreshing topics after creation...");
+
+      // Refresh recent discussions
+      const filters: any = {
+        sortBy: sortBy,
+        timeFilter: timeFilter,
+        page: currentPage,
+        limit: 10,
+      };
+
+      if (searchTerm) {
+        filters.search = searchTerm;
+      }
+
+      if (viewMode === "global") {
+        filters.isGlobal = true;
+      }
+
+      const data = await GetRecentDiscussions(apiCompanyName || "", filters);
+      setRecentDiscussions(data.data.topics || []);
+
+      console.log("Topics refreshed successfully");
+    } catch (err) {
+      console.error("Error refreshing topics:", err);
+    }
   };
 
   const shared = {
@@ -208,25 +532,66 @@ export function ForumsView() {
     handleForumSelect,
     selectedCompany,
     selectedForum,
-    companies,
+    companies: [],
     globalForums,
     handleFollow,
     handleUnfollow,
     handleChat,
     activeCommentId,
     setActiveCommentId,
-    setViewMode
+    setViewMode,
+    viewMode, // FIX: Add viewMode to shared props
+    localMetrics,
+    globalMetrics,
+    foundationForums,
+    userJoinedForums,
+    topicsLoading,
+    initialLoading,
+    error,
+    handleViewAllGlobalForums,
+    handleForumMembershipChange,
+    handleTopicCreated, // NEW: Pass topic refresh handler
   };
 
-  if (viewMode === "overview") return <OverviewMode {...shared} />;
-  if (viewMode === "company" && selectedCompany) return <CompanyMode {...shared} />;
-  if (viewMode === "forumDetail" && selectedForum) {
-    const forum = [...globalForums, ...companies.flatMap(c => c.forums)].find(f => f.id === selectedForum);
-    if (!forum) return null;
-    return <ForumDetailView forum={forum} onBack={handleForumBack} />;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
-  if ((viewMode === "forum" || viewMode === "global") && selectedForum)
-    return <ForumTopicsMode {...shared} />;
+
+  // Show skeleton loading during initial load
+  if (initialLoading) {
+    return <ForumViewSkeleton />;
+  }
+
+  if (viewMode === "overview") return <OverviewMode {...shared} />;
+  if (viewMode === "company" && selectedCompany)
+    return <CompanyMode {...shared} />;
+  if (viewMode === "forumDetail" && selectedForum) {
+    const forum = [...globalForums, ...foundationForums].find(
+      (f) => f.id === selectedForum
+    );
+    if (!forum) return null;
+    return (
+      <ForumDetailView
+        forum={forum}
+        onBack={handleForumBack}
+        onForumMembershipChange={handleForumMembershipChange}
+      />
+    );
+  }
+  // FIXED: Check if we're in global mode WITHOUT a selected forum (showing grid)
+  if (viewMode === "global") return <ForumTopicsMode {...shared} />;
 
   return null;
 }

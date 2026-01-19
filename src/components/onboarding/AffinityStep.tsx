@@ -69,7 +69,7 @@ export function AffinityStep({ data, updateData }: Props) {
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Select communities you'd like to join <span className="text-gray-500">(optional)</span>
+          Select communities you'd like to join
         </label>
         
         <div className="grid grid-cols-1 gap-3">

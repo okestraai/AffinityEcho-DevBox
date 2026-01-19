@@ -180,6 +180,22 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         created_at: getTimeAgo(480),
         read_at: getTimeAgo(470),
       },
+      {
+        id: '7',
+        user_id: user?.id || '',
+        actor_id: 'actor7',
+        type: 'identity_reveal_request',
+        title: 'Identity Reveal Request',
+        message: 'Anonymous_User wants to reveal identities',
+        action_url: '/dashboard/messages',
+        reference_id: 'reveal1',
+        reference_type: 'identity_reveal',
+        is_read: false,
+        action_taken: false,
+        metadata: {},
+        created_at: getTimeAgo(15),
+        read_at: null,
+      },
     ];
   };
 
@@ -279,6 +295,27 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     await markAsRead(notification.id);
 
     try {
+      if (action === 'accept_identity_reveal' && notification.reference_id) {
+        const { error: updateError } = await supabase
+          .from('identity_reveals')
+          .update({ status: 'accepted' })
+          .eq('id', notification.reference_id);
+
+        if (updateError) throw updateError;
+
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .update({ action_taken: true })
+          .eq('id', notification.id);
+
+        if (notificationError) throw notificationError;
+
+        alert('Identity reveal accepted! You can now see each other\'s identities.');
+        navigate('/dashboard/messages');
+        onClose();
+        return;
+      }
+
       const { error } = await supabase
         .from('notifications')
         .update({ action_taken: true })
@@ -322,6 +359,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
       case 'mentorship_message':
         return <Target className="w-4 h-4 text-indigo-600" />;
       case 'identity_reveal':
+      case 'identity_reveal_request':
         return <Eye className="w-4 h-4 text-yellow-600" />;
       default:
         return <Bell className="w-4 h-4 text-gray-600" />;
@@ -375,6 +413,30 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
           </div>
         );
 
+      case 'identity_reveal_request':
+        return (
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'accept_identity_reveal');
+              }}
+              className="flex-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+            >
+              Accept
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteNotification(notification.id);
+              }}
+              className="flex-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+            >
+              Decline
+            </button>
+          </div>
+        );
+
       case 'follow':
         return (
           <button
@@ -398,7 +460,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
   return (
     <div
       ref={dropdownRef}
-      className="absolute right-0 top-full mt-2 w-96 max-h-[600px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+      className="fixed md:absolute right-2 md:right-0 left-2 md:left-auto top-16 md:top-full md:mt-2 w-auto md:w-96 max-h-[calc(100vh-5rem)] md:max-h-[600px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50"
     >
       <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
         <div className="flex items-center justify-between mb-3">
@@ -538,7 +600,13 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
 
       {notifications.length > 0 && (
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-3">
-          <button className="w-full text-center text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors">
+          <button
+            onClick={() => {
+              navigate('/dashboard/notifications');
+              onClose();
+            }}
+            className="w-full text-center text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+          >
             View all notifications
           </button>
         </div>

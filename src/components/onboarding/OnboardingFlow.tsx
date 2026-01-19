@@ -12,16 +12,21 @@ import { useAuth } from "../../contexts/AuthContext";
 import { DemographicsStep } from "./DemographicsStep";
 import { CompanyStep } from "./CompanyStep";
 import { AffinityStep } from "./AffinityStep";
-import { CreateOnboardingProfile } from "../../../api/authApis";
+import { CreateOnboardingProfile } from "../../../api/authApis"; // REMOVED CreateFoundationForums
+import { formatCompanyName } from "../../utils/CompanyFormatter";
 import { showToast } from "../../Helper/ShowToast";
 
 export function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     race: "",
     gender: "",
     careerLevel: "",
     company: "",
+    companyType: "", // Added companyType field
+    isCustomCompany: false,
     affinityTags: [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,29 +54,61 @@ export function OnboardingFlow() {
   ];
 
   const handleNext = async () => {
+    // For all steps except the last one, just proceed
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       return;
     }
 
+    // If we're on the last step, handle the complete submission
+    await handleCompleteOnboarding();
+  };
+
+  const handleCompleteOnboarding = async () => {
     setIsSubmitting(true);
     try {
+      let finalCompanyName = formData.company;
+      let finalCompanyType = formData.companyType || "static"; // Default to static if not set
+
+      // Format company name if it's a custom company
+      if (formData.isCustomCompany && formData.company?.trim()) {
+        finalCompanyName = formatCompanyName(formData.company.trim());
+        finalCompanyType = "other"; // Force to 'other' for custom companies
+        console.log("Custom company selected:", {
+          original: formData.company,
+          formatted: finalCompanyName,
+          companyType: finalCompanyType,
+        });
+      } else {
+        console.log("Static company selected:", {
+          company: finalCompanyName,
+          companyType: finalCompanyType,
+        });
+      }
+
+   
       const payload = {
+        ...(formData.firstName && { firstName: formData.firstName }),
+        ...(formData.lastName && { lastName: formData.lastName }),
         ...(formData.race && { race: formData.race }),
         ...(formData.gender && { gender: formData.gender }),
         ...(formData.careerLevel && { careerLevel: formData.careerLevel }),
-        ...(formData.company && { company: formData.company }),
+        ...(finalCompanyName && { company: finalCompanyName }),
+        ...(finalCompanyType && { companyType: finalCompanyType }),
         ...(formData.affinityTags.length > 0 && {
           affinityTags: formData.affinityTags,
         }),
       };
 
+      console.log("Submitting onboarding payload:", payload);
+
       await CreateOnboardingProfile(payload);
       await completeOnboarding(); // This refreshes user + redirects + shows toast
     } catch (error: any) {
+      console.error("Error during onboarding completion:", error);
       const message =
         error?.response?.data?.message ||
-        "Failed to save your profile. Please try again.";
+        "Failed to complete setup. Please try again.";
       showToast("Oops!", message, "error");
     } finally {
       setIsSubmitting(false);
@@ -89,6 +126,22 @@ export function OnboardingFlow() {
   const currentStepData = steps[currentStep];
   const StepComponent = currentStepData.component;
   const isLastStep = currentStep === steps.length - 1;
+
+  // Determine button disabled states
+  const getNextButtonDisabled = () => {
+    if (isSubmitting) return true;
+
+    // For company step, disable if custom company but no company name
+    if (
+      currentStep === 1 &&
+      formData.isCustomCompany &&
+      !formData.company?.trim()
+    ) {
+      return true;
+    }
+
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -140,14 +193,18 @@ export function OnboardingFlow() {
           </div>
 
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/30">
-            <StepComponent data={formData} updateData={updateFormData} />
+            <StepComponent
+              data={formData}
+              updateData={updateFormData}
+              onNext={handleNext}
+            />
           </div>
 
           {/* Navigation */}
           <div className="flex justify-between items-center mt-10">
             <button
               onClick={handleBack}
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 || isSubmitting}
               className="flex items-center gap-2 px-6 py-3 text-gray-600 disabled:opacity-50 hover:text-gray-900 transition-all rounded-2xl hover:bg-white/80 font-semibold border border-gray-200 hover:border-gray-300"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -156,7 +213,7 @@ export function OnboardingFlow() {
 
             <button
               onClick={handleNext}
-              disabled={isSubmitting}
+              disabled={getNextButtonDisabled()}
               className={`flex items-center gap-3 px-8 py-3 rounded-2xl font-bold transition-all duration-200 shadow-xl
                 ${
                   isSubmitting
@@ -167,7 +224,7 @@ export function OnboardingFlow() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving your info...
+                  Completing Setup...
                 </>
               ) : (
                 <>

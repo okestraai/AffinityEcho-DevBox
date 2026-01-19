@@ -1,40 +1,237 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, MessageCircle, TrendingUp, UserPlus, UserCheck, Shield, Info, Plus, Eye, ThumbsUp, Clock } from 'lucide-react';
-import { Forum, Topic } from '../../../types/forum';
-import { mockTopics } from '../../../data/mockForums';
-import { CreateTopicModal } from '../../Modals/CreateTopicModal';
+// src/components/forums/ForumDetailView.tsx - WITH REFRESH CALLBACK
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Users,
+  MessageCircle,
+  TrendingUp,
+  UserPlus,
+  UserCheck,
+  Shield,
+  Info,
+  Plus,
+  Eye,
+  ThumbsUp,
+  Clock,
+} from "lucide-react";
+import {
+  GetForumById,
+  UserJoinForum,
+  UserLeaveForum,
+  GetUserJoinedForums,
+} from "../../../../api/forumApis";
+import { DecryptData } from "../../../../api/EncrytionApis";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  formatLastActivity,
+  transformTopicFromAPI,
+} from "../../../utils/forumUtils";
+import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
+import { ForumCardSkeleton } from "../../../Helper/SkeletonLoader";
+import { showToast } from "../../../Helper/ShowToast";
 
 interface Props {
-  forum: Forum;
+  forum: any;
   onBack: () => void;
+  onForumMembershipChange?: () => Promise<void>; // NEW: Callback to refresh parent
 }
 
-export function ForumDetailView({ forum, onBack }: Props) {
+export function ForumDetailView({
+  forum: initialForum,
+  onBack,
+  onForumMembershipChange,
+}: Props) {
   const navigate = useNavigate();
-  const [isJoined, setIsJoined] = useState(forum.isJoined || false);
+  const { user: currentUser } = useAuth();
+
+  const [forum, setForum] = useState(initialForum);
+  const [isJoined, setIsJoined] = useState(false);
+  const [memberCount, setMemberCount] = useState(initialForum.memberCount || 0);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [memberCount, setMemberCount] = useState(forum.memberCount);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checkingJoinStatus, setCheckingJoinStatus] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
+  const [companyType, setCompanyType] = useState<string>("");
 
-  const forumTopics = mockTopics.filter(t => t.forumId === forum.id);
+  // Determine if this is a global forum or company forum
+  const isGlobalForum = !forum.company_name || forum.is_global;
 
-  const handleJoinToggle = () => {
-    if (isJoined) {
+  // Decrypt company name and get company type
+  useEffect(() => {
+    const decryptCompanyName = async () => {
+      try {
+        if (currentUser?.company_encrypted) {
+          const result = await DecryptData({
+            encryptedData: currentUser.company_encrypted,
+          });
+          setDecryptedCompanyName(result.data.decryptedData);
+          setCompanyType(currentUser.company_type || "");
+        }
+      } catch (err) {
+        console.error("Error decrypting company name:", err);
+      }
+    };
+
+    decryptCompanyName();
+  }, [currentUser]);
+
+  // Get the correct company name for API calls
+  const getCompanyNameForApi = useCallback(() => {
+    if (!decryptedCompanyName) return null;
+
+    // When company type is "other", use "Others" for API calls
+    if (companyType?.toLowerCase() === "other") {
+      return "Others";
+    }
+
+    return decryptedCompanyName;
+  }, [decryptedCompanyName, companyType]);
+
+  // Get company name to use for this forum
+  const getForumCompanyName = useCallback(() => {
+    // If it's a global forum, we don't need company name
+    if (isGlobalForum) return null;
+
+    // If it's a company forum, use the appropriate company name
+    return getCompanyNameForApi();
+  }, [isGlobalForum, getCompanyNameForApi]);
+
+  // Fetch forum details
+  useEffect(() => {
+    const fetchForumDetails = async () => {
+      try {
+        setLoading(true);
+        const result = await GetForumById(initialForum.id);
+        const forumData = result.data;
+
+        setForum(forumData);
+        setMemberCount(forumData.memberCount || forumData.member_count || 0);
+
+        // Transform topics if available
+        if (forumData.forum_topics) {
+          const transformedTopics = forumData.forum_topics.map(
+            transformTopicFromAPI
+          );
+          setTopics(transformedTopics);
+        }
+      } catch (err) {
+        console.error("Error fetching forum details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchForumDetails();
+  }, [initialForum.id]);
+
+  // Check if user has joined this forum - using useCallback to prevent infinite loops
+  const checkJoinStatus = useCallback(async () => {
+    try {
+      setCheckingJoinStatus(true);
+
+      // For global forums, we don't need company name
+      // For company forums, we need the correct company name
+      const companyNameForApi = getForumCompanyName();
+
+      // If it's a company forum but we don't have company name, skip
+      if (!isGlobalForum && !companyNameForApi) {
+        console.log("No company name available for company forum check");
+        setIsJoined(false);
+        return;
+      }
+
+      // Get joined forums - pass company name for company forums, null for global
+      const result = await GetUserJoinedForums(
+        isGlobalForum ? null : companyNameForApi
+      );
+      const joinedForums = result.data || [];
+
+      // Check if user is in this forum
+      const hasJoined = joinedForums.some((f: any) => f.id === initialForum.id);
+      setIsJoined(hasJoined);
+
+      // Also update member count if joined
+      if (hasJoined && forum.memberCount) {
+        setMemberCount(forum.memberCount);
+      }
+    } catch (err) {
+      console.error("Error checking join status:", err);
       setIsJoined(false);
-      setMemberCount(prev => prev - 1);
-    } else {
-      setIsJoined(true);
-      setMemberCount(prev => prev + 1);
+    } finally {
+      setCheckingJoinStatus(false);
+    }
+  }, [initialForum.id, isGlobalForum, getForumCompanyName, forum.memberCount]);
+
+  // Run checkJoinStatus when dependencies change
+  useEffect(() => {
+    if (!loading && (isGlobalForum || decryptedCompanyName)) {
+      checkJoinStatus();
+    }
+  }, [loading, isGlobalForum, decryptedCompanyName, checkJoinStatus]);
+
+  // ISOLATED JOIN/LEAVE WITH PARENT REFRESH
+  const handleJoinToggle = async () => {
+    if (joining) return; // Prevent multiple clicks
+
+    try {
+      setJoining(true);
+
+      // Optimistically update UI
+      const wasJoined = isJoined;
+      setIsJoined(!wasJoined);
+      setMemberCount((prev) => (wasJoined ? Math.max(0, prev - 1) : prev + 1));
+
+      // Make API call
+      if (wasJoined) {
+        await UserLeaveForum(initialForum.id);
+        showToast("Left forum successfully", "success");
+      } else {
+        await UserJoinForum(initialForum.id);
+        showToast("Joined forum successfully", "success");
+      }
+
+      // Small delay to ensure server has processed the request
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // REFRESH PARENT FORUMS LIST
+      if (onForumMembershipChange) {
+        await onForumMembershipChange();
+      }
+    } catch (error: any) {
+      console.error("Error toggling join status:", error);
+      showToast(
+        error.response?.data?.message || "Failed to update forum membership",
+        "error"
+      );
+
+      // Revert optimistic update on error
+      setIsJoined(isJoined);
+      setMemberCount((prev) => (isJoined ? prev + 1 : Math.max(0, prev - 1)));
+    } finally {
+      setJoining(false);
     }
   };
 
   const forumRules = forum.rules || [
-    'Be respectful and professional in all interactions',
-    'Share experiences honestly while maintaining privacy',
-    'Support others and contribute constructively',
-    'Report harassment or inappropriate behavior',
-    'Keep discussions relevant to the forum topic'
+    "Be respectful and professional in all interactions",
+    "Share experiences honestly while maintaining privacy",
+    "Support others and contribute constructively",
   ];
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="h-8 w-32 bg-gray-200 rounded mb-6 animate-pulse"></div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 animate-pulse">
+          <div className="h-64 bg-gray-200"></div>
+        </div>
+        <ForumCardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -56,18 +253,47 @@ export function ForumDetailView({ forum, onBack }: Props) {
               <div className="text-white">
                 <h1 className="text-3xl font-bold mb-2">{forum.name}</h1>
                 <p className="text-blue-100 max-w-2xl">{forum.description}</p>
+                {!isGlobalForum && forum.company_name && (
+                  <p className="text-blue-200 text-sm mt-1">
+                    Company Forum • {forum.company_name}
+                  </p>
+                )}
+                {isGlobalForum && (
+                  <p className="text-blue-200 text-sm mt-1">Global Forum</p>
+                )}
               </div>
             </div>
 
             <button
               onClick={handleJoinToggle}
+              disabled={
+                (!isGlobalForum && !decryptedCompanyName) ||
+                joining ||
+                checkingJoinStatus
+              }
               className={`px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${
                 isJoined
-                  ? 'bg-white text-blue-600 hover:bg-blue-50'
-                  : 'bg-blue-500 text-white hover:bg-blue-400'
+                  ? "bg-white text-blue-600 hover:bg-blue-50"
+                  : "bg-blue-500 text-white hover:bg-blue-400"
+              } ${
+                (!isGlobalForum && !decryptedCompanyName) ||
+                joining ||
+                checkingJoinStatus
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
+              title={
+                !isGlobalForum && !decryptedCompanyName
+                  ? "You need to set your company to join company forums"
+                  : ""
+              }
             >
-              {isJoined ? (
+              {joining || checkingJoinStatus ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {joining ? "Processing..." : "Checking..."}
+                </span>
+              ) : isJoined ? (
                 <>
                   <UserCheck className="w-5 h-5" />
                   Joined
@@ -87,7 +313,9 @@ export function ForumDetailView({ forum, onBack }: Props) {
                 <Users className="w-5 h-5" />
                 <span className="font-semibold">Members</span>
               </div>
-              <div className="text-3xl font-bold text-white">{memberCount.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-white">
+                {memberCount.toLocaleString()}
+              </div>
             </div>
 
             <div className="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
@@ -95,7 +323,9 @@ export function ForumDetailView({ forum, onBack }: Props) {
                 <MessageCircle className="w-5 h-5" />
                 <span className="font-semibold">Topics</span>
               </div>
-              <div className="text-3xl font-bold text-white">{forum.topicCount}</div>
+              <div className="text-3xl font-bold text-white">
+                {forum.topicCount || forum.topic_count || 0}
+              </div>
             </div>
 
             <div className="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
@@ -103,7 +333,9 @@ export function ForumDetailView({ forum, onBack }: Props) {
                 <TrendingUp className="w-5 h-5" />
                 <span className="font-semibold">Last Activity</span>
               </div>
-              <div className="text-2xl font-bold text-white">{forum.lastActivity}</div>
+              <div className="text-2xl font-bold text-white">
+                {formatLastActivity(forum.lastActivity || forum.last_activity)}
+              </div>
             </div>
           </div>
         </div>
@@ -112,7 +344,9 @@ export function ForumDetailView({ forum, onBack }: Props) {
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Forum Guidelines</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Forum Guidelines
+              </h3>
               <ul className="space-y-1">
                 {forumRules.map((rule, index) => (
                   <li key={index} className="text-sm text-gray-600 flex gap-2">
@@ -129,7 +363,7 @@ export function ForumDetailView({ forum, onBack }: Props) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Recent Discussions</h2>
 
-        {isJoined && (
+        {isJoined && !joining && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
@@ -140,29 +374,69 @@ export function ForumDetailView({ forum, onBack }: Props) {
         )}
       </div>
 
-      {!isJoined && (
+      {!isJoined && !checkingJoinStatus && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center mb-6">
           <Shield className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Join to participate</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Join to participate
+          </h3>
           <p className="text-gray-600 mb-4">
-            Join this forum to view discussions, create topics, and connect with {memberCount.toLocaleString()} members
+            Join this forum to view discussions, create topics, and connect with{" "}
+            {memberCount.toLocaleString()} members
+            {!isGlobalForum && !decryptedCompanyName && (
+              <span className="block text-sm text-orange-600 mt-2">
+                Note: You need to set your company in your profile to join
+                company forums
+              </span>
+            )}
           </p>
           <button
             onClick={handleJoinToggle}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+            disabled={
+              (!isGlobalForum && !decryptedCompanyName) ||
+              joining ||
+              checkingJoinStatus
+            }
+            className={`px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2 ${
+              (!isGlobalForum && !decryptedCompanyName) ||
+              joining ||
+              checkingJoinStatus
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
           >
-            <UserPlus className="w-5 h-5" />
-            Join Forum
+            {joining || checkingJoinStatus ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                {joining ? "Processing..." : "Checking..."}
+              </span>
+            ) : (
+              <>
+                <UserPlus className="w-5 h-5" />
+                Join Forum
+              </>
+            )}
           </button>
         </div>
       )}
 
-      {isJoined && (
+      {checkingJoinStatus && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center mb-6">
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-600">Checking forum membership...</p>
+          </div>
+        </div>
+      )}
+
+      {isJoined && !checkingJoinStatus && (
         <div className="space-y-3">
-          {forumTopics.length === 0 ? (
+          {topics.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
               <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No topics yet</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No topics yet
+              </h3>
               <p className="text-gray-600 mb-4">
                 Be the first to start a discussion in this forum!
               </p>
@@ -175,7 +449,7 @@ export function ForumDetailView({ forum, onBack }: Props) {
               </button>
             </div>
           ) : (
-            forumTopics.map((topic) => (
+            topics.map((topic) => (
               <div
                 key={topic.id}
                 onClick={() => navigate(`/dashboard/forums/topic/${topic.id}`)}
@@ -193,7 +467,9 @@ export function ForumDetailView({ forum, onBack }: Props) {
                         {topic.title}
                       </h3>
                     </div>
-                    <p className="text-gray-600 line-clamp-2 mb-3">{topic.content}</p>
+                    <p className="text-gray-600 line-clamp-2 mb-3">
+                      {topic.content}
+                    </p>
 
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
@@ -204,7 +480,7 @@ export function ForumDetailView({ forum, onBack }: Props) {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{new Date(topic.createdAt).toLocaleDateString()}</span>
+                        <span>{formatLastActivity(topic.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -214,28 +490,34 @@ export function ForumDetailView({ forum, onBack }: Props) {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 text-sm">
                       <Eye className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">{topic.reactions.seen}</span>
+                      <span className="text-gray-600">{topic.views}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <ThumbsUp className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">{topic.reactions.validated}</span>
+                      <span className="text-gray-600">
+                        {topic.reactions.validated}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MessageCircle className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">{topic.commentCount} comments</span>
+                      <span className="text-gray-600">
+                        {topic.commentCount} comments
+                      </span>
                     </div>
                   </div>
 
-                  {topic.tags.length > 0 && (
+                  {topic.tags && topic.tags.length > 0 && (
                     <div className="flex gap-2">
-                      {topic.tags.slice(0, 3).map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+                      {topic.tags
+                        .slice(0, 3)
+                        .map((tag: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -250,7 +532,7 @@ export function ForumDetailView({ forum, onBack }: Props) {
         onClose={() => setShowCreateModal(false)}
         forumName={forum.name}
         forumId={forum.id}
-        companyId={forum.companyId}
+        companyId={forum.companyId || forum.company_name}
       />
     </div>
   );

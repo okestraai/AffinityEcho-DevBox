@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { BottomNavigation } from '../components/NavComponent/BottomNavigation';
-import { MentorshipModal } from '../components/Modals/MentorshipModal';
+import { MentorshipModal } from '../components/Modals/MentorShipModals/MentorshipModal';
 import { DashboardHeader } from '../components/NavComponent/DashboardHeader';
 import { useAuth } from '../hooks/useAuth';
 import { getUnreadCount } from '../lib/notifications';

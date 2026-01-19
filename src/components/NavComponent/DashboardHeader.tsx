@@ -28,7 +28,6 @@ const navItems = [
   { id: "forums", label: "Forums", icon: Users },
   { id: "nooks", label: "Nooks", icon: Zap },
   { id: "mentorship", label: "Mentorship", icon: Target },
-  { id: "referrals", label: "Referrals", icon: Briefcase },
   { id: "messages", label: "Messages", icon: MessageCircle },
 ] as const;
 
@@ -55,7 +54,6 @@ export function DashboardHeader({
     { id: "forums", label: "Forums", icon: Users },
     { id: "nooks", label: "Nooks", icon: Zap },
     { id: "mentorship", label: "Mentorship", icon: Target },
-    { id: "referrals", label: "Referrals", icon: Briefcase },
     { id: "messages", label: "Messages", icon: MessageCircle },
   ];
 
