@@ -150,9 +150,11 @@ export function OnboardingFlow() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-3xl flex items-center justify-center shadow-lg border border-white/20">
-                <Users className="w-6 h-6 text-white drop-shadow-sm" />
-              </div>
+                <img
+                src="/affinity-echo-logo-hd.png"
+                alt="Affinity Echo Logo"
+                className="w-12 h-12 object-contain"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent tracking-tight">
                 Affinity Echo
               </span>

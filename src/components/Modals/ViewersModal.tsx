@@ -50,43 +50,14 @@ export function ViewersModal({
   const loadViewers = async () => {
     setLoading(true);
     try {
-      const mockViewers: Viewer[] = Array.from({ length: Math.min(totalViewers, 50) }, (_, i) => ({
-        id: `viewer-${i + 1}`,
-        display_name: generateAnonymousName(i),
-        bio: generateBio(i),
-        viewed_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-      }));
-
-      setViewers(mockViewers);
-      setHasMore(mockViewers.length < totalViewers);
+      // TODO: Replace with real viewers API endpoint when available
+      setViewers([]);
+      setHasMore(false);
     } catch (error) {
       console.error('Error loading viewers:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateAnonymousName = (index: number) => {
-    const adjectives = ['Silent', 'Brave', 'Quiet', 'Bold', 'Wise', 'Kind', 'Swift', 'Calm', 'Noble', 'Gentle', 'Fierce', 'Ancient', 'Mystic', 'Cosmic', 'Shadow'];
-    const nouns = ['Phoenix', 'Tiger', 'Eagle', 'Wolf', 'Lion', 'Falcon', 'Bear', 'Hawk', 'Dragon', 'Fox', 'Raven', 'Panther', 'Owl', 'Viper', 'Lynx'];
-    const number = 1000 + (index * 137) % 9000;
-    return `@${adjectives[index % adjectives.length]}${nouns[Math.floor(index / adjectives.length) % nouns.length]}${number}`;
-  };
-
-  const generateBio = (index: number) => {
-    const bios = [
-      'Software Engineer',
-      'Product Manager',
-      'UX Designer',
-      'Data Scientist',
-      'Marketing Lead',
-      'Engineering Manager',
-      'Tech Lead',
-      'Startup Founder',
-      'Designer',
-      'Developer'
-    ];
-    return bios[index % bios.length];
   };
 
   const getAvatarColor = (name: string) => {
@@ -120,7 +91,7 @@ export function ViewersModal({
   };
 
   const handleChat = (userId: string) => {
-    navigate('/dashboard/messages', { state: { startChatWith: userId } });
+    navigate('/dashboard/messages', { state: { startChatWith: userId, contextType: "regular" } });
     onClose();
   };
 
@@ -177,8 +148,16 @@ export function ViewersModal({
             </div>
           ) : filteredViewers.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600">
-                {searchTerm ? 'No viewers found matching your search.' : 'No viewers yet.'}
+              <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Eye className="w-8 h-8 text-green-300" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">
+                {totalViewers > 0 ? `${totalViewers.toLocaleString()} anonymous viewers` : 'No viewers yet'}
+              </h3>
+              <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
+                {totalViewers > 0
+                  ? 'Viewer identities are kept anonymous to protect privacy. Only the total view count is available.'
+                  : 'When people view this content, the count will appear here.'}
               </p>
             </div>
           ) : (

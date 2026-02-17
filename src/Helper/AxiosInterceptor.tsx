@@ -1,5 +1,7 @@
 // src/lib/AxiosInterceptor.tsx
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import { CookieUtil } from '../utils/cookies';
+import { webSocketService } from '../services/websocket.service';
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value: any) => void; reject: (reason?: any) => void }> = [];
@@ -64,14 +66,28 @@ const AxiosInterceptor = (
           );
 
           const token = newAccessToken.data.data.access_token;
+
+          // Save refreshed token to both cookies and localStorage
+          CookieUtil.set('access_token', token, 7);
           localStorage.setItem('access_token', token);
+
+          // Reconnect WebSocket with the fresh token
+          if (webSocketService.isConnected()) {
+            webSocketService.reconnectWithFreshToken();
+          }
 
           processQueue(null, token);
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return instance(originalRequest);
         } catch (refreshError) {
           processQueue(refreshError, null);
-          localStorage.clear();
+
+          // Clear tokens from both cookies and localStorage
+          CookieUtil.remove('access_token');
+          CookieUtil.remove('refresh_token');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+
           window.location.href = '/login';
           return Promise.reject(refreshError);
         } finally {

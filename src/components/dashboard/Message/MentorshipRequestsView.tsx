@@ -87,24 +87,14 @@ export function MentorshipRequestsView({
   const markRequestsAsRead = async () => {
     if (activeTab !== "received") return;
 
-    if (!hasUnreadRequests) {
-      console.log("ℹ️ No unread requests to mark as read");
-      return;
-    }
+    if (!hasUnreadRequests) return;
 
     setMarkingAsRead(true);
     try {
-      console.log("📨 Calling UpdateMentorshipDirectRequestToRead API...");
-      console.log(
-        "URL should be: /mentorship/requests/direct/read-all?type=received"
-      );
-
       const response = await UpdateMentorshipDirectRequestToRead("received");
-      console.log("✅ Mark as read API response:", response);
 
       if (response && (response.success || response.data?.success)) {
         const count = response?.data?.count || response?.count || 0;
-        console.log(`✅ Successfully marked ${count} requests as read`);
 
         setReceivedRequests((prev) =>
           prev.map((request) => ({
@@ -137,14 +127,9 @@ export function MentorshipRequestsView({
           showToast(`Marked ${count} requests as read`, "success");
         }
       } else {
-        console.error(
-          "❌ Failed to mark requests as read - unexpected response:",
-          response
-        );
         showToast("Failed to mark requests as read", "error");
       }
-    } catch (error) {
-      console.error("❌ Error marking requests as read:", error);
+    } catch {
       showToast("Failed to mark requests as read", "error");
     } finally {
       setMarkingAsRead(false);
@@ -152,20 +137,12 @@ export function MentorshipRequestsView({
   };
 
   useEffect(() => {
-    console.log("🔄 useEffect triggered:", {
-      activeTab,
-      receivedRequestsLength: receivedRequests.length,
-      hasUnreadRequests,
-      markingAsRead,
-    });
-
     if (
       activeTab === "received" &&
       receivedRequests.length > 0 &&
       hasUnreadRequests &&
       !markingAsRead
     ) {
-      console.log("🚀 Calling markRequestsAsRead...");
       markRequestsAsRead();
     }
   }, [activeTab, receivedRequests.length, hasUnreadRequests]);
@@ -176,9 +153,7 @@ export function MentorshipRequestsView({
     
     try {
       if (activeTab === "received") {
-        console.log("🔍 Fetching received requests...");
         const response = await GetReceivedDirectMentorshipRequests("pending");
-        console.log("📥 Received requests API response:", response);
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
@@ -194,36 +169,17 @@ export function MentorshipRequestsView({
           requests = response;
         }
 
-        console.log(`✅ Found ${requests.length} received requests`);
-
-        if (requests.length > 0) {
-          console.log("📝 First request:", {
-            id: requests[0].id,
-            is_read_by_target: requests[0].is_read_by_target,
-            created_at: requests[0].created_at,
-            hasMessage: !!requests[0].message,
-          });
-
-          const unreadRequests = requests.filter((r) => !r.is_read_by_target);
-          console.log(
-            `📊 Unread requests: ${unreadRequests.length}/${requests.length}`
-          );
-        }
-
         setReceivedRequests(requests);
 
         const unreadCount = requests.filter(
           (request) => !request.is_read_by_target
         ).length;
-        console.log(`📊 Total unread requests: ${unreadCount}`);
         setHasUnreadRequests(unreadCount > 0);
 
         await decryptProfiles(requests, "received");
 
       } else if (activeTab === "sent") {
-        console.log("🔍 Fetching sent requests...");
         const response = await GetSentDirectMentorshipRequests("pending");
-        console.log("📤 Sent requests response:", response);
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
@@ -237,15 +193,12 @@ export function MentorshipRequestsView({
           requests = response;
         }
 
-        console.log(`✅ Found ${requests.length} sent requests`);
         setSentRequests(requests);
 
         await decryptProfiles(requests, "sent");
         
       } else if (activeTab === "all") {
-        console.log("🔍 Fetching all requests...");
         const response = await GeAllRequests();
-        console.log("📊 All requests API response:", response);
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
@@ -260,27 +213,12 @@ export function MentorshipRequestsView({
           requests = response;
         }
 
-        console.log(`✅ Found ${requests.length} total requests`);
-        
-        // Log first request for debugging
-        if (requests.length > 0) {
-          console.log("📝 First all request:", {
-            id: requests[0].id,
-            status: requests[0].status,
-            request_type: requests[0].request_type,
-            hasRequestContext: !!requests[0].requestContext,
-            isSent: requests[0].requestContext?.isSent,
-            isReceived: requests[0].requestContext?.isReceived,
-          });
-        }
-
         setAllRequests(requests);
 
         // Decrypt profiles for all requests
         await decryptProfiles(requests, "all");
       }
-    } catch (error) {
-      console.error("❌ Error fetching requests:", error);
+    } catch {
       showToast("Failed to load requests", "error");
       
       // Reset appropriate state based on active tab
@@ -349,6 +287,7 @@ export function MentorshipRequestsView({
           newDecryptedProfiles[requestId] = {
             id: profile.id,
             username: profile.username || "Unknown User",
+            display_name: profile.display_name || profile.username || "Unknown User",
             avatar: profile.avatar || "👤",
             job_title: profile.job_title || "Professional",
             company: decryptedCompany,
@@ -358,14 +297,11 @@ export function MentorshipRequestsView({
             years_experience: profile.years_experience || 0,
             career_level: decryptedCareerLevel,
           };
-        } catch (error) {
-          console.error(
-            `Error decrypting profile for request ${requestId}:`,
-            error
-          );
+        } catch {
           newDecryptedProfiles[requestId] = {
             id: profile.id,
             username: profile.username || "Unknown User",
+            display_name: profile.display_name || profile.username || "Unknown User",
             avatar: profile.avatar || "👤",
             job_title: profile.job_title || "Professional",
             company: "Company information hidden",
@@ -386,12 +322,9 @@ export function MentorshipRequestsView({
 
     setProcessingId(requestId);
     try {
-      console.log(`🤝 Accepting request ${requestId}...`);
       const response = await RespondToDirectMentorshipRequest(requestId, {
         action: "accept",
       });
-
-      console.log("Accept response:", response);
 
       if (response.success) {
         setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
@@ -405,8 +338,7 @@ export function MentorshipRequestsView({
         });
         showToast("Mentorship request accepted!", "success");
       }
-    } catch (error) {
-      console.error("Error accepting request:", error);
+    } catch {
       showToast("Failed to accept request. Please try again.", "error");
     } finally {
       setProcessingId(null);
@@ -434,8 +366,7 @@ export function MentorshipRequestsView({
         });
         showToast("Request declined", "success");
       }
-    } catch (error) {
-      console.error("Error declining request:", error);
+    } catch {
       showToast("Failed to decline request. Please try again.", "error");
     } finally {
       setProcessingId(null);
@@ -463,8 +394,7 @@ export function MentorshipRequestsView({
         });
         showToast("Request cancelled", "success");
       }
-    } catch (error) {
-      console.error("Error cancelling request:", error);
+    } catch {
       showToast("Failed to cancel request. Please try again.", "error");
     } finally {
       setProcessingId(null);
@@ -474,12 +404,9 @@ export function MentorshipRequestsView({
   const handleMarkAllAsRead = async () => {
     if (markingAsRead || activeTab !== "received") return;
 
-    console.log("🖱️ Manual: Mark all as read clicked");
     setMarkingAsRead(true);
     try {
-      console.log("📨 Manual: Calling UpdateMentorshipDirectRequestToRead...");
       const response = await UpdateMentorshipDirectRequestToRead("received");
-      console.log("✅ Manual mark as read response:", response);
 
       if (response && (response.success || response.data?.success)) {
         const count = response?.data?.count || response?.count || 0;
@@ -511,11 +438,9 @@ export function MentorshipRequestsView({
 
         setHasUnreadRequests(false);
       } else {
-        console.error("❌ Manual: Failed to mark requests as read:", response);
         showToast("Failed to mark requests as read", "error");
       }
-    } catch (error) {
-      console.error("❌ Error marking all as read:", error);
+    } catch {
       showToast("Failed to mark requests as read", "error");
     } finally {
       setMarkingAsRead(false);
@@ -775,7 +700,7 @@ export function MentorshipRequestsView({
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-900 text-lg">
-                            {profile.username}
+                            {profile.display_name || profile.username}
                           </h3>
                           {isUnread && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

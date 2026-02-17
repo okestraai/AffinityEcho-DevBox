@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Database, FileText, MessageCircle, Users, Calendar, CheckCircle, Shield, Info } from 'lucide-react';
+import { ExportUserData } from '../../../../api/profileApis';
+import { showToast } from '../../../Helper/ShowToast';
 
 export function ExportDataPage() {
   const navigate = useNavigate();
   const [selectedData, setSelectedData] = useState<string[]>(['all']);
-  const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json');
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'pdf'>('json');
   const [isExporting, setIsExporting] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
 
@@ -69,41 +71,242 @@ export function ExportDataPage() {
 
   const handleExport = async () => {
     setIsExporting(true);
+    try {
+      const category = selectedData.includes('all') ? 'all' : selectedData[0] || 'all';
+      const response = await ExportUserData(category as "all" | "profile" | "posts" | "comments" | "connections" | "activity");
+      const exportData = response.data || response;
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const exportData = {
-      exportedAt: new Date().toISOString(),
-      format: exportFormat,
-      categories: selectedData,
-      data: {
-        profile: {
-          username: 'AnonymousUser123',
-          email: 'user@example.com',
-          joinedDate: '2024-01-15',
-          demographics: {
-            company: 'TechCorp',
-            careerLevel: 'Mid-level'
-          }
-        },
-        posts: selectedData.includes('posts') || selectedData.includes('all') ? 12 : 0,
-        comments: selectedData.includes('comments') || selectedData.includes('all') ? 45 : 0,
-        connections: selectedData.includes('connections') || selectedData.includes('all') ? 23 : 0
+      if (exportFormat === 'pdf') {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          const html = buildPdfTemplate(exportData);
+          printWindow.document.write(html);
+          printWindow.document.close();
+          printWindow.onload = () => printWindow.print();
+        }
+      } else {
+        const dataStr = exportFormat === 'json'
+          ? JSON.stringify(exportData, null, 2)
+          : convertToCSV(exportData);
+        const mimeType = exportFormat === 'json' ? 'application/json' : 'text/csv';
+        const blob = new Blob([dataStr], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `my-data-export-${Date.now()}.${exportFormat}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
-    };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `my-data-export-${Date.now()}.${exportFormat}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      setExportComplete(true);
+    } catch {
+      showToast('Failed to export data. Please try again.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
-    setIsExporting(false);
-    setExportComplete(true);
+  const convertToCSV = (data: unknown): string => {
+    if (Array.isArray(data)) {
+      if (data.length === 0) return '';
+      const headers = Object.keys(data[0] as Record<string, unknown>);
+      const rows = data.map(item => headers.map(h => JSON.stringify((item as Record<string, unknown>)[h] ?? '')).join(','));
+      return [headers.join(','), ...rows].join('\n');
+    }
+    // For non-array data, flatten to key-value pairs
+    const entries = Object.entries(data as Record<string, unknown>);
+    return ['key,value', ...entries.map(([k, v]) => `${k},${JSON.stringify(v ?? '')}`)].join('\n');
+  };
+
+  const esc = (val: unknown): string => {
+    const str = typeof val === 'string' ? val : JSON.stringify(val ?? '');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+
+  const formatLabel = (key: string): string => {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const isIdField = (key: string): boolean => {
+    const lower = key.toLowerCase();
+    return lower === 'id' || lower.endsWith('_id') || lower === 'userid' || lower === 'postid' || lower === 'commentid' || lower === 'topicid';
+  };
+
+  const renderValue = (val: unknown): string => {
+    if (val === null || val === undefined) return '<span class="empty">N/A</span>';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (typeof val === 'string' && !val.trim()) return '<span class="empty">N/A</span>';
+    if (Array.isArray(val)) {
+      if (val.length === 0) return '<span class="empty">None</span>';
+      if (typeof val[0] === 'string' || typeof val[0] === 'number') {
+        return val.map(v => `<span class="tag">${esc(v)}</span>`).join(' ');
+      }
+      return renderList(val);
+    }
+    if (typeof val === 'object') return renderFields(val as Record<string, unknown>);
+    return esc(val);
+  };
+
+  const renderFields = (obj: Record<string, unknown>): string => {
+    return Object.entries(obj)
+      .filter(([k, v]) => v !== null && v !== undefined && !isIdField(k))
+      .map(([k, v]) => {
+        if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+          return `<div class="field-group">
+            <div class="field-group-label">${esc(formatLabel(k))}</div>
+            <div class="field-group-body">${renderFields(v as Record<string, unknown>)}</div>
+          </div>`;
+        }
+        return `<div class="field-row">
+          <span class="field-label">${esc(formatLabel(k))}: </span>
+          <span class="field-value">${renderValue(v)}</span>
+        </div>`;
+      })
+      .join('');
+  };
+
+  const renderList = (items: unknown[]): string => {
+    if (items.length === 0) return '<p class="empty">No data</p>';
+    const firstItem = items[0];
+    if (typeof firstItem !== 'object' || firstItem === null) {
+      return items.map(i => `<span class="tag">${esc(i)}</span>`).join(' ');
+    }
+    return items.map((item, idx) => {
+      const obj = item as Record<string, unknown>;
+      const entries = Object.entries(obj).filter(([k, v]) => v !== null && v !== undefined && !isIdField(k));
+      return `<div class="card">
+        <div class="card-number">${idx + 1}.</div>
+        <div class="card-body">
+          ${entries.map(([k, v]) => {
+            if (Array.isArray(v)) {
+              const rendered = typeof v[0] === 'string' || typeof v[0] === 'number'
+                ? v.map(i => `<span class="tag">${esc(i)}</span>`).join(' ')
+                : renderList(v);
+              return `<div class="field-row">
+                <span class="field-label">${esc(formatLabel(k))}: </span>
+                <span class="field-value">${rendered}</span>
+              </div>`;
+            }
+            if (typeof v === 'object' && v !== null) {
+              return `<div class="field-group">
+                <div class="field-group-label">${esc(formatLabel(k))}</div>
+                <div class="field-group-body">${renderFields(v as Record<string, unknown>)}</div>
+              </div>`;
+            }
+            return `<div class="field-row">
+              <span class="field-label">${esc(formatLabel(k))}: </span>
+              <span class="field-value">${renderValue(v)}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  const buildPdfTemplate = (data: unknown): string => {
+    const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const selectedNames = selectedData.map(id => dataCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ');
+
+    // Build the body sections from the export data
+    let sectionsHtml = '';
+    const record = (typeof data === 'object' && data !== null && !Array.isArray(data)) ? data as Record<string, unknown> : null;
+
+    if (record) {
+      // Render each top-level key as its own section, skipping ID fields
+      for (const [key, value] of Object.entries(record)) {
+        if (value === null || value === undefined || isIdField(key)) continue;
+        sectionsHtml += `
+          <div class="section">
+            <h2>${esc(formatLabel(key))}</h2>
+            <div class="section-body">${renderValue(value)}</div>
+          </div>`;
+      }
+    } else {
+      // Fallback: render the whole thing
+      sectionsHtml = `<div class="section"><div class="section-body">${renderValue(data)}</div></div>`;
+    }
+
+    return `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>Affinity Echo - Data Export</title>
+<style>
+  @page { margin: 20mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #1f2937; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0;
+  }
+  .header {
+    border-bottom: 3px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 28px; color: #6b21a8; margin: 0 0 4px 0;
+  }
+  .header .subtitle { color: #6b7280; font-size: 14px; margin: 0; }
+  .meta-bar {
+    display: flex; gap: 24px; background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; font-size: 13px;
+  }
+  .meta-bar .meta-item { color: #6b7280; }
+  .meta-bar .meta-item strong { color: #374151; }
+  .section { margin-bottom: 28px; page-break-inside: avoid; }
+  .section h2 {
+    font-size: 16px; color: #7c3aed; margin: 0 0 12px 0;
+    padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;
+  }
+  .section-body { font-size: 14px; }
+  .field-row { margin-bottom: 6px; line-height: 1.6; }
+  .field-label { font-weight: 600; color: #374151; }
+  .field-value { color: #4b5563; }
+  .field-group { margin: 10px 0; }
+  .field-group-label {
+    font-weight: 700; color: #374151; font-size: 13px;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .field-group-body { padding-left: 16px; border-left: 2px solid #e5e7eb; }
+  .card {
+    display: flex; gap: 10px; padding: 14px 16px; margin-bottom: 10px;
+    background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;
+    page-break-inside: avoid;
+  }
+  .card-number {
+    font-weight: 700; color: #7c3aed; font-size: 14px; min-width: 24px;
+  }
+  .card-body { flex: 1; }
+  .tag {
+    display: inline-block; background: #ede9fe; color: #6b21a8;
+    padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px;
+  }
+  .empty { color: #9ca3af; font-style: italic; }
+  .footer {
+    margin-top: 40px; padding-top: 16px; border-top: 2px solid #e5e7eb;
+    font-size: 11px; color: #9ca3af; text-align: center;
+  }
+  .footer .lock { font-size: 14px; }
+</style>
+</head><body>
+  <div class="header">
+    <h1>Affinity Echo</h1>
+    <p class="subtitle">Personal Data Export</p>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><strong>Date:</strong> ${exportDate}</div>
+    <div class="meta-item"><strong>Categories:</strong> ${esc(selectedNames)}</div>
+    <div class="meta-item"><strong>Format:</strong> PDF</div>
+  </div>
+  ${sectionsHtml}
+  <div class="footer">
+    <span class="lock">&#128274;</span><br>
+    This document contains personal data exported from Affinity Echo.<br>
+    Store securely and do not share publicly. Generated on ${exportDate}.
+  </div>
+</body></html>`;
   };
 
   if (exportComplete) {
@@ -236,7 +439,7 @@ export function ExportDataPage() {
 
             <div className="mb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Export Format</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <label
                   className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
                     exportFormat === 'json'
@@ -253,7 +456,7 @@ export function ExportDataPage() {
                   />
                   <div className="font-semibold text-gray-900 mb-1">JSON</div>
                   <div className="text-sm text-gray-600">
-                    Machine-readable format, ideal for developers
+                    Machine-readable, ideal for developers
                   </div>
                 </label>
 
@@ -273,7 +476,27 @@ export function ExportDataPage() {
                   />
                   <div className="font-semibold text-gray-900 mb-1">CSV</div>
                   <div className="text-sm text-gray-600">
-                    Spreadsheet format, easy to view and analyze
+                    Spreadsheet format, easy to analyze
+                  </div>
+                </label>
+
+                <label
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    exportFormat === 'pdf'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    value="pdf"
+                    checked={exportFormat === 'pdf'}
+                    onChange={() => setExportFormat('pdf')}
+                    className="sr-only"
+                  />
+                  <div className="font-semibold text-gray-900 mb-1">PDF</div>
+                  <div className="text-sm text-gray-600">
+                    Printable document, easy to save and share
                   </div>
                 </label>
               </div>

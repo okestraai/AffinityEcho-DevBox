@@ -17,8 +17,17 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import {
+  GetNotifications,
+  MarkNotificationAsRead,
+  MarkAllNotificationsAsRead,
+  DeleteNotification,
+  UpdateNotification,
+} from '../../../api/notificationApis';
+import { RespondToIdentityReveal } from '../../../api/messaging';
+import { webSocketService } from '../../services/websocket.service';
+import { showToast } from '../../Helper/ShowToast';
 
 interface Notification {
   id: string;
@@ -60,6 +69,26 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     }
   }, [isOpen, user?.id]);
 
+  // Listen for real-time notifications via WebSocket
+  useEffect(() => {
+    const handleNewNotification = (data: any) => {
+      const notification = data?.data || data;
+      if (notification?.id) {
+        setNotifications((prev) => {
+          const exists = prev.some((n) => n.id === notification.id);
+          if (exists) return prev;
+          return [notification, ...prev].slice(0, 10);
+        });
+      }
+    };
+
+    webSocketService.on("new_notification", handleNewNotification);
+
+    return () => {
+      webSocketService.off("new_notification", handleNewNotification);
+    };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -76,156 +105,20 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     };
   }, [isOpen, onClose]);
 
-  const getDummyNotifications = (): Notification[] => {
-    const now = new Date();
-    const getTimeAgo = (minutes: number) => {
-      const date = new Date(now.getTime() - minutes * 60000);
-      return date.toISOString();
-    };
-
-    return [
-      {
-        id: '1',
-        user_id: user?.id || '',
-        actor_id: 'actor1',
-        type: 'follow',
-        title: 'New Follower',
-        message: 'TechLeader_Sarah started following you',
-        action_url: '/dashboard/profile',
-        reference_id: null,
-        reference_type: null,
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(5),
-        read_at: null,
-      },
-      {
-        id: '2',
-        user_id: user?.id || '',
-        actor_id: 'actor2',
-        type: 'forum_post',
-        title: 'New post from someone you follow',
-        message: 'DataScience_Miguel posted: "Best practices for technical interviews"',
-        action_url: '/dashboard/forums',
-        reference_id: 'post1',
-        reference_type: 'forum',
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(30),
-        read_at: null,
-      },
-      {
-        id: '3',
-        user_id: user?.id || '',
-        actor_id: 'actor3',
-        type: 'mentorship_request',
-        title: 'New Mentorship Request',
-        message: 'AspiringEngineer_Jay has requested you as their mentor',
-        action_url: '/dashboard/mentorship',
-        reference_id: 'request1',
-        reference_type: 'mentorship',
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(120),
-        read_at: null,
-      },
-      {
-        id: '4',
-        user_id: user?.id || '',
-        actor_id: 'actor4',
-        type: 'forum_comment',
-        title: 'New comment on your post',
-        message: 'Product_Manager_Lisa commented on "How to transition to PM?"',
-        action_url: '/dashboard/forums',
-        reference_id: 'post2',
-        reference_type: 'forum',
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(180),
-        read_at: getTimeAgo(150),
-      },
-      {
-        id: '5',
-        user_id: user?.id || '',
-        actor_id: 'actor5',
-        type: 'nook_post',
-        title: 'New post in Black Tech Leaders',
-        message: 'ExperiencedEngineer posted in your nook',
-        action_url: '/dashboard/nooks',
-        reference_id: 'nook1',
-        reference_type: 'nook',
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(360),
-        read_at: getTimeAgo(300),
-      },
-      {
-        id: '6',
-        user_id: user?.id || '',
-        actor_id: 'actor6',
-        type: 'referral_connection',
-        title: 'New Referral Connection',
-        message: 'GrowingAnalyst_Priya wants to connect',
-        action_url: '/dashboard/messages',
-        reference_id: 'connection1',
-        reference_type: 'referral',
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(480),
-        read_at: getTimeAgo(470),
-      },
-      {
-        id: '7',
-        user_id: user?.id || '',
-        actor_id: 'actor7',
-        type: 'identity_reveal_request',
-        title: 'Identity Reveal Request',
-        message: 'Anonymous_User wants to reveal identities',
-        action_url: '/dashboard/messages',
-        reference_id: 'reveal1',
-        reference_type: 'identity_reveal',
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(15),
-        read_at: null,
-      },
-    ];
-  };
-
   const fetchNotifications = async () => {
     if (!user?.id) return;
 
     try {
       setLoading(true);
+      const response = await GetNotifications({ limit: 10 });
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      let allNotifications = data || [];
-
-      if (allNotifications.length === 0) {
-        allNotifications = getDummyNotifications();
-      }
+      const raw = response?.data?.items ?? response?.data ?? response ?? [];
+      const allNotifications = Array.isArray(raw) ? raw : [];
 
       setNotifications(allNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      setNotifications(getDummyNotifications());
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -233,13 +126,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('id', notificationId);
-
-      if (error) throw error;
-
+      await MarkNotificationAsRead(notificationId);
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
       );
@@ -253,12 +140,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase.rpc('mark_all_notifications_read', {
-        p_user_id: user.id
-      });
-
-      if (error) throw error;
-
+      await MarkAllNotificationsAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       onUnreadCountChange();
     } catch (error) {
@@ -268,13 +150,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
-
-      if (error) throw error;
-
+      await DeleteNotification(notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       onUnreadCountChange();
     } catch (error) {
@@ -295,33 +171,35 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     await markAsRead(notification.id);
 
     try {
-      if (action === 'accept_identity_reveal' && notification.reference_id) {
-        const { error: updateError } = await supabase
-          .from('identity_reveals')
-          .update({ status: 'accepted' })
-          .eq('id', notification.reference_id);
+      if (action === 'decline_identity_reveal') {
+        const revealId = notification.reference_id || notification.metadata?.reveal_id;
+        if (revealId) {
+          await RespondToIdentityReveal(revealId, 'rejected');
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        setNotifications(prev =>
+          prev.map(n => (n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n))
+        );
+        showToast('Identity reveal declined.', 'info');
+        return;
+      }
 
-        if (updateError) throw updateError;
-
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .update({ action_taken: true })
-          .eq('id', notification.id);
-
-        if (notificationError) throw notificationError;
-
-        alert('Identity reveal accepted! You can now see each other\'s identities.');
+      if (action === 'accept_identity_reveal') {
+        const revealId = notification.reference_id || notification.metadata?.reveal_id;
+        if (revealId) {
+          await RespondToIdentityReveal(revealId, 'accepted');
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        setNotifications(prev =>
+          prev.map(n => (n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n))
+        );
+        showToast('Identity reveal accepted! You can now see each other\'s identities.', 'success');
         navigate('/dashboard/messages');
         onClose();
         return;
       }
 
-      const { error } = await supabase
-        .from('notifications')
-        .update({ action_taken: true })
-        .eq('id', notification.id);
-
-      if (error) throw error;
+      await UpdateNotification(notification.id, { action_taken: true });
 
       if (action === 'accept_mentorship' || action === 'view_profile' || action === 'view_post') {
         if (notification.action_url) {
@@ -335,6 +213,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
       );
     } catch (error) {
       console.error('Error handling action:', error);
+      showToast('An error occurred. Please try again.', 'error');
     }
   };
 
@@ -428,7 +307,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                deleteNotification(notification.id);
+                handleAction(notification, 'decline_identity_reveal');
               }}
               className="flex-1 px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
             >
@@ -507,10 +386,14 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
             <RefreshCw className="w-6 h-6 text-purple-600 animate-spin" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-medium text-gray-900 mb-2">No notifications</h3>
-            <p className="text-sm text-gray-500">You're all caught up!</p>
+          <div className="text-center py-16 px-6">
+            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-8 h-8 text-purple-300" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">No notifications yet</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              When someone follows you, comments on your posts, or sends you a request, it will show up here.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

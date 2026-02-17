@@ -23,13 +23,19 @@ interface DashboardHeaderProps {
   onUnreadCountChange: () => void;
 }
 
-const navItems = [
+// Static nav arrays hoisted outside component — avoids re-creation on every render
+const desktopNavItems = [
   { id: "feeds", label: "Home", icon: Home },
   { id: "forums", label: "Forums", icon: Users },
   { id: "nooks", label: "Nooks", icon: Zap },
   { id: "mentorship", label: "Mentorship", icon: Target },
   { id: "messages", label: "Messages", icon: MessageCircle },
 ] as const;
+
+const mobileNavItems = [
+  ...desktopNavItems,
+  { id: "profile" as const, label: "Profile" as const, icon: User },
+];
 
 export function DashboardHeader({
   activeTab,
@@ -49,18 +55,6 @@ export function DashboardHeader({
     }
   };
 
-  const desktopNavItems = [
-    { id: "feeds", label: "Home", icon: Home },
-    { id: "forums", label: "Forums", icon: Users },
-    { id: "nooks", label: "Nooks", icon: Zap },
-    { id: "mentorship", label: "Mentorship", icon: Target },
-    { id: "messages", label: "Messages", icon: MessageCircle },
-  ];
-
-  const mobileNavItems = [
-    ...desktopNavItems,
-    { id: "profile", label: "Profile", icon: User },
-  ];
 
   return (
     <header
@@ -69,9 +63,11 @@ export function DashboardHeader({
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Users className="w-5 h-5 md:w-6 md:h-6 text-white" />
-          </div>
+          <img
+            src="/affinity-echo-logo-hd.png"
+            alt="Affinity Echo Logo"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-2xl shadow-lg object-contain"
+          />
           <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
             Affinity Echo
           </span>

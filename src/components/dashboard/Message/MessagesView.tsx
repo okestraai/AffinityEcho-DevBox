@@ -1,331 +1,1298 @@
-import React, { useState, useEffect } from "react";
+// MessagesView.tsx - Production Ready
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search,
   MessageCircle,
   Shield,
   Eye,
+  EyeOff,
   Target,
   Plus,
-  Check,
-  X,
-  Clock,
-  Send,
-  Building,
-  AlertCircle,
-  CheckCircle,
-  UserPlus,
   Inbox,
   ArrowLeft,
-  Trash2,
+  Loader2,
+  Send,
+  Clock,
 } from "lucide-react";
 
 import { useAuth } from "../../../hooks/useAuth";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "../../../lib/supabase";
-import type { UserProfile, Conversation } from "../../../lib/supabase";
-
-// ── Your original MentorshipRequestsView component ──────────────────────────
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
-  GetReceivedDirectMentorshipRequests,
-  GetSentDirectMentorshipRequests,
-  RespondToDirectMentorshipRequest,
-  UpdateMentorshipDirectRequestToRead,
-  DeleteDirectMentorshipRequest,
-  GeAllRequests,
-  type DirectMentorshipRequest,
-} from "../../../../api/mentorshipApis";
-import { DecryptData } from "../../../../api/EncrytionApis";
+  GetSingleConversationMessages,
+  GetConversations,
+  CreateConversation,
+  MarkMessagesAsRead,
+  GetTypingStatus,
+  RequestIdentityReveal,
+  GetIdentityRevealStatusForConversation,
+  SetTypingStatus,
+  GetConnectableUsers,
+  SendAMessage,
+} from "../../../../api/messaging";
+import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
-import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { MentorshipRequestModal } from "../../Modals/MentorShipModals/MentorshipRequestModal";
+import { MentorshipUserProfileModal } from "../../Modals/MentorShipModals/MentorshipUserProfileModal";
+import { MentorshipRequestsView } from "./MentorshipRequestsView";
+import { GetMentorProfileByUserId } from "../../../../api/mentorshipApis";
+import { DecryptData } from "../../../../api/EncrytionApis";
 
-interface DecryptedProfile {
+// ==================== TYPES ====================
+interface UserProfile {
   id: string;
   username: string;
+  display_name?: string;
   avatar: string;
   job_title: string;
   company: string;
-  bio: string;
-  skills: string[];
-  location: string;
-  years_experience: number;
-  career_level?: string;
+  bio?: string;
+  skills?: string[];
+  location?: string;
+  years_experience?: number;
+  can_message?: boolean;
+  privacy_level?: string;
 }
 
-type ExtendedDirectMentorshipRequest = DirectMentorshipRequest & {
-  requestContext?: {
-    isSent: boolean;
-    isReceived: boolean;
-    userRole: string;
-    otherUser: any;
-    isRead: boolean;
+interface Conversation {
+  id: string;
+  participant1_id: string;
+  participant2_id: string;
+  context_type: "regular" | "mentorship";
+  context_id?: string;
+  chat_type?: "regular" | "mentorship";
+  created_at: string;
+  updated_at: string;
+  last_message?: {
+    content_preview?: string;
   };
-};
-
-interface MentorshipRequestsViewProps {
-  onBack: () => void;
+  last_message_at?: string;
+  last_activity_at?: string;
+  unread_count?: number;
+  other_user?: UserProfile;
+  identity_revealed?: boolean;
 }
 
-function MentorshipRequestsView({ onBack }: MentorshipRequestsViewProps) {
-  const [receivedRequests, setReceivedRequests] = useState<
-    ExtendedDirectMentorshipRequest[]
-  >([]);
-  const [sentRequests, setSentRequests] = useState<
-    ExtendedDirectMentorshipRequest[]
-  >([]);
-  const [allRequests, setAllRequests] = useState<
-    ExtendedDirectMentorshipRequest[]
-  >([]);
-  const [decryptedProfiles, setDecryptedProfiles] = useState<
-    Record<string, DecryptedProfile>
-  >({});
-  const [loading, setLoading] = useState({
-    received: false,
-    sent: false,
-    all: false,
-  });
-  const [activeTab, setActiveTab] = useState<"received" | "sent" | "all">(
-    "received"
+interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content_encrypted: string;
+  content_type: string;
+  file_url?: string;
+  file_name?: string;
+  is_read: boolean;
+  created_at: string;
+  sent_at?: string;
+  sender?: UserProfile;
+  sender_info?: UserProfile;
+}
+
+interface TypingStatus {
+  user_id: string;
+  conversation_id: string;
+  is_typing: boolean;
+  user?: UserProfile;
+}
+
+interface LoadingState {
+  conversations: boolean;
+  messages: boolean;
+  users: boolean;
+  identityStatus: boolean;
+  sendingMessage: boolean;
+}
+
+// ==================== SKELETON LOADERS ====================
+function ConversationsSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div className="h-3 bg-gray-200 rounded w-48"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [markingAsRead, setMarkingAsRead] = useState(false);
-  const [hasUnreadRequests, setHasUnreadRequests] = useState(false);
+}
 
-  useEffect(() => {
-    fetchRequests();
-  }, [activeTab]);
+function MessagesSkeleton() {
+  return (
+    <div className="space-y-3 p-4">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
+        >
+          <div className="max-w-xs">
+            <div
+              className={`${i === 1 ? "w-44" : i === 2 ? "w-52" : "w-60"} h-16 bg-gray-200 rounded-2xl animate-pulse ${
+                i % 2 === 0 ? "rounded-br-md" : "rounded-bl-md"
+              }`}
+            ></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  const markRequestsAsRead = async () => {
-    if (activeTab !== "received") return;
+function UserSearchSkeleton() {
+  return (
+    <div className="space-y-1">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="p-3 rounded-lg flex items-center gap-3 animate-pulse"
+        >
+          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="h-3 bg-gray-200 rounded w-32"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-    if (!hasUnreadRequests) return;
+// ==================== GROUPED CONVERSATION LIST ====================
+interface ConversationListProps {
+  conversations: Conversation[];
+  onSelect: (conv: Conversation) => void;
+  getIdentityRevealStatus: (conv: Conversation) => boolean | null;
+  getTimeAgo: (dateString: string) => string;
+}
 
-    setMarkingAsRead(true);
-    try {
-      const response = await UpdateMentorshipDirectRequestToRead("received");
+function ConversationList({
+  conversations,
+  onSelect,
+  getIdentityRevealStatus,
+  getTimeAgo,
+}: ConversationListProps) {
+  const mentorshipChats = conversations.filter(
+    (c) => c.context_type === "mentorship" || c.chat_type === "mentorship",
+  );
+  const regularChats = conversations.filter(
+    (c) => c.context_type !== "mentorship" && c.chat_type !== "mentorship",
+  );
 
-      if (response && (response.success || response.data?.success)) {
-        const count = response?.data?.count || response?.count || 0;
+  const renderCard = (conv: Conversation) => {
+    const identityRevealed = getIdentityRevealStatus(conv);
+    const isMentorship =
+      conv.context_type === "mentorship" || conv.chat_type === "mentorship";
 
-        setReceivedRequests((prev) =>
-          prev.map((request) => ({
-            ...request,
-            is_read_by_target: true,
-          }))
-        );
-
-        setAllRequests((prev) =>
-          prev.map((request) => {
-            if (request.requestContext?.isReceived) {
-              return {
-                ...request,
-                is_read_by_target: true,
-                requestContext: {
-                  ...request.requestContext,
-                  isRead: true,
-                },
-              };
-            }
-            return request;
-          })
-        );
-
-        setHasUnreadRequests(false);
-
-        if (count > 0) {
-          showToast(`Marked ${count} requests as read`, "success");
-        }
-      }
-    } catch (error) {
-      showToast("Failed to mark requests as read", "error");
-    } finally {
-      setMarkingAsRead(false);
-    }
-  };
-
-  useEffect(() => {
-    if (
-      activeTab === "received" &&
-      receivedRequests.length > 0 &&
-      hasUnreadRequests &&
-      !markingAsRead
-    ) {
-      markRequestsAsRead();
-    }
-  }, [activeTab, receivedRequests.length, hasUnreadRequests, markingAsRead]);
-
-  const fetchRequests = async () => {
-    setLoading((prev) => ({ ...prev, [activeTab]: true }));
-
-    try {
-      let response;
-      let requests: ExtendedDirectMentorshipRequest[] = [];
-
-      if (activeTab === "received") {
-        response = await GetReceivedDirectMentorshipRequests("pending");
-        requests = extractRequests(response);
-        await decryptProfiles(requests, "received");
-
-        const unreadCount = requests.filter((r) => !r.is_read_by_target).length;
-        setHasUnreadRequests(unreadCount > 0);
-
-        setReceivedRequests(requests);
-      } else if (activeTab === "sent") {
-        response = await GetSentDirectMentorshipRequests("pending");
-        requests = extractRequests(response);
-        await decryptProfiles(requests, "sent");
-        setSentRequests(requests);
-      } else if (activeTab === "all") {
-        response = await GeAllRequests();
-        requests = extractRequests(response);
-        await decryptProfiles(requests, "all");
-        setAllRequests(requests);
-      }
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-      showToast("Failed to load requests", "error");
-    } finally {
-      setLoading((prev) => ({ ...prev, [activeTab]: false }));
-    }
-  };
-
-  const extractRequests = (res: any) => {
-    if (!res) return [];
-    if (Array.isArray(res)) return res;
     return (
-      res?.data?.requests ||
-      res?.data?.data?.requests ||
-      res?.data?.data?.data?.requests ||
-      []
+      <button
+        key={conv.id}
+        type="button"
+        onClick={() => onSelect(conv)}
+        className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div
+              className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-lg`}
+            >
+              {conv.other_user?.avatar || "👤"}
+            </div>
+            {identityRevealed && (
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                <Eye className="w-2 h-2 text-white m-auto" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-medium text-gray-900 truncate">
+                  {conv.other_user?.display_name || conv.other_user?.username || "Unknown User"}
+                </span>
+                {isMentorship && (
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
+                    Mentorship
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {conv.last_activity_at && (
+                  <span className="text-xs text-gray-500">
+                    {getTimeAgo(conv.last_activity_at)}
+                  </span>
+                )}
+                {Number(conv.unread_count) > 0 && (
+                  <div
+                    className={`w-5 h-5 ${isMentorship ? "bg-orange-600" : "bg-blue-600"} rounded-full flex items-center justify-center`}
+                  >
+                    <span className="text-xs text-white">
+                      {conv.unread_count}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-gray-500 truncate flex-1">
+                {conv.last_message?.content_preview || "No messages yet"}
+              </p>
+              {!identityRevealed && (
+                <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
+              )}
+            </div>
+          </div>
+        </div>
+      </button>
     );
   };
 
-  const decryptProfiles = async (
-    requests: ExtendedDirectMentorshipRequest[],
-    tab: "received" | "sent" | "all"
-  ) => {
-    const newProfiles: Record<string, DecryptedProfile> = {};
+  return (
+    <div className="space-y-4">
+      {/* Mentorship Chats — always on top */}
+      {mentorshipChats.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Target className="w-4 h-4 text-orange-600" />
+            <h3 className="text-sm font-semibold text-orange-700 uppercase tracking-wide">
+              Mentorship Chats
+            </h3>
+            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+              {mentorshipChats.length}
+            </span>
+          </div>
+          <div className="grid gap-2">
+            {mentorshipChats.map(renderCard)}
+          </div>
+        </div>
+      )}
 
-    for (const req of requests) {
-      let profile =
-        tab === "received"
-          ? req.requester
-          : tab === "sent"
-          ? req.target_user
-          : req.requestContext?.otherUser;
+      {/* Regular Chats — below mentorship */}
+      {regularChats.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <MessageCircle className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-semibold text-blue-700 uppercase tracking-wide">
+              Conversations
+            </h3>
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              {regularChats.length}
+            </span>
+          </div>
+          <div className="grid gap-2">
+            {regularChats.map(renderCard)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      if (!profile?.id) continue;
+// ==================== MESSAGE INPUT COMPONENT ====================
+interface MessageInputProps {
+  conversationId: string;
+  onSendMessage: (content: string) => Promise<void>;
+  disabled?: boolean;
+  isMentorship?: boolean;
+}
 
+function MessageInputComponent({
+  conversationId,
+  onSendMessage,
+  disabled,
+  isMentorship,
+}: MessageInputProps) {
+  const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastTypingSentRef = useRef<number>(0);
+
+  const sendTypingStatus = useCallback(
+    async (isTyping: boolean) => {
+      if (!conversationId) return;
       try {
-        let company = "Unknown Company";
-        if (profile.company_encrypted) {
-          const res = await DecryptData({
-            encryptedData: profile.company_encrypted,
+        await SetTypingStatus({
+          conversation_id: conversationId,
+          is_typing: isTyping,
+        });
+      } catch {
+        // Silent failure for typing status
+      }
+    },
+    [conversationId],
+  );
+
+  const handleTyping = useCallback(() => {
+    if (!conversationId || disabled) return;
+
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 500) {
+      webSocketService.startTyping(conversationId);
+      sendTypingStatus(true);
+      lastTypingSentRef.current = now;
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      webSocketService.stopTyping(conversationId);
+      sendTypingStatus(false);
+      lastTypingSentRef.current = 0;
+    }, 2000);
+  }, [conversationId, disabled, sendTypingStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (conversationId) {
+        webSocketService.stopTyping(conversationId);
+        sendTypingStatus(false);
+      }
+    };
+  }, [conversationId, sendTypingStatus]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+    handleTyping();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!message.trim() || isSending || disabled) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    webSocketService.stopTyping(conversationId);
+    sendTypingStatus(false);
+
+    setIsSending(true);
+
+    try {
+      await onSendMessage(message);
+      setMessage("");
+      lastTypingSentRef.current = 0;
+    } catch {
+      // Error handled in parent
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={message}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
+          className={`flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 ${isMentorship ? "focus:ring-orange-500" : "focus:ring-blue-500"} outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+          disabled={disabled || isSending}
+          autoFocus
+        />
+        <button
+          type="submit"
+          disabled={!message.trim() || disabled || isSending}
+          className={`px-4 py-2 ${isMentorship ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"} text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2`}
+        >
+          {isSending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+          Send
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ==================== MAIN COMPONENT ====================
+export function MessagesView() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // State
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState<LoadingState>({
+    conversations: false,
+    messages: false,
+    users: false,
+    identityStatus: false,
+    sendingMessage: false,
+  });
+  const [activeTab, setActiveTab] = useState<"messages" | "mentorship">(
+    "messages",
+  );
+  const [showMentorshipRequest, setShowMentorshipRequest] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [searchUsername, setSearchUsername] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
+  const [identityRevealStatus, setIdentityRevealStatus] = useState<{
+    is_revealed: boolean;
+    requested_at?: string;
+    responded_at?: string;
+    status?: string;
+    pending_request?: {
+      id: string;
+      status: string;
+      direction: "sent" | "received";
+    } | null;
+    can_request?: boolean;
+  } | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [mentorProfileData, setMentorProfileData] = useState<any>(null);
+  const [showMentorProfileModal, setShowMentorProfileModal] = useState(false);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ==================== HELPERS ====================
+
+  const parseConversationsResponse = (response: any): Conversation[] => {
+    if (response && typeof response === "object") {
+      if (response.success && response.data) {
+        const innerData = response.data;
+        if (innerData.success && innerData.data) return innerData.data.conversations || [];
+        if (Array.isArray(innerData.conversations)) return innerData.conversations;
+        if (Array.isArray(innerData)) return innerData;
+      }
+      if (Array.isArray(response)) return response;
+    }
+    return [];
+  };
+
+  // ==================== API FUNCTIONS ====================
+
+  const fetchConnectableUsers = useCallback(async () => {
+    if (!user?.id || !showNewConversation) return;
+
+    setLoading((prev) => ({ ...prev, users: true }));
+    try {
+      const response = await GetConnectableUsers({
+        search: searchUsername,
+        limit: 20,
+        offset: 0,
+        exclude_existing: true,
+      });
+
+      let usersArray: any[] = [];
+
+      if (response && typeof response === "object") {
+        if (response.success && response.data) {
+          const innerData = response.data;
+          if (
+            innerData.success &&
+            innerData.data &&
+            Array.isArray(innerData.data.users)
+          ) {
+            usersArray = innerData.data.users;
+          } else if (Array.isArray(innerData.users)) {
+            usersArray = innerData.users;
+          } else if (Array.isArray(innerData)) {
+            usersArray = innerData;
+          }
+        } else if (Array.isArray(response.users)) {
+          usersArray = response.users;
+        } else if (Array.isArray(response.data)) {
+          usersArray = response.data;
+        }
+      }
+
+      const formattedUsers = usersArray.map((userData: any) => ({
+        id: userData.id,
+        username: userData.username || "Unknown User",
+        display_name: userData.display_name || userData.username || "Unknown User",
+        avatar: userData.avatar || "👤",
+        job_title:
+          userData.job_title || userData.job_title_encrypted || "Not specified",
+        company:
+          userData.company_encrypted || userData.company || "Not specified",
+        bio: userData.bio,
+        skills: userData.skills || [],
+        can_message: userData.can_message !== false,
+      }));
+
+      setFilteredUsers(formattedUsers);
+    } catch {
+      setFilteredUsers([]);
+    } finally {
+      setLoading((prev) => ({ ...prev, users: false }));
+    }
+  }, [user?.id, showNewConversation, searchUsername]);
+
+  const fetchIdentityRevealStatus = useCallback(
+    async (conversationId: string) => {
+      if (!conversationId) return;
+
+      setLoading((prev) => ({ ...prev, identityStatus: true }));
+      try {
+        const response =
+          await GetIdentityRevealStatusForConversation(conversationId);
+
+        // Unwrap: { success, data: { success, data: { identity_revealed, pending_request, can_request } } }
+        const outer = response?.data || response;
+        const inner = outer?.data || outer;
+
+        if (inner && typeof inner === "object") {
+          setIdentityRevealStatus({
+            is_revealed: inner.identity_revealed ?? inner.is_revealed ?? false,
+            pending_request: inner.pending_request || null,
+            can_request: inner.can_request ?? true,
+            status: inner.pending_request?.status,
           });
-          company =
-            res.success && res.data?.decryptedData
-              ? res.data.decryptedData
-              : company;
+        }
+      } catch {
+        setIdentityRevealStatus(null);
+      } finally {
+        setLoading((prev) => ({ ...prev, identityStatus: false }));
+      }
+    },
+    [],
+  );
+
+  const fetchConversations = useCallback(async () => {
+    if (!user?.id) return;
+
+    setLoading((prev) => ({ ...prev, conversations: true }));
+    try {
+      const response = await GetConversations({
+        chat_type: "all",
+        limit: 50,
+        offset: 0,
+        search: "",
+      });
+
+      const conversationsArray = parseConversationsResponse(response);
+      setConversations(conversationsArray);
+    } catch {
+      setConversations([]);
+    } finally {
+      setConversationsLoaded(true);
+      setLoading((prev) => ({ ...prev, conversations: false }));
+    }
+  }, [user?.id]);
+
+  const fetchMessages = useCallback(
+    async (conversationId: string) => {
+      if (!conversationId) return;
+
+      setLoading((prev) => ({ ...prev, messages: true }));
+      try {
+        const response = await GetSingleConversationMessages(conversationId, {
+          limit: 50,
+          before: undefined,
+        });
+
+        let messagesArray: Message[] = [];
+
+        if (response && typeof response === "object") {
+          if (response.success && response.data) {
+            const innerData = response.data;
+            if (innerData.success && innerData.data) {
+              messagesArray = innerData.data.messages || [];
+            } else if (Array.isArray(innerData.messages)) {
+              messagesArray = innerData.messages;
+            } else if (Array.isArray(innerData)) {
+              messagesArray = innerData;
+            }
+          } else if (Array.isArray(response)) {
+            messagesArray = response;
+          }
         }
 
-        let careerLevel = "";
-        if (profile.career_level_encrypted) {
-          const res = await DecryptData({
-            encryptedData: profile.career_level_encrypted,
-          });
-          careerLevel =
-            res.success && res.data?.decryptedData
-              ? res.data.decryptedData
-              : "";
-        }
+        setMessages(messagesArray);
 
-        newProfiles[req.id] = {
-          id: profile.id,
-          username: profile.username || "Unknown User",
-          avatar: profile.avatar || "👤",
-          job_title: profile.job_title || "Professional",
-          company,
-          bio: profile.mentor_bio || "",
-          skills: profile.mentor_expertise || [],
-          location: profile.location || "",
-          years_experience: profile.years_experience || 0,
-          career_level: careerLevel,
+        // Mark messages as read silently
+        if (messagesArray.length > 0) {
+          const lastMessage = messagesArray[messagesArray.length - 1];
+          if (
+            lastMessage &&
+            !lastMessage.is_read &&
+            lastMessage.sender_id !== user?.id
+          ) {
+            try {
+              await MarkMessagesAsRead(conversationId, lastMessage.id);
+              webSocketService.markAsRead(lastMessage.id, conversationId);
+            } catch {
+              // Silent failure
+            }
+          }
+        }
+      } catch {
+        setMessages([]);
+      } finally {
+        setLoading((prev) => ({ ...prev, messages: false }));
+      }
+    },
+    [user?.id],
+  );
+
+  // ==================== HANDLERS ====================
+
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || !selectedConversation || !user?.id) return;
+
+    const chatType = selectedConversation.context_type || selectedConversation.chat_type || "regular";
+
+    const messageData = {
+      conversation_id: selectedConversation.id,
+      content_encrypted: content,
+      content_type: "text",
+      chat_type: chatType,
+    };
+
+    // Try WebSocket first (real-time), fall back to REST API
+    if (webSocketService.isReady()) {
+      const sent = webSocketService.sendMessage(messageData);
+      if (sent) {
+        // Optimistic UI: show the message immediately while waiting for
+        // the server's message_sent echo (which will deduplicate via id check)
+        const optimistic: Message = {
+          id: `temp-${Date.now()}`,
+          conversation_id: selectedConversation.id,
+          sender_id: user.id,
+          content_encrypted: content,
+          content_type: "text",
+          is_read: false,
+          created_at: new Date().toISOString(),
         };
-      } catch {}
+        setMessages((prev) => [...prev, optimistic]);
+        fetchConversations();
+        return;
+      }
     }
 
-    setDecryptedProfiles((prev) => ({ ...prev, ...newProfiles }));
-  };
-
-  const handleAccept = async (requestId: string) => {
-    if (processingId) return;
-    setProcessingId(requestId);
+    // REST API fallback — guarantees delivery even if WS is flaky
     try {
-      const res = await RespondToDirectMentorshipRequest(requestId, {
-        action: "accept",
+      const response = await SendAMessage({
+        conversation_id: selectedConversation.id,
+        content_encrypted: content,
+        content_type: "text",
+        chat_type: chatType as "regular" | "mentorship",
       });
-      if (res.success) {
-        setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setDecryptedProfiles((prev) => {
-          const next = { ...prev };
-          delete next[requestId];
-          return next;
+
+      // Add the sent message to the UI immediately
+      const sentMsg = response?.data || response;
+      if (sentMsg?.id) {
+        setMessages((prev) => {
+          const exists = prev.some((msg) => msg.id === sentMsg.id);
+          if (exists) return prev;
+          return [...prev, sentMsg];
         });
-        showToast("Mentorship request accepted!", "success");
       }
-    } catch {
-      showToast("Failed to accept request", "error");
-    } finally {
-      setProcessingId(null);
+
+      // Refresh conversations to update last_message preview
+      fetchConversations();
+
+      // Reconnect WS in the background so future messages use real-time
+      if (!webSocketService.isReady()) {
+        webSocketService.reconnect();
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to send message";
+      showToast(msg, "error");
+      throw error;
     }
   };
 
-  const handleDecline = async (requestId: string) => {
-    if (processingId) return;
-    setProcessingId(requestId);
+  const handleRequestIdentityReveal = async () => {
+    if (!selectedConversation) return;
+
     try {
-      const res = await RespondToDirectMentorshipRequest(requestId, {
-        action: "decline",
-      });
-      if (res.success) {
-        setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setDecryptedProfiles((prev) => {
-          const next = { ...prev };
-          delete next[requestId];
-          return next;
-        });
-        showToast("Request declined", "success");
-      }
-    } catch {
-      showToast("Failed to decline request", "error");
-    } finally {
-      setProcessingId(null);
+      await RequestIdentityReveal(selectedConversation.id);
+      showToast("Identity reveal request sent", "success");
+      fetchIdentityRevealStatus(selectedConversation.id);
+    } catch (error) {
+      const errorMessage =
+        (typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          (error as any).response?.data?.message) ||
+        "Failed to send request";
+      showToast(errorMessage, "error");
     }
   };
 
-  const handleCancel = async (requestId: string) => {
-    if (processingId || !window.confirm("Cancel this request?")) return;
-    setProcessingId(requestId);
-    try {
-      const res = await DeleteDirectMentorshipRequest(requestId);
-      if (res.success) {
-        setSentRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        setDecryptedProfiles((prev) => {
-          const next = { ...prev };
-          delete next[requestId];
-          return next;
-        });
-        showToast("Request cancelled", "success");
-      }
-    } catch {
-      showToast("Failed to cancel request", "error");
-    } finally {
-      setProcessingId(null);
+  const handleCreateNewChat = () => {
+    setShowNewConversation(!showNewConversation);
+    if (!showNewConversation) {
+      setSearchUsername("");
+      fetchConnectableUsers();
     }
   };
+
+  // Helper: decrypt a single encrypted field, returns original value on failure
+  const decryptField = async (value: string | undefined | null): Promise<string> => {
+    if (!value || typeof value !== "string") return "";
+    // Skip if it doesn't look encrypted (base64-like with special chars)
+    if (value.length < 20 || /^[a-zA-Z0-9 ,.\-_()]+$/.test(value)) return value;
+    try {
+      const res = await DecryptData({ encryptedData: value });
+      return res?.data?.decryptedData ?? res?.decryptedData ?? value;
+    } catch {
+      return value;
+    }
+  };
+
+  // Pre-fetch mentor profile when entering a mentorship conversation
+  const fetchMentorProfileForConversation = useCallback(async (userId: string) => {
+    if (!userId) return;
+    try {
+      const response = await GetMentorProfileByUserId(userId);
+      let profile = response?.data?.data || response?.data || response;
+      if (profile?.data) profile = profile.data;
+
+      if (profile) {
+        const basic = profile.basicProfile || {};
+        const mentor = profile.mentorProfile || null;
+        const mentee = profile.menteeProfile || null;
+        const status = profile.status || {};
+
+        // Decrypt encrypted fields in parallel
+        const [decryptedCompany, decryptedCareerLevel, decryptedAffinityTags] = await Promise.all([
+          decryptField(basic.company),
+          decryptField(basic.careerLevel),
+          decryptField(basic.affinityTags),
+        ]);
+
+        // Parse affinity tags — could be JSON array string or comma-separated
+        let parsedAffinityTags: string[] = [];
+        if (decryptedAffinityTags) {
+          try {
+            const parsed = JSON.parse(decryptedAffinityTags);
+            parsedAffinityTags = Array.isArray(parsed) ? parsed : [decryptedAffinityTags];
+          } catch {
+            parsedAffinityTags = decryptedAffinityTags.split(",").map((t: string) => t.trim()).filter(Boolean);
+          }
+        }
+
+        setMentorProfileData({
+          id: profile.id || userId,
+          username: profile.username || "Unknown",
+          display_name: profile.display_name || profile.username || "Unknown",
+          avatar: profile.avatar || "👤",
+          bio: basic.bio || mentor?.bio || "",
+          company: decryptedCompany,
+          jobTitle: basic.jobTitle || basic.job_title || "",
+          careerLevel: decryptedCareerLevel,
+          location: basic.location || "",
+          expertise: mentor?.expertise || [],
+          industries: mentor?.industries || mentee?.industries || [],
+          mentoringAs: status.mentoringAs || "mentor",
+          availability: mentor?.availability || mentee?.availability || "",
+          responseTime: mentor?.responseTime || "",
+          isAvailable: status.isActiveMentor || status.isActiveMentee || true,
+          totalMentees: 0,
+          yearsOfExperience: basic.yearsExperience ?? basic.yearsOfExperience ?? 0,
+          affinityTags: parsedAffinityTags,
+          mentorshipStyle: mentor?.mentorStyle || mentor?.style || "",
+          languages: mentor?.languages || mentee?.languages || [],
+          goals: mentee?.goals || "",
+          // Full profile data
+          mentorProfile: mentor,
+          menteeProfile: mentee,
+          mentorshipStatus: status.mentoringAs ? status : null,
+          mentorshipStats: profile.stats || null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to pre-fetch mentor profile:", error);
+    }
+  }, []);
+
+  const handleViewMentorProfile = () => {
+    // Data is already pre-fetched — just open the modal
+    if (mentorProfileData) {
+      setShowMentorProfileModal(true);
+    } else {
+      showToast("Mentor profile is still loading...", "info");
+    }
+  };
+
+  const handleStartConversation = async (userId: string) => {
+    // Close the new conversation panel
+    setShowNewConversation(false);
+    setSearchUsername("");
+
+    // Check if conversation already exists
+    const existingConv = conversations.find((c) => c.other_user?.id === userId);
+
+    if (existingConv) {
+      // Navigate to existing conversation
+      setSelectedConversation(existingConv);
+      fetchMessages(existingConv.id);
+      navigate(`/dashboard/messages?conversation=${existingConv.id}`);
+    } else {
+      // Create new conversation
+      try {
+        const data = await CreateConversation({
+          other_user_id: userId,
+          context_type: "regular",
+        });
+
+        const conversationId = data?.conversation_id || data?.id;
+        if (!conversationId) return;
+
+        // Refresh conversations and find the new one
+        const response = await GetConversations({
+          chat_type: "all",
+          limit: 50,
+          offset: 0,
+          search: "",
+        });
+
+        const conversationsArray = parseConversationsResponse(response);
+        const newConv = conversationsArray.find((c) => c.id === conversationId);
+
+        if (newConv) {
+          setSelectedConversation(newConv);
+          setConversations(conversationsArray);
+        } else {
+          // Fallback: build a minimal conversation so the chat view opens
+          const targetUser = filteredUsers.find((u) => u.id === userId);
+          const fallbackConv: Conversation = {
+            id: conversationId,
+            participant1_id: user?.id || "",
+            participant2_id: userId,
+            context_type: "regular",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            other_user: targetUser || {
+              id: userId,
+              username: "User",
+              display_name: "User",
+              avatar: "",
+              job_title: "",
+              company: "",
+            },
+          };
+          setSelectedConversation(fallbackConv);
+          setConversations((prev) => [fallbackConv, ...prev]);
+        }
+
+        await fetchMessages(conversationId);
+        navigate(`/dashboard/messages?conversation=${conversationId}`);
+      } catch {
+        showToast("Failed to start conversation", "error");
+      }
+    }
+  };
+
+  // ==================== EFFECTS ====================
+
+  // Track WebSocket connection + authentication status
+  useEffect(() => {
+    const handleAuthenticated = () => {
+      setWsConnected(true);
+    };
+
+    const handleDisconnected = () => {
+      setWsConnected(false);
+    };
+
+    const handleConnectionError = () => {
+      setWsConnected(false);
+    };
+
+    const handleAuthError = () => {
+      setWsConnected(false);
+    };
+
+    webSocketService.on("authenticated", handleAuthenticated);
+    webSocketService.on("disconnected", handleDisconnected);
+    webSocketService.on("connection_error", handleConnectionError);
+    webSocketService.on("auth_error", handleAuthError);
+
+    // Use isReady() which checks both connected AND authenticated
+    setWsConnected(webSocketService.isReady());
+
+    return () => {
+      webSocketService.off("authenticated", handleAuthenticated);
+      webSocketService.off("disconnected", handleDisconnected);
+      webSocketService.off("connection_error", handleConnectionError);
+      webSocketService.off("auth_error", handleAuthError);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showNewConversation) {
+      fetchConnectableUsers();
+    }
+  }, [showNewConversation, searchUsername, fetchConnectableUsers]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchIdentityRevealStatus(selectedConversation.id);
+    }
+  }, [selectedConversation, fetchIdentityRevealStatus]);
+
+  // Pre-fetch mentor profile when entering a mentorship conversation
+  useEffect(() => {
+    if (!selectedConversation) {
+      setMentorProfileData(null);
+      return;
+    }
+    const isMentorshipChat =
+      selectedConversation.chat_type === "mentorship" ||
+      selectedConversation.context_type === "mentorship";
+    const otherUserId = selectedConversation.other_user?.id;
+    if (isMentorshipChat && otherUserId) {
+      fetchMentorProfileForConversation(otherUserId);
+    }
+  }, [selectedConversation?.id, fetchMentorProfileForConversation]);
+
+  // WebSocket connection setup
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const connectTimeout = setTimeout(() => {
+      // Use reconnect() if not already connected to reset any
+      // isManualDisconnect flag from prior failures
+      if (!webSocketService.isConnected()) {
+        webSocketService.reconnect();
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(connectTimeout);
+    };
+  }, [user?.id]);
+
+  // WebSocket event handlers
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const handleNewMessage = (data: any) => {
+      const messageData = data.data || data;
+
+      if (
+        selectedConversation &&
+        messageData.conversation_id === selectedConversation.id
+      ) {
+        // Skip own messages — handleMessageSent handles those
+        if (messageData.sender_id === user.id) {
+          fetchConversations();
+          return;
+        }
+
+        setMessages((prev) => {
+          const exists = prev.some((msg) => msg.id === messageData.id);
+          if (exists) return prev;
+          return [...prev, messageData];
+        });
+
+        if (!messageData.is_read && messageData.id) {
+          MarkMessagesAsRead(selectedConversation.id, messageData.id)
+            .then(() => {
+              webSocketService.markAsRead(
+                messageData.id,
+                selectedConversation.id,
+              );
+            })
+            .catch(() => {});
+        }
+      }
+
+      fetchConversations();
+    };
+
+    const handleMessageSent = (data: any) => {
+      const messageData = data?.data || data;
+
+      if (
+        selectedConversation &&
+        messageData?.conversation_id === selectedConversation.id &&
+        messageData?.id
+      ) {
+        setMessages((prev) => {
+          // Remove optimistic temp messages and check for duplicates
+          const withoutTemp = prev.filter((msg) => !msg.id.startsWith("temp-"));
+          const exists = withoutTemp.some((msg) => msg.id === messageData.id);
+          if (exists) return withoutTemp;
+          return [...withoutTemp, messageData];
+        });
+      }
+      fetchConversations();
+    };
+
+    const handleMessageError = (data: any) => {
+      const errorData = data?.data || data;
+      showToast(errorData?.message || "Message failed to send", "error");
+    };
+
+    const handleTypingStart = (data: any) => {
+      const typingData = data.data || data;
+
+      if (
+        selectedConversation &&
+        typingData.conversation_id === selectedConversation.id &&
+        typingData.user_id !== user.id
+      ) {
+        setTypingUsers((prev) => {
+          const exists = prev.some((u) => u.user_id === typingData.user_id);
+          if (exists) {
+            return prev.map((u) =>
+              u.user_id === typingData.user_id
+                ? { ...u, is_typing: true }
+                : u,
+            );
+          }
+          return [
+            ...prev,
+            {
+              ...typingData,
+              conversation_id: selectedConversation.id,
+              is_typing: true,
+            },
+          ];
+        });
+      }
+    };
+
+    const handleTypingEnd = (data: any) => {
+      const typingData = data.data || data;
+
+      if (selectedConversation) {
+        setTypingUsers((prev) =>
+          prev.filter((u) => u.user_id !== typingData.user_id),
+        );
+      }
+    };
+
+    const handleIdentityRevealRequest = () => {
+      if (selectedConversation) {
+        fetchIdentityRevealStatus(selectedConversation.id);
+      }
+    };
+
+    const handleIdentityRevealResponse = () => {
+      if (selectedConversation) {
+        fetchIdentityRevealStatus(selectedConversation.id);
+      }
+    };
+
+    // Register event listeners
+    webSocketService.on("new_message", handleNewMessage);
+    webSocketService.on("message_sent", handleMessageSent);
+    webSocketService.on("message_error", handleMessageError);
+    webSocketService.on("typing_start", handleTypingStart);
+    webSocketService.on("typing_end", handleTypingEnd);
+    webSocketService.on("identity_reveal_request", handleIdentityRevealRequest);
+    webSocketService.on(
+      "identity_reveal_response",
+      handleIdentityRevealResponse,
+    );
+
+    return () => {
+      webSocketService.off("new_message", handleNewMessage);
+      webSocketService.off("message_sent", handleMessageSent);
+      webSocketService.off("message_error", handleMessageError);
+      webSocketService.off("typing_start", handleTypingStart);
+      webSocketService.off("typing_end", handleTypingEnd);
+      webSocketService.off(
+        "identity_reveal_request",
+        handleIdentityRevealRequest,
+      );
+      webSocketService.off(
+        "identity_reveal_response",
+        handleIdentityRevealResponse,
+      );
+    };
+  }, [user?.id, selectedConversation, fetchConversations, fetchIdentityRevealStatus, fetchMessages]);
+
+  // Handle joining/leaving conversations
+  useEffect(() => {
+    if (!selectedConversation?.id || !user?.id) return;
+
+    // joinConversation now auto-queues if not yet authenticated
+    if (webSocketService.isConnected()) {
+      webSocketService.joinConversation(selectedConversation.id);
+    } else {
+      // Use reconnect() to reset isManualDisconnect flag and connect fresh
+      webSocketService.reconnect();
+      // Will auto-join once authenticated thanks to pending operations queue
+      webSocketService.joinConversation(selectedConversation.id);
+    }
+
+    GetTypingStatus(selectedConversation.id)
+      .then((status) => {
+        setTypingUsers(status?.data?.active_typers || []);
+      })
+      .catch(() => {});
+
+    return () => {
+      if (selectedConversation?.id && webSocketService.isConnected()) {
+        webSocketService.leaveConversation(selectedConversation.id);
+      }
+    };
+  }, [selectedConversation?.id, user?.id]);
+
+  // Initial load and handle URL conversation parameter
+  useEffect(() => {
+    const conversationId = searchParams.get("conversation");
+
+    if (conversationId && conversations.length > 0) {
+      const conv = conversations.find((c) => c.id === conversationId);
+      if (conv && conv.id !== selectedConversation?.id) {
+        setSelectedConversation(conv);
+        fetchMessages(conv.id);
+      }
+    }
+  }, [searchParams, conversations, selectedConversation?.id, fetchMessages]);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle startChatWith from navigation state (e.g., from UserProfileModal Chat button)
+  useEffect(() => {
+    const state = location.state as { startChatWith?: string; contextType?: string } | null;
+    if (!state?.startChatWith || !conversationsLoaded) return;
+
+    const userId = state.startChatWith;
+    const contextType = state.contextType || "regular";
+
+    // Clear the state so it doesn't re-trigger
+    navigate(location.pathname + location.search, { replace: true, state: {} });
+
+    // Check if conversation with this user already exists (matching context_type for mentorship)
+    const existingConv = conversations.find((c) => {
+      if (c.other_user?.id !== userId) return false;
+      if (contextType === "mentorship") return c.context_type === "mentorship";
+      return true;
+    });
+
+    if (existingConv) {
+      setSelectedConversation(existingConv);
+      fetchMessages(existingConv.id);
+    } else {
+      // Create a new conversation and auto-route to chat view
+      CreateConversation({
+        other_user_id: userId,
+        context_type: contextType as "regular" | "mentorship",
+      })
+        .then(async (data) => {
+          const convId = data?.conversation_id || data?.id;
+          if (!convId) return;
+
+          // Fetch fresh conversation list and select the new one
+          const response = await GetConversations({
+            chat_type: "all",
+            limit: 50,
+            offset: 0,
+            search: "",
+          });
+          const convList = parseConversationsResponse(response);
+          const newConv = convList.find((c) => c.id === convId);
+
+          if (newConv) {
+            setSelectedConversation(newConv);
+            setConversations(convList);
+          }
+
+          await fetchMessages(convId);
+          navigate(`/dashboard/messages?conversation=${convId}`, { replace: true });
+        })
+        .catch((err) => {
+          const msg = err?.response?.data?.message || "Failed to start conversation";
+          showToast(msg, "error");
+        });
+    }
+  }, [location.state, conversationsLoaded]);
+
+  // Handle ?user= query param (e.g., from MentorshipView Message button)
+  useEffect(() => {
+    const userId = searchParams.get("user");
+    if (!userId || !conversationsLoaded) return;
+
+    const chatType = searchParams.get("chat_type") || "regular";
+
+    // Clear the query params so it doesn't re-trigger
+    navigate(location.pathname, { replace: true });
+
+    const existingConv = conversations.find((c) => c.other_user?.id === userId);
+
+    if (existingConv) {
+      setSelectedConversation(existingConv);
+      fetchMessages(existingConv.id);
+    } else {
+      // Create a new conversation and auto-route to chat view
+      CreateConversation({
+        other_user_id: userId,
+        context_type: chatType as "regular" | "mentorship",
+      })
+        .then(async (data) => {
+          const convId = data?.conversation_id || data?.id;
+          if (!convId) return;
+
+          // Fetch fresh conversation list and select the new one
+          const response = await GetConversations({
+            chat_type: "all",
+            limit: 50,
+            offset: 0,
+            search: "",
+          });
+          const convList = parseConversationsResponse(response);
+          const newConv = convList.find((c) => c.id === convId);
+
+          if (newConv) {
+            setSelectedConversation(newConv);
+            setConversations(convList);
+          }
+
+          await fetchMessages(convId);
+          navigate(`/dashboard/messages?conversation=${convId}`, { replace: true });
+        })
+        .catch((err) => {
+          const msg = err?.response?.data?.message || "Failed to start conversation";
+          showToast(msg, "error");
+        });
+    }
+  }, [searchParams, conversationsLoaded]);
+
+  // Scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typingUsers]);
+
+  // ==================== UTILITY FUNCTIONS ====================
+
+  const unreadCount = conversations.reduce(
+    (acc, conv) => acc + (conv.unread_count || 0),
+    0,
+  );
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -339,771 +1306,408 @@ function MentorshipRequestsView({ onBack }: MentorshipRequestsViewProps) {
     return date.toLocaleDateString();
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "accepted":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "declined":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getRequestTypeText = (
-    request: ExtendedDirectMentorshipRequest,
-    tab: "received" | "sent" | "all"
-  ) => {
-    const isMentor = request.request_type === "mentor_request";
-
-    if (tab === "received") {
-      return isMentor ? "Wants you as their mentor" : "Offering to mentor you";
-    }
-    if (tab === "sent") {
-      return isMentor
-        ? "You requested them as mentor"
-        : "You offered to mentor them";
-    }
-    if (request.requestContext?.isSent) {
-      return isMentor
-        ? "You requested them as mentor"
-        : "You offered to mentor them";
-    }
-    if (request.requestContext?.isReceived) {
-      return isMentor ? "Wants you as their mentor" : "Offering to mentor you";
-    }
-    return isMentor ? "Mentor Request" : "Mentee Request";
-  };
-
-  const requestsToShow =
-    activeTab === "received"
-      ? receivedRequests
-      : activeTab === "sent"
-      ? sentRequests
-      : allRequests;
-
-  const isLoading = loading[activeTab];
-
-  return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-    
-        <div className="flex gap-2 items-center">
-          <div className="flex gap-2 flex-1">
-            <button
-              onClick={() => setActiveTab("received")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === "received"
-                  ? "bg-orange-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Inbox className="w-4 h-4" />
-              Received
-              {receivedRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
-                  {receivedRequests.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("sent")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === "sent"
-                  ? "bg-orange-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <UserPlus className="w-4 h-4" />
-              Sent
-              {sentRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
-                  {sentRequests.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === "all"
-                  ? "bg-orange-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Trash2 className="w-4 h-4" />
-              All
-              {allRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
-                  {allRequests.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 animate-pulse"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex justify-between">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-32"></div>
-                        <div className="h-3 bg-gray-200 rounded w-48"></div>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded w-16"></div>
-                    </div>
-                    <div className="h-16 bg-gray-200 rounded"></div>
-                    <div className="flex gap-2">
-                      <div className="h-6 bg-gray-200 rounded w-16"></div>
-                      <div className="h-6 bg-gray-200 rounded w-20"></div>
-                    </div>
-                    <div className="h-10 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : requestsToShow.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-            <Inbox className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {activeTab === "all"
-                ? "No requests found"
-                : "No pending requests"}
-            </h3>
-            <p className="text-gray-500">
-              {activeTab === "received"
-                ? "You don't have any pending mentorship requests at the moment."
-                : activeTab === "sent"
-                ? "You haven't sent any mentorship requests yet."
-                : "No mentorship activity yet."}
-            </p>
-          </div>
-        ) : (
-          requestsToShow.map((request) => {
-            const profile = decryptedProfiles[request.id] || {
-              id: request.id,
-              username: "Loading...",
-              avatar: "👤",
-              job_title: "Professional",
-              company: "Loading...",
-              bio: "",
-              skills: [],
-              location: "",
-              years_experience: 0,
-            };
-
-            const isUnread =
-              activeTab === "received" && !request.is_read_by_target;
-            const isSentRequest =
-              activeTab === "sent" ||
-              (activeTab === "all" && request.requestContext?.isSent);
-
-            return (
-              <div
-                key={request.id}
-                className={`bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow ${
-                  isUnread ? "border-l-4 border-l-orange-500" : ""
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{profile.avatar}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900 text-lg">
-                            {profile.username}
-                          </h3>
-                          {isUnread && (
-                            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                              New
-                            </span>
-                          )}
-                          {activeTab === "all" && request.status && (
-                            <span
-                              className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusBadgeColor(
-                                request.status
-                              )}`}
-                            >
-                              {request.status.charAt(0).toUpperCase() +
-                                request.status.slice(1)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {profile.job_title} at {profile.company}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs text-gray-500 whitespace-nowrap">
-                          {getTimeAgo(request.created_at)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-3">
-                        <UserPlus className="w-4 h-4" />
-                        {getRequestTypeText(request, activeTab)}
-                      </div>
-
-                      {profile.bio && (
-                        <p className="text-sm text-gray-600 mb-3">
-                          {profile.bio}
-                        </p>
-                      )}
-
-                      {request.message && (
-                        <div className="mb-3 p-3 bg-gray-50 rounded-lg border-l-4 border-orange-600">
-                          <p className="text-sm text-gray-700 italic">
-                            "{request.message}"
-                          </p>
-                        </div>
-                      )}
-
-                      {profile.skills.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {profile.skills.map((skill, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-3">
-                      {activeTab === "received" &&
-                      request.status === "pending" ? (
-                        <>
-                          <button
-                            onClick={() => handleAccept(request.id)}
-                            disabled={processingId === request.id}
-                            className="flex-1 py-2.5 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                          >
-                            {processingId === request.id ? (
-                              <Loader className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <>
-                                <Check className="w-5 h-5" /> Accept
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDecline(request.id)}
-                            disabled={processingId === request.id}
-                            className="flex-1 py-2.5 px-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
-                          >
-                            {processingId === request.id ? (
-                              <Loader className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <>
-                                <X className="w-5 h-5" /> Decline
-                              </>
-                            )}
-                          </button>
-                        </>
-                      ) : activeTab === "sent" &&
-                        request.status === "pending" ? (
-                        <div className="flex items-center justify-between w-full">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
-                            <Clock className="w-4 h-4" />
-                            Pending
-                          </div>
-                          <button
-                            onClick={() => handleCancel(request.id)}
-                            disabled={processingId === request.id}
-                            className="py-2 px-4 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 disabled:opacity-50 flex items-center gap-2"
-                          >
-                            {processingId === request.id ? (
-                              <Loader className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Trash2 className="w-4 h-4" /> Cancel
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-full text-center text-sm text-gray-600 py-2">
-                          {/* {request.status?.charAt(0).toUpperCase() +
-                            request.status?.slice(1) || "Processed"} */}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Main MessagesView Component ─────────────────────────────────────────────
-
-export function MessagesView() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [showMentorshipRequest, setShowMentorshipRequest] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"messages" | "mentorship">(
-    "messages"
-  );
-
-  const [currentConversation, setCurrentConversation] =
-    useState<Conversation | null>(null);
-  const [otherUserProfile, setOtherUserProfile] = useState<UserProfile | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const conversationId = searchParams.get("conversation");
-    if (conversationId && user?.id) {
-      fetchConversationDetails(conversationId);
-    } else {
-      setCurrentConversation(null);
-      setOtherUserProfile(null);
-    }
-  }, [searchParams, user?.id]);
-
-  const fetchConversationDetails = async (conversationId: string) => {
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      const { data: conv, error: convErr } = await supabase
-        .from("conversations")
-        .select("*")
-        .eq("id", conversationId)
-        .single();
-
-      if (convErr) throw convErr;
-      if (!conv) return;
-
-      setCurrentConversation(conv);
-
-      const otherId =
-        conv.participant1_id === user.id
-          ? conv.participant2_id
-          : conv.participant1_id;
-
-      const { data: profile, error: profileErr } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("id", otherId)
-        .single();
-
-      if (profileErr) throw profileErr;
-      setOtherUserProfile(profile);
-    } catch (err) {
-      console.error("Failed to load conversation:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUserClick = (userId: string) => {
-    if (user?.id === userId) {
-      navigate("/dashboard/profile");
-    } else {
-      setSelectedUserId(userId);
-      setShowUserProfile(true);
-    }
-  };
-
-  const handleChatUser = (userId: string) => {
-    setShowUserProfile(false);
-    setSelectedChat(userId);
-  };
-
-  const conversations = [
-    {
-      id: "1",
-      userId: "mentor1",
-      user: "Jennifer Wu",
-      avatar: "☁️",
-      lastMessage: "Happy to help you with cloud architecture!",
-      timeAgo: "5m",
-      unread: 2,
-      identityRevealed: true,
-      realName: "Jennifer Wu",
-      isMentorship: true,
-      mentorshipRole: "mentor",
-    },
-    {
-      id: "2",
-      userId: "mentee1",
-      user: "Sarah Chen",
-      avatar: "👩‍💻",
-      lastMessage: "Thank you for the advice on system design!",
-      timeAgo: "1h",
-      unread: 0,
-      identityRevealed: true,
-      realName: "Sarah Chen",
-      isMentorship: true,
-      mentorshipRole: "mentee",
-    },
-    {
-      id: "3",
-      userId: "user2",
-      user: "ThoughtfulLeader92",
-      avatar: "🌟",
-      lastMessage: "That sounds like a great opportunity!",
-      timeAgo: "2h",
-      unread: 0,
-      identityRevealed: false,
-    },
-  ];
-
-  if (currentConversation && otherUserProfile && user?.id) {
-    const isMentorshipConversation =
-      currentConversation.context_type === "mentorship";
-
+  const getIdentityRevealStatus = (conversation: Conversation) => {
     return (
-      <div className="max-w-4xl mx-auto flex flex-col h-screen">
+      conversation.identity_revealed ||
+      (identityRevealStatus && identityRevealStatus.is_revealed === true)
+    );
+  };
+
+  // ==================== RENDER CHAT VIEW ====================
+  if (selectedConversation) {
+    const otherUser = selectedConversation.other_user || {
+      id: "",
+      username: "Unknown User",
+      display_name: "Unknown User",
+      avatar: "👤",
+      job_title: "",
+      company: "",
+    };
+    const isMentorship = selectedConversation.chat_type === "mentorship" || selectedConversation.context_type === "mentorship";
+    const identityRevealed = getIdentityRevealStatus(selectedConversation);
+    const isTyping = typingUsers.some(
+      (u) =>
+        u.conversation_id === selectedConversation.id && u.is_typing === true,
+    );
+    return (
+      <>
+      <div className="max-w-4xl mx-auto flex flex-col h-screen bg-gray-50">
+        {/* Header */}
         <header className="bg-white px-4 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3 mb-3">
             <button
+              type="button"
               onClick={() => {
-                setCurrentConversation(null);
-                setOtherUserProfile(null);
+                setSelectedConversation(null);
                 navigate("/dashboard/messages");
               }}
               className="text-gray-500 hover:text-gray-700"
+              aria-label="Back to conversations"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
-              {otherUserProfile.avatar}
+            <div className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-2xl`}>
+              {otherUser.avatar || "👤"}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-gray-900">
-                  {otherUserProfile.username}
+                  {otherUser.display_name || otherUser.username || "User"}
                 </h3>
-                {isMentorshipConversation && (
+                {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
                     Mentorship
                   </span>
                 )}
               </div>
               <p className="text-xs text-gray-500">
-                {otherUserProfile.company} • {otherUserProfile.job_title}
+                {otherUser.company} • {otherUser.job_title}
               </p>
             </div>
-          </div>
-          {isMentorshipConversation && (
-            <button
-              onClick={() => navigate("/dashboard/mentorship")}
-              className="w-full px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-            >
-              <Target className="w-4 h-4" />
-              View Mentorship Profile
-            </button>
-          )}
-        </header>
+            {!identityRevealed && (() => {
+              const pending = identityRevealStatus?.pending_request;
+              const canRequest = identityRevealStatus?.can_request !== false;
+              const isPendingSent = pending?.status === "pending" && pending?.direction === "sent";
+              const isPendingReceived = pending?.status === "pending" && pending?.direction === "received";
 
-        <div className="flex-1 bg-gray-50 p-4 overflow-y-auto">
-          <div className="space-y-3">
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Conversation started</p>
-              <p className="text-xs text-gray-500 mt-2">
-                {new Date(currentConversation.created_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border-t border-gray-200 p-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <button
-              onClick={() =>
-                alert("Message functionality will be implemented soon!")
-              }
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              Send
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedChat) {
-    const chat = conversations.find((c) => c.id === selectedChat);
-    if (!chat) return null;
-
-    return (
-      <div className="max-w-md mx-auto flex flex-col h-screen">
-        <header className="bg-white px-4 py-4 border-b border-gray-200">
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              onClick={() => setSelectedChat(null)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ←
-            </button>
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              {chat.avatar}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900">
-                  {chat.identityRevealed ? chat.realName : chat.user}
-                </h3>
-                {chat.isMentorship && (
-                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                    Mentorship
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-500">
-                {chat.identityRevealed ? "Identity revealed" : "Anonymous"}
-              </p>
-            </div>
-            {!chat.identityRevealed && (
-              <button
-                onClick={() => {
-                  if (confirm("Request to reveal identities with this user?")) {
-                    alert(
-                      "Identity reveal request sent! You will be notified when they respond."
-                    );
-                  }
-                }}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Request Identity Reveal"
-              >
-                <Eye className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-          {chat.isMentorship && (
-            <button
-              onClick={() => navigate("/dashboard/mentorship")}
-              className="w-full px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-            >
-              <Target className="w-4 h-4" />
-              View Mentorship Profile
-            </button>
-          )}
-        </header>
-
-        <div className="flex-1 bg-gray-50 p-4 space-y-3 overflow-y-auto">
-          <div className="text-right">
-            <div className="inline-block bg-blue-600 text-white px-3 py-2 rounded-2xl rounded-br-md max-w-xs">
-              <p className="text-sm">
-                Hi! I saw your post about promotion strategies. Would love to
-                chat!
-              </p>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">2h</p>
-          </div>
-
-          <div className="text-left">
-            <div className="inline-block bg-white px-3 py-2 rounded-2xl rounded-bl-md max-w-xs border border-gray-200">
-              <p className="text-sm">{chat.lastMessage}</p>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">{chat.timeAgo}</p>
-          </div>
-        </div>
-
-        <div className="bg-white border-t border-gray-200 p-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <button
-              onClick={() => alert("Message sent!")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto">
-      <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Messages & Requests
-            </h1>
-            <p className="text-gray-500">
-              Manage your conversations and mentorship requests
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab("messages")}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === "messages"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              <span>Messages</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab("mentorship")}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === "mentorship"
-                ? "bg-orange-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Target className="w-4 h-4" />
-              <span>Mentorship</span>
-            </div>
-          </button>
-        </div>
-      </header>
-
-      {activeTab === "messages" ? (
-        <div>
-          <div className="mb-4 flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              />
-            </div>
-            <button
-              onClick={() => alert("New conversation feature coming soon!")}
-              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              New
-            </button>
-          </div>
-
-          <div className="grid gap-2">
-            {conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => setSelectedChat(conv.id)}
-                className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-lg">
-                      {conv.avatar}
-                    </div>
-                    {conv.identityRevealed && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-                        <Eye className="w-2 h-2 text-white m-auto" />
-                      </div>
-                    )}
+              if (isPendingSent) {
+                return (
+                  <div className={`p-2 ${isMentorship ? "text-orange-400" : "text-blue-400"} rounded-lg`} title="Identity reveal request pending">
+                    <Clock className="w-5 h-5" />
                   </div>
+                );
+              }
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="font-medium text-gray-900 truncate">
-                          {conv.identityRevealed ? conv.realName : conv.user}
-                        </span>
-                        {conv.isMentorship && (
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
-                            Mentorship
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-500">
-                          {conv.timeAgo}
-                        </span>
-                        {conv.unread > 0 && (
-                          <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                            <span className="text-xs text-white">
-                              {conv.unread}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              if (isPendingReceived) {
+                return (
+                  <button
+                    type="button"
+                    onClick={handleRequestIdentityReveal}
+                    disabled={loading.identityStatus}
+                    className={`p-2 ${isMentorship ? "text-orange-600 hover:bg-orange-50" : "text-blue-600 hover:bg-blue-50"} rounded-lg transition-colors disabled:opacity-50 animate-pulse`}
+                    title="They requested to reveal identities — click to accept"
+                  >
+                    {loading.identityStatus ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                );
+              }
 
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-500 truncate flex-1">
-                        {conv.lastMessage}
-                      </p>
-                      {!conv.identityRevealed && (
-                        <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      )}
+              if (canRequest) {
+                return (
+                  <button
+                    type="button"
+                    onClick={handleRequestIdentityReveal}
+                    disabled={loading.identityStatus}
+                    className={`p-2 ${isMentorship ? "text-orange-600 hover:bg-orange-50" : "text-blue-600 hover:bg-blue-50"} rounded-lg transition-colors disabled:opacity-50`}
+                    title="Request Identity Reveal"
+                  >
+                    {loading.identityStatus ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <EyeOff className="w-5 h-5" />
+                    )}
+                  </button>
+                );
+              }
+
+              return null;
+            })()}
+          </div>
+          {isMentorship && (
+            <button
+              type="button"
+              onClick={handleViewMentorProfile}
+              disabled={!mentorProfileData}
+              className="w-full px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {!mentorProfileData ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading Profile...
+                </>
+              ) : (
+                <>
+                  <Target className="w-4 h-4" />
+                  View Mentorship Profile
+                </>
+              )}
+            </button>
+          )}
+        </header>
+
+        {/* Messages */}
+        <div className="flex-1 bg-gray-50 p-4 space-y-3 overflow-y-auto">
+          {loading.messages ? (
+            <MessagesSkeleton />
+          ) : messages.length === 0 ? (
+            <div className="text-center py-12">
+              {isMentorship ? (
+                <>
+                  <Target className="w-12 h-12 text-orange-300 mx-auto mb-3" />
+                  <h3 className="font-medium text-gray-500">Start Your Mentorship Journey</h3>
+                  <p className="text-sm text-gray-400">
+                    Share your goals, ask questions, and build a meaningful connection.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="font-medium text-gray-500">No messages yet</h3>
+                  <p className="text-sm text-gray-400">Start the conversation!</p>
+                </>
+              )}
+            </div>
+          ) : (
+            messages.map((message) => {
+              const isOwn = message.sender_id === user?.id;
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                >
+                  <div className={`max-w-xs ${isOwn ? "text-right" : ""}`}>
+                    <div
+                      className={`inline-block px-3 py-2 rounded-2xl ${
+                        isOwn
+                          ? `${isMentorship ? "bg-orange-600" : "bg-blue-600"} text-white rounded-br-md`
+                          : "bg-white border border-gray-200 rounded-bl-md"
+                      }`}
+                    >
+                      <p className="text-sm">{message.content_encrypted}</p>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {getTimeAgo(message.sent_at || message.created_at)}
+                    </p>
                   </div>
                 </div>
-              </button>
-            ))}
-          </div>
-
-          {conversations.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="font-medium text-gray-500 mb-1">
-                No conversations yet
-              </h3>
-              <p className="text-sm text-gray-400">
-                Start chatting with mentors and mentees you've connected with
-              </p>
+              );
+            })
+          )}
+          {isTyping && (
+            <div className="text-left">
+              <div className="inline-block bg-white px-3 py-2 rounded-2xl rounded-bl-md max-w-xs border border-gray-200">
+                <p className="text-sm text-gray-500 italic">typing...</p>
+              </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
-      ) : (
-        <MentorshipRequestsView onBack={() => setActiveTab("messages")} />
-      )}
 
-      <MentorshipRequestModal
-        isOpen={showMentorshipRequest}
-        onClose={() => setShowMentorshipRequest(false)}
-      />
+        {/* Message Input */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <MessageInputComponent
+            conversationId={selectedConversation.id}
+            onSendMessage={handleSendMessage}
+            isMentorship={isMentorship}
+            disabled={loading.messages}
+          />
+        </div>
+      </div>
 
-      <UserProfileModal
-        isOpen={showUserProfile}
-        onClose={() => setShowUserProfile(false)}
-        userId={selectedUserId || ""}
-        onChat={handleChatUser}
+      <MentorshipUserProfileModal
+        isOpen={showMentorProfileModal}
+        onClose={() => setShowMentorProfileModal(false)}
+        profile={mentorProfileData}
+        currentUserId={user?.id}
+        context="mentorship-view"
       />
-    </div>
+      </>
+    );
+  }
+
+  // ==================== RENDER MAIN VIEW ====================
+  return (
+    <>
+      <div className="max-w-4xl mx-auto">
+        <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Messages & Requests
+              </h1>
+              <p className="text-gray-500">
+                Manage your conversations and requests
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("messages")}
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                activeTab === "messages"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>Messages</span>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("mentorship")}
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                activeTab === "mentorship"
+                  ? "bg-orange-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Target className="w-4 h-4" />
+                <span>Mentorship</span>
+              </div>
+            </button>
+          </div>
+        </header>
+
+        {activeTab === "messages" ? (
+          <div>
+            <div className="mb-4 flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateNewChat}
+                className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                New
+              </button>
+            </div>
+
+            {showNewConversation && (
+              <div className="mb-4 p-4 bg-white border border-blue-200 rounded-xl shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  Start New Conversation
+                </h3>
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    placeholder="Search users by username..."
+                    value={searchUsername}
+                    onChange={(e) => setSearchUsername(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {loading.users ? (
+                    <UserSearchSkeleton />
+                  ) : filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleStartConversation(user.id)}
+                        disabled={!user.can_message}
+                        className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={
+                          !user.can_message ? "Cannot message this user" : ""
+                        }
+                      >
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          {user.avatar}
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-medium text-gray-900 block">
+                            {user.display_name || user.username}
+                          </span>
+                          <span className="text-xs text-gray-500 block">
+                            {user.job_title !== "Not specified" &&
+                            user.company !== "Not specified"
+                              ? `${user.job_title} • ${user.company}`
+                              : "User"}
+                          </span>
+                        </div>
+                        {user.privacy_level === "anonymous" && (
+                          <Shield className="w-3 h-3 text-gray-400" />
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-center py-3">
+                      <Inbox className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        {searchUsername
+                          ? "No users found matching your search"
+                          : "No users available to chat with"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewConversation(false);
+                    setSearchUsername("");
+                  }}
+                  className="mt-3 w-full py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {loading.conversations ? (
+              <ConversationsSkeleton />
+            ) : conversations.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h3 className="font-medium text-gray-500 mb-1">
+                  No conversations yet
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Accept connection requests to start messaging
+                </p>
+              </div>
+            ) : (
+              <ConversationList
+                conversations={conversations}
+                onSelect={(conv) => {
+                  setSelectedConversation(conv);
+                  fetchMessages(conv.id);
+                }}
+                getIdentityRevealStatus={getIdentityRevealStatus}
+                getTimeAgo={getTimeAgo}
+              />
+            )}
+          </div>
+        ) : (
+          <MentorshipRequestsView onBack={() => setActiveTab("messages")} />
+        )}
+
+        <MentorshipRequestModal
+          isOpen={showMentorshipRequest}
+          onClose={() => setShowMentorshipRequest(false)}
+        />
+
+        <MentorshipUserProfileModal
+          isOpen={showMentorProfileModal}
+          onClose={() => setShowMentorProfileModal(false)}
+          profile={mentorProfileData}
+          currentUserId={user?.id}
+          context="mentorship-view"
+        />
+
+      </div>
+    </>
   );
 }

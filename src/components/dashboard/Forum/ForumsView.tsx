@@ -204,9 +204,10 @@ export function ForumsView() {
     setShowUserProfile(true);
   };
 
-  const handleFollow = () => {};
-  const handleUnfollow = () => {};
-  const handleChat = () => setShowUserProfile(false);
+  const handleChat = (userId: string) => {
+    setShowUserProfile(false);
+    navigate("/dashboard/messages", { state: { startChatWith: userId, contextType: "regular" } });
+  };
 
   const TOPICS_PER_PAGE = 10;
 
@@ -534,8 +535,6 @@ export function ForumsView() {
     selectedForum,
     companies: [],
     globalForums,
-    handleFollow,
-    handleUnfollow,
     handleChat,
     activeCommentId,
     setActiveCommentId,

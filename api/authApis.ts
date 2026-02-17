@@ -1,8 +1,6 @@
-// src/api/authApis.ts
+// api/authApis.ts
 import axios from "axios";
-import axiosInstance from "../src/Helper/AxiosInterceptor";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { getAuthInstance, API_URL } from "./base";
 
 // Public endpoints (no auth needed)
 export const registerUser = async (payload: {
@@ -55,12 +53,6 @@ export const VerifyOTP = async (email: string, token: string) => {
 };
 
 // Authenticated endpoints (use interceptor)
-const getAuthInstance = () => {
-  const accessToken = localStorage.getItem("access_token");
-  const refreshToken = localStorage.getItem("refresh_token");
-  return axiosInstance(accessToken, refreshToken);
-};
-
 export const GetCurrentUser = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/auth/me`);

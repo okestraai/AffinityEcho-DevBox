@@ -19,6 +19,7 @@ import {
   Eye,
   ThumbsUp,
   Heart as HeartIcon,
+  Sparkles,
 } from "lucide-react";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
@@ -30,13 +31,15 @@ import {
   SidebarSkeleton,
   ForumViewSkeleton,
 } from "../../../Helper/SkeletonLoader";
+import { OkestraPanel } from "../OkestraPanel";
+import { Topic } from "../../../types/forum";
+import { useState, useRef } from "react";
 
 export function OverviewMode(props: any) {
   const {
     handleCommentClick,
     handleCommentSubmit,
     handleCommentCancel,
-    currentUser,
     userCompany,
     searchTerm,
     setSearchTerm,
@@ -74,6 +77,30 @@ export function OverviewMode(props: any) {
     handleViewAllGlobalForums, // NEW: Handler for view all button
   } = props;
 
+    const [okestraSelectedTopic, setOkestraSelectedTopic] = useState<Topic | null>(null);
+      const [showOkestraPanel, setShowOkestraPanel] = useState(false);
+
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleUserHover = (userId: string) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      handleUserClick(userId);
+    }, 400);
+  };
+
+  const handleUserHoverLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+
+  const handleOkestraClick = (topic: Topic, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOkestraSelectedTopic(topic);
+    setShowOkestraPanel(true);
+  };
   return (
     <div className="max-w-7xl mx-auto">
       {/* === HEADER === */}
@@ -210,7 +237,7 @@ export function OverviewMode(props: any) {
             <div className="space-y-4">
               {paginatedTopics.topics.map((topic: any) => {
                 const avatarEmoji = topic.user_profile?.avatar || "👤";
-                const username = topic.user_profile?.username || "Anonymous";
+                const username = topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous";
 
                 return (
                   <div
@@ -229,6 +256,8 @@ export function OverviewMode(props: any) {
                             e.stopPropagation();
                             handleUserClick(topic.user_id);
                           }}
+                          onMouseEnter={() => handleUserHover(topic.user_id)}
+                          onMouseLeave={handleUserHoverLeave}
                           className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-lg md:text-xl shadow-sm border border-purple-200/50 flex-shrink-0 hover:bg-blue-200 transition-colors"
                         >
                           {avatarEmoji}
@@ -240,6 +269,8 @@ export function OverviewMode(props: any) {
                                 e.stopPropagation();
                                 handleUserClick(topic.user_id);
                               }}
+                              onMouseEnter={() => handleUserHover(topic.user_id)}
+                              onMouseLeave={handleUserHoverLeave}
                               className="text-sm text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-3 py-1.5 rounded-full border border-purple-200 hover:text-purple-800 transition-colors inline-flex items-center gap-1"
                             >
                               {username} {avatarEmoji}
@@ -375,6 +406,14 @@ export function OverviewMode(props: any) {
                             <span className="text-sm">
                               {topic.commentCount || topic.comments_count || 0}
                             </span>
+                          </button>
+                          <button
+                            onClick={(e) => handleOkestraClick(topic as Topic, e)}
+                            className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            title="AI Insights"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            <span className="text-sm hidden md:inline">AI Insights</span>
                           </button>
                         </div>
                         <div className="text-xs md:text-sm text-gray-500 w-full md:w-auto mt-2 md:mt-0">
@@ -581,12 +620,20 @@ export function OverviewMode(props: any) {
       <UserProfileModal
         isOpen={showUserProfile}
         onClose={() => setShowUserProfile(false)}
-        profile={selectedUserProfile}
-        onFollow={props.handleFollow}
-        onUnfollow={props.handleUnfollow}
+        userId={selectedUserProfile?.id || ""}
         onChat={props.handleChat}
-        currentUserId={currentUser?.id}
       />
+
+      {okestraSelectedTopic && (
+          <OkestraPanel
+            isOpen={showOkestraPanel}
+            onClose={() => {
+              setShowOkestraPanel(false);
+            }}
+            topic={okestraSelectedTopic}
+            comments={okestraSelectedTopic.comments || []}
+          />
+        )}
     </div>
   );
 }

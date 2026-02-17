@@ -387,7 +387,7 @@ export function ForumTopicsMode(props: any) {
                         onClick={() => handleUserClick(topic.user_id)}
                         className="text-sm text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-3 py-1.5 rounded-full border border-purple-200 hover:text-purple-800 transition-colors"
                       >
-                        {topic.user_profile?.username || "Anonymous"}
+                        {topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous"}
                       </button>
                       {topic.is_pinned && (
                         <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full font-medium flex items-center gap-1">

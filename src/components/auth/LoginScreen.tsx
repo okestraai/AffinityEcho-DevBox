@@ -59,9 +59,8 @@ export function LoginScreen() {
       } else {
         await signup(email, password);
       }
-    } catch (err: any) {
+    } catch {
       // Errors are already handled + toasted inside AuthContext
-      console.error(err);
     }
   };
 
@@ -95,9 +94,11 @@ export function LoginScreen() {
           <div className="space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-3xl flex items-center justify-center shadow-xl">
-                  <Users className="w-8 h-8 text-white" />
-                </div>
+               <img
+                  src="/affinity-echo-logo-hd.png"
+                  alt="Affinity Echo Logo"
+                  className="w-16 h-16 object-contain"
+                />
                 <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
                   Affinity Echo
                 </span>

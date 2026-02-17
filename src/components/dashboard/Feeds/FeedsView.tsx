@@ -17,22 +17,36 @@ import {
   Clock,
   Flame,
   Building,
+  Loader2,
 } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../hooks/useAuth";
+import {
+  GetFeed,
+  CreatePost,
+  ToggleLike,
+  AddComment,
+  GetComments,
+  ShareItem,
+  ToggleBookmark,
+} from "../../../../api/feedApis";
+import { GetAllCommentsForATopic, CreateForumTopicsComments } from "../../../../api/forumApis";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
+import { showToast } from "../../../Helper/ShowToast";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
+import { FeedSkeleton } from "../../../Helper/SkeletonLoader";
 
 interface FeedItem {
   id: string;
   content_type: "topic" | "nook" | "post";
   content_id: string;
   user_id: string;
+  is_anonymous: boolean;
   author: {
     display_name: string;
-    avatar_url?: string;
-    bio?: string;
+    username?: string;
+    avatar?: string | null;
+    bio?: string | null;
   };
   content: {
     title?: string;
@@ -55,244 +69,33 @@ interface FeedItem {
   created_at: string;
   user_has_liked?: boolean;
   user_has_bookmarked?: boolean;
+  user_has_shared?: boolean;
   privacy?: "public" | "connections" | "private";
 }
 
-const DUMMY_FEED_DATA: FeedItem[] = [
-  {
-    id: "1",
-    content_type: "topic",
-    content_id: "topic-123",
-    user_id: "user1",
-    author: {
-      display_name: "Anonymous Phoenix",
-      bio: "Tech enthusiast | Mentor",
-    },
-    content: {
-      title: "How do you handle imposter syndrome in senior roles?",
-      text: "I recently got promoted to a senior position and I'm feeling overwhelmed. Even though I've been in tech for 8 years, I constantly feel like I don't belong here. Has anyone else experienced this? How did you overcome it?",
-      forum_name: "Career Growth",
-      tags: ["career", "mental-health", "advice"],
-    },
-    engagement: {
-      likes: 156,
-      comments: 43,
-      seen: 892,
-    },
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "2",
-    content_type: "nook",
-    content_id: "nook-456",
-    user_id: "user2",
-    author: {
-      display_name: "Silent Warrior",
-      bio: "Software Engineer | Career Coach",
-    },
-    content: {
-      title: "Morning Motivation",
-      text: "Just a reminder that your journey is unique. Don't compare your chapter 1 to someone else's chapter 20. Keep pushing forward! 💪",
-      nook_name: "Daily Inspiration",
-      nook_urgency: "medium",
-      nook_scope: "global",
-      nook_temperature: "warm",
-      nook_members: 15,
-      nook_time_left: "18h 42m",
-    },
-    engagement: {
-      likes: 234,
-      comments: 18,
-    },
-    created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "3",
-    content_type: "topic",
-    content_id: "topic-789",
-    user_id: "user3",
-    author: {
-      display_name: "Brave Soul",
-      bio: "UX Designer",
-    },
-    content: {
-      title: "Tips for transitioning from design to product management?",
-      text: "I've been working as a UX designer for 5 years and I'm considering a move into product management. Would love to hear from anyone who made a similar transition. What skills did you need to develop? Any resources you'd recommend?",
-      forum_name: "Career Transitions",
-      tags: ["career-change", "product-management", "design"],
-    },
-    engagement: {
-      likes: 89,
-      comments: 32,
-      seen: 456,
-    },
-    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "4",
-    content_type: "post",
-    content_id: "post-101",
-    user_id: "user4",
-    author: {
-      display_name: "Rising Star",
-      bio: "Full Stack Developer",
-    },
-    content: {
-      text: "Celebrating a small win today - my code review feedback was actually positive! After months of learning and improving, it feels amazing to be recognized. To anyone struggling right now: keep going, progress isn't always visible but it's happening. 🎉",
-    },
-    engagement: {
-      likes: 342,
-      comments: 56,
-      shares: 12,
-      seen: 892,
-    },
-    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "5",
-    content_type: "topic",
-    content_id: "topic-202",
-    user_id: "user5",
-    author: {
-      display_name: "Quiet Champion",
-      bio: "Engineering Manager",
-    },
-    content: {
-      title:
-        "How to give constructive feedback without demotivating team members?",
-      text: "I'm a new manager and I struggle with giving negative feedback. I want to help my team improve but I'm worried about hurting morale. How do you balance being honest with being supportive?",
-      forum_name: "Leadership & Management",
-      tags: ["management", "feedback", "leadership"],
-    },
-    engagement: {
-      likes: 127,
-      comments: 67,
-      seen: 678,
-    },
-    created_at: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "6",
-    content_type: "nook",
-    content_id: "nook-303",
-    user_id: "user6",
-    author: {
-      display_name: "Hidden Gem",
-      bio: "Data Analyst",
-    },
-    content: {
-      title: "Weekend Wins",
-      text: "Share your professional wins from this week! Big or small, let's celebrate together. I'll start: I finally automated that boring task that was taking 2 hours every day. Now it runs in 5 minutes! 🚀",
-      nook_name: "Weekly Reflections",
-      nook_urgency: "low",
-      nook_scope: "company",
-      nook_temperature: "hot",
-      nook_members: 23,
-      nook_time_left: "21h 15m",
-    },
-    engagement: {
-      likes: 198,
-      comments: 87,
-    },
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "7",
-    content_type: "topic",
-    content_id: "topic-404",
-    user_id: "user7",
-    author: {
-      display_name: "Mystery Maven",
-      bio: "Product Designer",
-    },
-    content: {
-      title: "Resources for learning system design?",
-      text: "I'm preparing for senior engineer interviews and need to brush up on system design. What are the best resources you've used? Looking for both theoretical knowledge and practical examples.",
-      forum_name: "Tech Skills",
-      tags: ["system-design", "interview-prep", "learning"],
-    },
-    engagement: {
-      likes: 213,
-      comments: 94,
-      seen: 1234,
-    },
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "8",
-    content_type: "post",
-    content_id: "post-505",
-    user_id: "user8",
-    author: {
-      display_name: "Anonymous Ace",
-      bio: "DevOps Engineer",
-    },
-    content: {
-      text: "PSA: Take your lunch breaks. Take your vacation days. Your productivity will thank you. I learned this the hard way after burning out last year. Your company will survive without you for an hour or a week. You won't survive without taking care of yourself. 💚",
-    },
-    engagement: {
-      likes: 567,
-      comments: 123,
-      shares: 45,
-      seen: 1543,
-    },
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "9",
-    content_type: "nook",
-    content_id: "nook-404",
-    user_id: "user9",
-    author: {
-      display_name: "Shadow Knight",
-      bio: "Security Engineer",
-    },
-    content: {
-      title: "Workplace Microaggressions",
-      text: "Safe space to share and process daily microaggressions. You're not alone in experiencing these subtle but damaging interactions. Let's support each other.",
-      nook_name: "Support Circle",
-      nook_urgency: "high",
-      nook_scope: "company",
-      nook_temperature: "hot",
-      nook_members: 8,
-      nook_time_left: "4h 32m",
-    },
-    engagement: {
-      likes: 178,
-      comments: 71,
-    },
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "10",
-    content_type: "topic",
-    content_id: "topic-505",
-    user_id: "user10",
-    author: {
-      display_name: "Veiled Visionary",
-      bio: "Startup Founder",
-    },
-    content: {
-      title: "Balancing startup life with personal relationships",
-      text: "How do you manage to maintain meaningful relationships when building a startup? I feel like I'm constantly choosing between my company and my loved ones. Any advice from founders who've found a balance?",
-      forum_name: "Entrepreneurship",
-      tags: ["work-life-balance", "startup", "relationships"],
-    },
-    engagement: {
-      likes: 289,
-      comments: 134,
-      seen: 987,
-    },
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+interface FeedComment {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user_profile?: {
+    display_name?: string;
+    username?: string;
+    avatar?: string;
+  };
+  author?: {
+    display_name?: string;
+    avatar?: string;
+  };
+}
 
 export function FeedsView() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [feedItems, setFeedItems] = useState<FeedItem[]>(DUMMY_FEED_DATA);
-  const [loading, setLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -305,25 +108,64 @@ export function FeedsView() {
   } | null>(null);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [expandedComments, setExpandedComments] = useState<Record<string, FeedComment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    loadUserProfile();
-  }, [user]);
+    loadFeed();
+  }, []);
 
-  const loadUserProfile = async () => {
-    if (!user) return;
+  const isEmojiAvatar = (avatar?: string | null): boolean => {
+    if (!avatar || avatar.startsWith("http") || avatar.startsWith("/") || avatar.startsWith("data:")) return false;
+    return true; // Emoji or short text like "📦"
+  };
 
+  const normalizeFeedItem = (item: any): FeedItem => ({
+    ...item,
+    content_type:
+      item.content_type === "nook_message" ? "nook" : item.content_type,
+    is_anonymous: item.is_anonymous ?? false,
+    author: {
+      display_name: item.author?.display_name || item.author?.username || "Anonymous",
+      username: item.author?.username,
+      avatar: item.author?.avatar || item.author?.avatar_url || null,
+      bio: item.author?.bio || null,
+    },
+    user_has_liked: item.user_has_liked ?? item.user_liked ?? false,
+    user_has_bookmarked: item.user_has_bookmarked ?? item.user_bookmarked ?? false,
+    user_has_shared: item.user_has_shared ?? item.user_shared ?? false,
+  });
+
+  const loadFeed = async (page: number = 1) => {
     try {
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select("display_name, avatar_url, bio")
-        .eq("id", user.id)
-        .maybeSingle();
+      setLoading(true);
+      const response = await GetFeed({ page, limit: 20 });
+      // After unwrap, response is: { success, data: [...items], pagination: {...} }
+      // or response could be the items array directly
+      const innerData = response?.data ?? response;
+      const raw = Array.isArray(innerData) ? innerData : (innerData?.items ?? []);
+      const items = (Array.isArray(raw) ? raw : []).map(normalizeFeedItem);
 
-      if (error) throw error;
-      setUserProfile(data);
-    } catch (error) {
-      console.error("Error loading user profile:", error);
+      if (page === 1) {
+        setFeedItems(items);
+      } else {
+        setFeedItems((prev) => [...prev, ...items]);
+      }
+
+      // Use pagination.hasMore from API if available, fallback to heuristic
+      const pagination = response?.pagination ?? innerData?.pagination;
+      setHasMore(pagination?.hasMore ?? items.length >= 20);
+      setCurrentPage(page);
+    } catch {
+      if (page === 1) setFeedItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      loadFeed(currentPage + 1);
     }
   };
 
@@ -332,18 +174,16 @@ export function FeedsView() {
 
     try {
       setSubmitting(true);
-
-      const { error } = await supabase.from("posts").insert({
-        user_id: user.id,
+      const response = await CreatePost({
         content: postContent,
-        post_type: "post",
-        privacy: "public",
+        visibility: "global",
       });
 
-      if (error) throw error;
-
-      setPostContent("");
-      setShowCreatePost(false);
+      if (response.success) {
+        setPostContent("");
+        setShowCreatePost(false);
+        loadFeed(1);
+      }
     } catch (error) {
       console.error("Error creating post:", error);
     } finally {
@@ -370,41 +210,60 @@ export function FeedsView() {
   };
 
   const handleChat = (userId: string) => {
-    navigate("/dashboard/messages", { state: { startChatWith: userId } });
+    navigate("/dashboard/messages", { state: { startChatWith: userId, contextType: "regular" } });
   };
 
-  const handleLike = (itemId: string) => {
-    setFeedItems(
-      feedItems.map((item) => {
-        if (item.id === itemId) {
-          return {
-            ...item,
-            user_has_liked: !item.user_has_liked,
-            engagement: {
-              ...item.engagement,
-              likes: item.user_has_liked
-                ? item.engagement.likes - 1
-                : item.engagement.likes + 1,
-            },
-          };
-        }
-        return item;
-      })
+  const handleLike = async (itemId: string) => {
+    const item = feedItems.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Optimistic update — use callback form to avoid stale closure over feedItems
+    setFeedItems((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? {
+              ...i,
+              user_has_liked: !i.user_has_liked,
+              engagement: {
+                ...i.engagement,
+                likes: i.user_has_liked ? i.engagement.likes - 1 : i.engagement.likes + 1,
+              },
+            }
+          : i
+      )
     );
+
+    try {
+      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+      await ToggleLike(contentType as "post" | "topic" | "nook_message", item.content_id);
+    } catch {
+      // Revert on failure
+      setFeedItems((prev) =>
+        prev.map((i) => (i.id === itemId ? item : i))
+      );
+    }
   };
 
-  const handleBookmark = (itemId: string) => {
-    setFeedItems(
-      feedItems.map((item) => {
-        if (item.id === itemId) {
-          return {
-            ...item,
-            user_has_bookmarked: !item.user_has_bookmarked,
-          };
-        }
-        return item;
-      })
+  const handleBookmark = async (itemId: string) => {
+    const item = feedItems.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Optimistic update — use callback form
+    setFeedItems((prev) =>
+      prev.map((i) =>
+        i.id === itemId ? { ...i, user_has_bookmarked: !i.user_has_bookmarked } : i
+      )
     );
+
+    try {
+      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+      await ToggleBookmark(contentType as "post" | "topic" | "nook_message", item.content_id);
+    } catch {
+      // Revert on failure
+      setFeedItems((prev) =>
+        prev.map((i) => (i.id === itemId ? item : i))
+      );
+    }
   };
 
   const handleShare = async (itemId: string, e: React.MouseEvent) => {
@@ -418,41 +277,40 @@ export function FeedsView() {
         ? `Check out this topic: ${item.content.title}`
         : `Check out this post`;
 
+    // Call share API
+    try {
+      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+      await ShareItem(contentType as "post" | "topic" | "nook_message", item.content_id);
+    } catch {
+      // Non-blocking - share API failure shouldn't block native share
+    }
+
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: shareText,
-          url: shareUrl,
-        });
+        await navigator.share({ title: shareText, url: shareUrl });
         setFeedItems(
           feedItems.map((i) => {
             if (i.id === itemId && i.engagement.shares !== undefined) {
               return {
                 ...i,
-                engagement: {
-                  ...i.engagement,
-                  shares: i.engagement.shares + 1,
-                },
+                engagement: { ...i.engagement, shares: i.engagement.shares + 1 },
               };
             }
             return i;
           })
         );
-      } catch (error) {
-        console.log("Share cancelled or failed");
+      } catch {
+        // Share cancelled or failed
       }
     } else {
       await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied to clipboard!");
+      showToast("Link copied to clipboard!", "success");
       setFeedItems(
         feedItems.map((i) => {
           if (i.id === itemId && i.engagement.shares !== undefined) {
             return {
               ...i,
-              engagement: {
-                ...i.engagement,
-                shares: i.engagement.shares + 1,
-              },
+              engagement: { ...i.engagement, shares: i.engagement.shares + 1 },
             };
           }
           return i;
@@ -461,28 +319,84 @@ export function FeedsView() {
     }
   };
 
+  const fetchCommentsForItem = async (item: FeedItem) => {
+    setLoadingComments((prev) => ({ ...prev, [item.id]: true }));
+    try {
+      let raw: any[];
+
+      if (item.content_type === "topic") {
+        // Use forum API for topic comments
+        const response = await GetAllCommentsForATopic(item.content_id);
+        raw = response?.data ?? [];
+      } else {
+        // Use feed API for post / nook_message comments
+        const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+        const response = await GetComments(
+          contentType as "post" | "nook_message",
+          item.content_id
+        );
+        raw = response?.data?.comments ?? response?.data ?? response?.comments ?? [];
+      }
+
+      const comments: FeedComment[] = Array.isArray(raw) ? raw : [];
+      setExpandedComments((prev) => ({ ...prev, [item.id]: comments }));
+    } catch {
+      setExpandedComments((prev) => ({ ...prev, [item.id]: [] }));
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [item.id]: false }));
+    }
+  };
+
   const handleCommentClick = (itemId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveCommentId(activeCommentId === itemId ? null : itemId);
+    const isOpening = activeCommentId !== itemId;
+    setActiveCommentId(isOpening ? itemId : null);
+
+    // Fetch comments when expanding
+    if (isOpening) {
+      const item = feedItems.find((i) => i.id === itemId);
+      if (item && !expandedComments[itemId]) {
+        fetchCommentsForItem(item);
+      }
+    }
   };
 
   const handleCommentSubmit = async (itemId: string, comment: string) => {
-    console.log("Comment submitted for item:", itemId, "Comment:", comment);
-    setFeedItems(
-      feedItems.map((item) => {
-        if (item.id === itemId) {
-          return {
-            ...item,
-            engagement: {
-              ...item.engagement,
-              comments: item.engagement.comments + 1,
-            },
-          };
-        }
-        return item;
-      })
-    );
-    setActiveCommentId(null);
+    const item = feedItems.find((i) => i.id === itemId);
+    if (!item) return;
+
+    try {
+      if (item.content_type === "topic") {
+        await CreateForumTopicsComments({
+          content: comment,
+          topicId: item.content_id,
+          isAnonymous: true,
+        });
+      } else {
+        const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+        await AddComment(contentType as "post" | "nook_message", item.content_id, {
+          content: comment,
+        });
+      }
+      setFeedItems(
+        feedItems.map((i) => {
+          if (i.id === itemId) {
+            return {
+              ...i,
+              engagement: {
+                ...i.engagement,
+                comments: i.engagement.comments + 1,
+              },
+            };
+          }
+          return i;
+        })
+      );
+      // Refresh comments to include the new one
+      await fetchCommentsForItem(item);
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+    }
   };
 
   const handleCommentCancel = () => {
@@ -545,6 +459,28 @@ export function FeedsView() {
     return colors[index];
   };
 
+  const renderAvatar = (avatar: string | null | undefined, displayName: string, size: string = "w-12 h-12", textSize: string = "text-2xl") => {
+    if (!avatar) {
+      return (
+        <div className={`${size} rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(displayName)}`}>
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+      );
+    }
+    // If avatar is a URL (http, /, data:), render as image
+    if (avatar.startsWith("http") || avatar.startsWith("/") || avatar.startsWith("data:")) {
+      return (
+        <img src={avatar} alt={displayName} className={`${size} rounded-full object-cover`} />
+      );
+    }
+    // Otherwise it's an emoji or short text — render as text
+    return (
+      <div className={`${size} rounded-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-100 ${textSize}`}>
+        {avatar}
+      </div>
+    );
+  };
+
   const getUrgencyColor = (urgency?: string) => {
     switch (urgency) {
       case "high":
@@ -572,11 +508,7 @@ export function FeedsView() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <FeedSkeleton />;
   }
 
   return (
@@ -584,19 +516,17 @@ export function FeedsView() {
       <div className="mb-6">
         <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
           <div className="flex items-center gap-3">
-            {userProfile?.avatar_url ? (
-              <img
-                src={userProfile.avatar_url}
-                alt={userProfile.display_name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
+            {user?.avatar ? (
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-blue-100">
+                {user.avatar}
+              </div>
             ) : (
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(
-                  userProfile?.display_name || "User"
+                  user?.username || "User"
                 )}`}
               >
-                {(userProfile?.display_name || "U").charAt(0).toUpperCase()}
+                {(user?.username || "U").charAt(0).toUpperCase()}
               </div>
             )}
             <button
@@ -626,24 +556,22 @@ export function FeedsView() {
 
             <div className="p-6">
               <div className="flex items-start gap-3 mb-4">
-                {userProfile?.avatar_url ? (
-                  <img
-                    src={userProfile.avatar_url}
-                    alt={userProfile.display_name}
-                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                  />
+                {user?.avatar ? (
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-blue-100 flex-shrink-0">
+                    {user.avatar}
+                  </div>
                 ) : (
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${getAvatarColor(
-                      userProfile?.display_name || "User"
+                      user?.username || "User"
                     )}`}
                   >
-                    {(userProfile?.display_name || "U").charAt(0).toUpperCase()}
+                    {(user?.username || "U").charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {userProfile?.display_name || "Anonymous User"}
+                    {user?.username || "Anonymous User"}
                   </h3>
                   <p className="text-sm text-gray-500">Sharing publicly</p>
                 </div>
@@ -845,25 +773,11 @@ export function FeedsView() {
 
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <button
-                          onClick={() => handleUserClick(item.user_id)}
+                          onClick={(e) => { e.stopPropagation(); handleUserClick(item.user_id); }}
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                         >
-                          {item.author.avatar_url ? (
-                            <img
-                              src={item.author.avatar_url}
-                              alt={item.author.display_name}
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(
-                                item.author.display_name
-                              )}`}
-                            >
-                              {item.author.display_name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span>{item.author.display_name}</span>
+                          {renderAvatar(item.author.avatar, item.author.display_name || item.author.username || "Anonymous", "w-6 h-6", "text-sm")}
+                          <span>{item.author.display_name || item.author.username || "Anonymous"}</span>
                         </button>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -932,13 +846,45 @@ export function FeedsView() {
                   </div>
 
                   {activeCommentId === item.id && (
-                    <InlineCommentInput
-                      onSubmit={(comment) =>
-                        handleCommentSubmit(item.id, comment)
-                      }
-                      onCancel={handleCommentCancel}
-                      placeholder="Share your thoughts on this topic..."
-                    />
+                    <div className="border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                      {/* Existing comments */}
+                      {loadingComments[item.id] ? (
+                        <div className="flex items-center justify-center py-4 gap-2 text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Loading comments...</span>
+                        </div>
+                      ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
+                        <div className="px-4 pt-3 pb-1 space-y-3 max-h-64 overflow-y-auto">
+                          {expandedComments[item.id].map((c) => (
+                            <div key={c.id} className="flex items-start gap-2">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U")} text-white`}>
+                                {c.author?.avatar || c.user_profile?.avatar || (c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-semibold text-gray-800">
+                                    {c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "Anonymous"}
+                                  </span>
+                                  <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
+                                </div>
+                                <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-4 pt-3 pb-1">
+                          <p className="text-xs text-gray-400 text-center">No comments yet — be the first!</p>
+                        </div>
+                      )}
+                      <InlineCommentInput
+                        onSubmit={(comment) =>
+                          handleCommentSubmit(item.id, comment)
+                        }
+                        onCancel={handleCommentCancel}
+                        placeholder="Share your thoughts on this topic..."
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -952,34 +898,32 @@ export function FeedsView() {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3 flex-1">
-                      <button
-                        onClick={() => handleUserClick(item.user_id)}
-                        className="flex-shrink-0"
-                      >
-                        {item.author.avatar_url ? (
-                          <img
-                            src={item.author.avatar_url}
-                            alt={item.author.display_name}
-                            className="w-12 h-12 rounded-full object-cover hover:ring-2 hover:ring-blue-500 transition-all"
-                          />
-                        ) : (
-                          <div
-                            className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold hover:ring-2 hover:ring-blue-500 transition-all ${getAvatarColor(
-                              item.author.display_name
-                            )}`}
-                          >
-                            {item.author.display_name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </button>
+                      {item.is_anonymous ? (
+                        <div className="flex-shrink-0">
+                          {renderAvatar(item.author.avatar, item.author.display_name, "w-12 h-12", "text-2xl")}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleUserClick(item.user_id)}
+                          className="flex-shrink-0"
+                        >
+                          {renderAvatar(item.author.avatar, item.author.display_name, "w-12 h-12", "text-2xl")}
+                        </button>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => handleUserClick(item.user_id)}
-                            className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
-                          >
-                            {item.author.display_name}
-                          </button>
+                          {item.is_anonymous ? (
+                            <span className="font-semibold text-gray-900">
+                              {item.author.display_name}
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleUserClick(item.user_id)}
+                              className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                            >
+                              {item.author.display_name}
+                            </button>
+                          )}
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
                             <FileText className="w-4 h-4" />
                             <span>Post</span>
@@ -1111,13 +1055,45 @@ export function FeedsView() {
                 </div>
 
                 {activeCommentId === item.id && (
-                  <InlineCommentInput
-                    onSubmit={(comment) =>
-                      handleCommentSubmit(item.id, comment)
-                    }
-                    onCancel={handleCommentCancel}
-                    placeholder="Write a comment..."
-                  />
+                  <div className="border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                    {/* Existing comments */}
+                    {loadingComments[item.id] ? (
+                      <div className="flex items-center justify-center py-4 gap-2 text-gray-400">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Loading comments...</span>
+                      </div>
+                    ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
+                      <div className="px-4 pt-3 pb-1 space-y-3 max-h-64 overflow-y-auto">
+                        {expandedComments[item.id].map((c) => (
+                          <div key={c.id} className="flex items-start gap-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U")} text-white`}>
+                              {c.author?.avatar || c.user_profile?.avatar || (c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U").charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-800">
+                                  {c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "Anonymous"}
+                                </span>
+                                <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 pt-3 pb-1">
+                        <p className="text-xs text-gray-400 text-center">No comments yet — be the first!</p>
+                      </div>
+                    )}
+                    <InlineCommentInput
+                      onSubmit={(comment) =>
+                        handleCommentSubmit(item.id, comment)
+                      }
+                      onCancel={handleCommentCancel}
+                      placeholder="Write a comment..."
+                    />
+                  </div>
                 )}
               </div>
             );
@@ -1125,10 +1101,14 @@ export function FeedsView() {
         )}
       </div>
 
-      {feedItems.length > 0 && (
+      {feedItems.length > 0 && hasMore && (
         <div className="mt-6 text-center">
-          <button className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm border border-gray-200 font-medium">
-            Load more
+          <button
+            onClick={handleLoadMore}
+            disabled={loading}
+            className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm border border-gray-200 font-medium disabled:opacity-50"
+          >
+            {loading ? "Loading..." : "Load more"}
           </button>
         </div>
       )}

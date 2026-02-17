@@ -15,6 +15,8 @@ import { CreateNookModal } from "../../Modals/NooksModals/CreateNookModal";
 import { CreateNookCTA } from "./CreateNookCTA";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
+import { OkestraPanel } from '../OkestraPanel';
+import { Topic } from '../../../types/forum';
 
 // Import API functions
 import {
@@ -44,7 +46,7 @@ export function NooksView() {
   const [viewMode, setViewMode] = useState<"grid" | "all">("grid");
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
+  const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   // Data State
   const [displayedNooks, setDisplayedNooks] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -54,7 +56,7 @@ export function NooksView() {
   });
 
   // Loading States
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [nookDetailLoading, setNookDetailLoading] = useState(false);
 
@@ -420,6 +422,47 @@ export function NooksView() {
         userId={selectedUserId || ""}
         onChat={handleChatUser}
       />
+
+       {selectedNookData && showOkestraPanel && (() => {
+          const topicData: Topic = {
+            id: selectedNookData.id,
+            title: selectedNookData.title,
+            content: selectedNookData.description,
+            author: {
+              id: 'anonymous',
+              username: 'Anonymous',
+              avatar: '🔒'
+            },
+            forumId: 'nook',
+            scope: selectedNookData.scope === 'global' ? 'global' : 'local',
+            reactions: {
+              seen: selectedNookData.members_count || 0,
+              validated: Math.floor((selectedNookData.messages_count || 0) * 0.3),
+              inspired: Math.floor((selectedNookData.messages_count || 0) * 0.2),
+              heard: Math.floor((selectedNookData.messages_count || 0) * 0.4)
+            },
+            userReactions: {
+              seen: false,
+              validated: false,
+              inspired: false,
+              heard: false
+            },
+            commentCount: selectedNookData.messages_count || 0,
+            createdAt: new Date(selectedNookData.created_at || Date.now()),
+            lastActivity: new Date(selectedNookData.last_activity_at || Date.now()),
+            isPinned: false,
+            tags: selectedNookData.hashtags || []
+          };
+
+          return (
+            <OkestraPanel
+              isOpen={showOkestraPanel}
+              onClose={() => setShowOkestraPanel(false)}
+              topic={topicData}
+              comments={[]}
+            />
+          );
+        })()}
     </div>
   );
 }

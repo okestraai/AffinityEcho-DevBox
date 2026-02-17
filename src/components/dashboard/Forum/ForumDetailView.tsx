@@ -476,7 +476,7 @@ export function ForumDetailView({
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs">
                           {topic.author.avatar}
                         </div>
-                        <span>{topic.author.username}</span>
+                        <span>{topic.author.display_name || topic.author.username}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />

@@ -22,7 +22,7 @@ class SecureEncryptionService {
       this.sessionId = sessionId;
       this.expiresAt = new Date(expiresAt);
       
-      console.log('Encryption session initialized:', { sessionId, expiresAt });
+      // Session initialized
     } catch (error) {
       console.error('Failed to initialize encryption session:', error);
       throw error;
@@ -38,7 +38,6 @@ class SecureEncryptionService {
         sessionId: this.sessionId,
       };
 
-      console.log('Sending encrypt request:', requestBody);
 
       const response = await fetch('/api/v1/api/encryption/encrypt', {
         method: 'POST',
@@ -55,7 +54,6 @@ class SecureEncryptionService {
       }
 
       const { encryptedData } = await response.json();
-      console.log('Encryption successful, encrypted data length:', encryptedData.length);
       return encryptedData;
     } catch (error) {
       console.error('Encryption failed:', error);
@@ -72,10 +70,6 @@ class SecureEncryptionService {
         sessionId: this.sessionId,
       };
 
-      console.log('Sending decrypt request:', { 
-        encryptedDataLength: encryptedData.length,
-        sessionId: this.sessionId 
-      });
 
       const response = await fetch('/api/v1/api/encryption/decrypt', {
         method: 'POST',
@@ -92,7 +86,6 @@ class SecureEncryptionService {
       }
 
       const { decryptedData } = await response.json();
-      console.log('Decryption successful, decrypted data:', decryptedData);
       return decryptedData;
     } catch (error) {
       console.error('Decryption failed:', error);
@@ -181,7 +174,6 @@ class SecureEncryptionService {
 
       const { expiresAt } = await response.json();
       this.expiresAt = new Date(expiresAt);
-      console.log('Session refreshed, new expiry:', expiresAt);
     } catch (error) {
       console.error('Session refresh failed:', error);
       // If refresh fails, create a new session

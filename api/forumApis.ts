@@ -1,13 +1,5 @@
-// src/api/authApis.ts
-import axiosInstance from "../src/Helper/AxiosInterceptor";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthInstance = () => {
-  const accessToken = localStorage.getItem("access_token");
-  const refreshToken = localStorage.getItem("refresh_token");
-  return axiosInstance(accessToken, refreshToken);
-};
+// api/forumApis.ts
+import { getAuthInstance, API_URL } from "./base";
 
 export const GetLocalScopeMetrics = async (companyName: any) => {
   const authFetch = getAuthInstance();

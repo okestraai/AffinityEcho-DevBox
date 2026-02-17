@@ -1,14 +1,14 @@
 // src/pages/auth/ResetPasswordPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { ResetPassword } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
 
 export function ResetPasswordPage() {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const email = searchParams.get('email') || '';
+  const email = (location.state as { email?: string })?.email || '';
 
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -80,7 +80,6 @@ export function ResetPasswordPage() {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      console.error('Password reset failed:', err);
       const msg = err?.response?.data?.message || err?.message || 'Invalid or expired code. Please request a new one.';
       setError(msg);
       showToast('error', 'Failed', msg);

@@ -27,34 +27,17 @@ import {
 } from "../../../../api/mentorshipApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { useNavigate } from "react-router-dom";
+import { MentorshipUserProfile } from "../../../types/mentorship";
 
-interface MentorProfile {
-  id: string;
-  username: string;
-  avatar: string;
-  bio: string;
+interface MentorProfile extends MentorshipUserProfile {
   company?: string;
-  jobTitle: string;
   job_title?: string;
-  careerLevel: string;
-  location?: string;
-  expertise: string[];
   mentor_expertise?: string[];
-  industries: string[];
   mentor_industries?: string[];
-  mentoringAs?: "mentor" | "mentee" | "both";
   availability: string;
   mentor_availability?: string;
-  responseTime?: string;
-  matchScore?: number;
-  isAvailable: boolean;
-  totalMentees?: number;
-  yearsOfExperience?: number;
   years_experience?: number;
-  affinityTags: string[];
-  mentorshipStyle?: string;
   mentor_style?: string;
-  languages?: string[];
   company_encrypted?: string;
   career_level_encrypted?: string;
   affinity_tags_encrypted?: string;
@@ -88,6 +71,10 @@ export function FindMentorshipView() {
   const [decryptedProfiles, setDecryptedProfiles] = useState<MentorProfile[]>(
     []
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProfiles, setTotalProfiles] = useState(0);
+  const PROFILES_PER_PAGE = 20;
 
   const [filters, setFilters] = useState({
     careerLevel: [] as string[],
@@ -115,10 +102,16 @@ export function FindMentorshipView() {
     fetchProfiles();
   }, []);
 
-  // Fetch profiles when viewMode or filters change
+  // Reset page and fetch when viewMode or filters change
   useEffect(() => {
-    fetchProfiles();
+    setCurrentPage(1);
+    fetchProfiles(1);
   }, [viewMode, filters]);
+
+  // Fetch when page changes
+  useEffect(() => {
+    fetchProfiles(currentPage);
+  }, [currentPage]);
 
   const checkProfileStatus = async () => {
     try {
@@ -152,7 +145,11 @@ export function FindMentorshipView() {
     }
   };
 
-  const fetchProfiles = async (isRefresh = false) => {
+  const fetchProfiles = async (page: number | boolean = 1) => {
+    // Support old call signature: fetchProfiles(true) for refresh
+    const isRefresh = typeof page === 'boolean' && page;
+    const pageNum = typeof page === 'number' ? page : currentPage;
+
     if (isRefresh) {
       setRefreshing(true);
     } else {
@@ -176,12 +173,14 @@ export function FindMentorshipView() {
             ? filters.availabilityOptions
             : undefined,
         sortOrder: "desc" as const,
-        limit: 20,
+        page: pageNum,
+        limit: PROFILES_PER_PAGE,
       };
 
       const response = await GetMentorsAndMentees(apiFilters);
 
       let profilesData: any[] = [];
+      let paginationData: { totalPages?: number; total?: number } = {};
 
       if (response && response.data) {
         const outerData = response.data;
@@ -194,8 +193,11 @@ export function FindMentorshipView() {
           } else if (Array.isArray(innerData)) {
             profilesData = innerData;
           }
+          // Extract pagination from inner data
+          paginationData = { totalPages: innerData.totalPages, total: innerData.total };
         } else if (outerData.profiles && Array.isArray(outerData.profiles)) {
           profilesData = outerData.profiles;
+          paginationData = { totalPages: outerData.totalPages, total: outerData.total };
         } else if (Array.isArray(outerData)) {
           profilesData = outerData;
         }
@@ -210,6 +212,14 @@ export function FindMentorshipView() {
       }
 
       setProfiles(profilesData);
+
+      // Update pagination state
+      if (paginationData.totalPages) {
+        setTotalPages(paginationData.totalPages);
+      } else {
+        setTotalPages(Math.ceil((paginationData.total || profilesData.length) / PROFILES_PER_PAGE) || 1);
+      }
+      if (paginationData.total !== undefined) setTotalProfiles(paginationData.total);
 
       const profilesWithDecryption = await Promise.all(
         profilesData.map(async (profile: any) => {
@@ -324,7 +334,7 @@ export function FindMentorshipView() {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (profile) =>
-          profile.username.toLowerCase().includes(search) ||
+          (profile.display_name || profile.username).toLowerCase().includes(search) ||
           profile.bio.toLowerCase().includes(search) ||
           (profile.company && profile.company.toLowerCase().includes(search)) ||
           (profile.jobTitle &&
@@ -819,7 +829,7 @@ export function FindMentorshipView() {
                       onClick={() => handleUserClick(profile.id)}
                       className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer truncate"
                     >
-                      {profile.username}
+                      {profile.display_name || profile.username}
                     </button>
                     {profile.matchScore && (
                       <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full flex-shrink-0">
@@ -971,6 +981,59 @@ export function FindMentorshipView() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-xl p-4 border border-gray-200 mt-6 gap-4">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+            {totalProfiles > 0 && (
+              <span className="ml-1">({totalProfiles} total profiles)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum: number;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-9 h-9 text-sm font-medium rounded-lg transition-colors ${
+                    currentPage === pageNum
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

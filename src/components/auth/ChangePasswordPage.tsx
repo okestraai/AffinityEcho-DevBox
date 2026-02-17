@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { ChangePassword } from '../../../api/profileApis';
+import { showToast } from '../../Helper/ShowToast';
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -60,32 +61,20 @@ export function ChangePasswordPage() {
     }
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        throw new Error('Current password is incorrect');
-      }
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (updateError) throw updateError;
+      await ChangePassword({ currentPassword, newPassword });
 
       setMessage('Password changed successfully! Redirecting...');
+      showToast('Password changed successfully!', 'success');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
 
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/dashboard/profile');
       }, 2000);
-    } catch (error: any) {
-      console.error('Change password error:', error);
-      setError(error.message || 'Failed to change password');
+    } catch (err: unknown) {
+      const errMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(errMsg || 'Failed to change password');
     } finally {
       setLoading(false);
     }

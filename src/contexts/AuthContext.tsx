@@ -14,13 +14,17 @@ import {
   ForgotPassword,
   GetCurrentUser,
 } from "../../api/authApis";
+import { ReactivateAccount } from "../../api/profileApis";
 import { showToast } from "../Helper/ShowToast";
+import { TokenUtils } from "../utils/tokenUtils";
 
 export interface User {
   id: string;
   email: string;
   username: string;
   avatar: string | null;
+  first_name?: string;
+  last_name?: string;
   has_completed_onboarding: boolean;
   demographics: {
     race?: string;
@@ -42,7 +46,8 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
-  completeOnboarding: (data?: any) => Promise<void>; // ← NEW METHOD
+  updateUser: (updates: Partial<User>) => void;
+  completeOnboarding: (data?: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,32 +58,47 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
+// Static arrays hoisted outside component to avoid re-creation on every render
+const USERNAME_ADJECTIVES = ["Brave", "Quiet", "Rising", "Bold", "True", "Free"];
+const USERNAME_NOUNS = ["Lion", "Eagle", "Wolf", "Fox", "Phoenix", "Bear"];
+const AVATAR_EMOJIS = [
+  "🌟", "⭐", "✨", "💫", "🔥", "⚡", "💎", "👑", "🏆", "🎯",
+  "🎨", "🎭", "🎪", "🎬", "🎮", "🎲", "🎸", "🎹", "🎺", "🎻",
+  "📦", "📚", "📖", "📝", "📌", "📍", "📎", "📐", "📏", "📊",
+  "⚙️", "🔧", "🔨", "⚒️", "🛠️", "🔩", "⚗️", "🧪", "🧬", "🔬",
+  "🚀", "✈️", "🛸", "🎈", "🎆", "🎇", "🌈", "☀️", "🌙", "⭐",
+  "💼", "🎓", "🏅", "🥇", "🥈", "🥉", "🏵️", "🎖️", "🔔", "🔑",
+  "🗝️", "💡", "🔦", "🕯️", "🧭", "🗺️", "⏰", "⏱️", "⌚", "🔮"
+];
+
+const generateUsername = () => {
+  const num = Math.floor(Math.random() * 9999);
+  return `${USERNAME_ADJECTIVES[Math.floor(Math.random() * USERNAME_ADJECTIVES.length)]}${
+    USERNAME_NOUNS[Math.floor(Math.random() * USERNAME_NOUNS.length)]
+  }${num}`;
+};
+
+const generateAvatar = () => {
+  return AVATAR_EMOJIS[Math.floor(Math.random() * AVATAR_EMOJIS.length)];
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [reactivateResolver, setReactivateResolver] = useState<{
+    resolve: (value: boolean) => void;
+  } | null>(null);
   const navigate = useNavigate();
 
-  const generateUsername = () => {
-    const adj = ["Brave", "Quiet", "Rising", "Bold", "True", "Free"];
-    const noun = ["Lion", "Eagle", "Wolf", "Fox", "Phoenix", "Bear"];
-    const emojis = ["rocket", "fire", "star2", "gem", "crown", "lightning"];
-    const num = Math.floor(Math.random() * 9999);
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    return `${adj[Math.floor(Math.random() * adj.length)]}${
-      noun[Math.floor(Math.random() * noun.length)]
-    }${num}${emoji}`;
-  };
-
   const saveTokens = (access: string, refresh: string) => {
-    localStorage.setItem("access_token", access);
-    localStorage.setItem("refresh_token", refresh);
+    TokenUtils.setTokens(access, refresh);
   };
 
   const clearAuth = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    TokenUtils.clearTokens();
     setUser(null);
   };
 
@@ -98,6 +118,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const { data } = await loginUser({ email, password });
       saveTokens(data.access_token, data.refresh_token);
+
+      // Check if the account is deactivated (returned from backend login response)
+      if (data.is_deactivated) {
+        const shouldReactivate = await new Promise<boolean>((resolve) => {
+          setReactivateResolver({ resolve });
+          setShowReactivateModal(true);
+        });
+        setShowReactivateModal(false);
+        setReactivateResolver(null);
+
+        if (shouldReactivate) {
+          try {
+            await ReactivateAccount();
+            showToast("Account reactivated! Welcome back!", "success");
+          } catch {
+            showToast("Failed to reactivate. Please try again.", "error");
+            clearAuth();
+            return;
+          }
+        } else {
+          clearAuth();
+          showToast("Login cancelled. Your account remains paused.", "info");
+          return;
+        }
+      }
+
       await loadUser();
       showToast("Welcome back!", "success");
       navigate(data.has_completed_onboarding ? "/dashboard" : "/onboarding");
@@ -112,9 +158,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       const username = generateUsername();
-      await registerUser({ email, password, username });
+      const avatar = generateAvatar();
+      await registerUser({ email, password, username, avatar });
       showToast("Check your email for the code!", "success");
-      navigate(`/verify-otp?email=${email}`, { replace: true });
+      navigate('/verify-otp', { state: { email }, replace: true });
     } catch (err: any) {
       showToast(err.response?.data?.message || "Signup failed", "error");
     } finally {
@@ -126,6 +173,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       const { data } = await SocialMediaLogin(provider);
+      // Validate redirect URL to prevent open redirect attacks
+      const url = new URL(data.url);
+      const allowedHosts = [
+        window.location.hostname,
+        'accounts.google.com',
+        'www.facebook.com',
+      ];
+      if (!allowedHosts.some(host => url.hostname === host || url.hostname.endsWith('.' + host))) {
+        throw new Error('Invalid redirect URL');
+      }
       window.location.href = data.url;
     } catch {
       showToast("Social login failed", "error");
@@ -138,12 +195,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       await ForgotPassword(email);
       showToast("Check your email", "success");
-      navigate(`/reset-password?email=${email}`);
+      navigate('/verify-otp', { state: { email, type: 'password-reset' }, replace: true });
     } catch {
       showToast("If email exists, code sent", "info");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const updateUser = (updates: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
   const logout = () => {
@@ -163,8 +224,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         "success"
       );
       navigate("/dashboard");
-    } catch (error) {
-      console.error("Failed to complete onboarding:", error);
+    } catch {
       showToast("Something went wrong. Please refresh.", "error");
     } finally {
       setIsLoading(false);
@@ -172,9 +232,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) loadUser();
-    else setIsLoading(false);
+    // Check for token (cookies first, localStorage as fallback)
+    if (TokenUtils.hasTokens()) {
+      loadUser();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   return (
@@ -190,10 +253,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         forgotPassword,
         logout,
         loadUser,
-        completeOnboarding, // ← EXPOSED
+        updateUser,
+        completeOnboarding,
       }}
     >
       {children}
+
+      {/* Reactivate Account Modal */}
+      {showReactivateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v2m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Account Paused</h3>
+              <p className="text-sm text-gray-600">
+                Your account is currently paused. Would you like to reactivate it and continue?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => reactivateResolver?.resolve(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => reactivateResolver?.resolve(true)}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-indigo-700 transition-all text-sm"
+              >
+                Reactivate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

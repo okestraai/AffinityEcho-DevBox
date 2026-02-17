@@ -19,6 +19,7 @@ import {
   DeleteTopicsComments,
 } from "../../../../api/forumApis";
 import { getTimeAgo } from "../../../utils/forumUtils";
+import { showToast } from "../../../Helper/ShowToast";
 import { UserProfileModal } from "../UserProfileModal";
 
 interface Props {
@@ -81,7 +82,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setNewComment("");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
-      alert(error.response?.data?.message || "Failed to post comment");
+      showToast(error.response?.data?.message || "Failed to post comment", "error");
     } finally {
       setSubmitting(false);
     }
@@ -108,7 +109,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setReplyingTo(null);
     } catch (error: any) {
       console.error("Error submitting reply:", error);
-      alert(error.response?.data?.message || "Failed to post reply");
+      showToast(error.response?.data?.message || "Failed to post reply", "error");
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +141,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setComments(result.data || []);
     } catch (error: any) {
       console.error("Error deleting comment:", error);
-      alert(error.response?.data?.message || "Failed to delete comment");
+      showToast(error.response?.data?.message || "Failed to delete comment", "error");
     }
   };
 
@@ -190,7 +191,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                   onClick={() => handleUserClick(comment.user_id)}
                   className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                 >
-                  {comment.user_profile?.username || "Anonymous"}
+                  {comment.user_profile?.display_name || comment.user_profile?.username || "Anonymous"}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -269,7 +270,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         placeholder={`Reply to ${
-                          comment.user_profile?.username || "comment"
+                          comment.user_profile?.display_name || comment.user_profile?.username || "comment"
                         }...`}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm"

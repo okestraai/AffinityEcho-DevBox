@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, AlertTriangle, Lock, CheckCircle, FileText, User, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Shield, AlertTriangle, Lock, CheckCircle, FileText, User, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { SubmitHarassmentReport } from '../../../../api/profileApis';
+import { showToast } from '../../../Helper/ShowToast';
 
 export function ReportHarassmentPage() {
   const navigate = useNavigate();
@@ -17,6 +19,9 @@ export function ReportHarassmentPage() {
     immediateRisk: false
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [responseMessage, setResponseMessage] = useState('');
 
   const incidentTypes = [
     'Racial discrimination',
@@ -29,9 +34,34 @@ export function ReportHarassmentPage() {
     'Other'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const reporterType = formData.reporterType === 'anonymous' ? 'other' as const : 'victim' as const;
+      const response = await SubmitHarassmentReport({
+        incidentType: formData.incidentType,
+        description: formData.description,
+        date: formData.date || undefined,
+        location: formData.location || undefined,
+        witnesses: formData.witnesses || undefined,
+        evidence: formData.evidence || undefined,
+        reporterType,
+        contactEmail: formData.contactEmail || undefined,
+        immediateRisk: formData.immediateRisk
+      });
+      if (response.data?.referenceNumber) {
+        setReferenceNumber(response.data.referenceNumber);
+      }
+      if (response.message) {
+        setResponseMessage(response.message);
+      }
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      showToast('Failed to submit report. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -48,12 +78,12 @@ export function ReportHarassmentPage() {
             </h2>
 
             <p className="text-gray-600 mb-6">
-              Your report has been received and will be reviewed by our safety team within 24 hours.
+              {responseMessage || 'Your report has been received and will be reviewed by our safety team within 24 hours.'}
             </p>
 
             <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
               <h3 className="font-semibold text-gray-900 mb-2">Reference Number</h3>
-              <p className="text-2xl font-mono text-blue-600">HR-{Date.now().toString().slice(-8)}</p>
+              <p className="text-2xl font-mono text-blue-600">{referenceNumber || `HR-${Date.now().toString().slice(-8)}`}</p>
               <p className="text-sm text-gray-600 mt-2">
                 Save this number to check the status of your report
               </p>
@@ -157,7 +187,7 @@ export function ReportHarassmentPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               {step === 1 && (
                 <>
                   <div>
@@ -369,14 +399,23 @@ export function ReportHarassmentPage() {
                   </button>
                 ) : (
                   <button
-                    type="submit"
-                    className="flex-1 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors"
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !formData.incidentType || !formData.description}
+                    className="flex-1 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Submit Report
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit Report'
+                    )}
                   </button>
                 )}
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>

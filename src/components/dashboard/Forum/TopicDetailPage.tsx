@@ -1,5 +1,5 @@
 // src/pages/TopicDetailPage.tsx - ISOLATED ACTIONS VERSION
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,13 +10,19 @@ import {
   Bookmark,
   Share2,
   MoreVertical,
+  User,
   Clock,
+  Building,
+  Globe,
   Send,
   Flag,
   Edit,
   Trash2,
   ChevronDown,
   ChevronUp,
+  Lightbulb,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import {
@@ -31,6 +37,8 @@ import { formatLastActivity, getTimeAgo } from "../../../utils/forumUtils";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { OkestraPanel } from "../OkestraPanel";
+import { ViewersModal } from "../../Modals/ViewersModal";
 
 export function TopicDetailPage() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -47,10 +55,12 @@ export function TopicDetailPage() {
   const [replyToComment, setReplyToComment] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [expandedComments, setExpandedComments] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [submittingComment, setSubmittingComment] = useState(false);
-
+  const [showOkestraPanel, setShowOkestraPanel] = useState(false);
+  const [showViewersModal, setShowViewersModal] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Fetch topic details
   useEffect(() => {
     const fetchTopic = async () => {
@@ -87,6 +97,11 @@ export function TopicDetailPage() {
       fetchComments();
     }
   }, [topicId]);
+
+    const handleViewers = () => {
+    setShowViewersModal(true);
+  };
+
 
   // Build comment tree from flat array if needed
   const buildCommentTree = (flatComments: any[]) => {
@@ -171,6 +186,20 @@ export function TopicDetailPage() {
   const handleUserClick = (userId: string) => {
     setSelectedUserId(userId);
     setShowUserProfile(true);
+  };
+
+  const handleUserHover = (userId: string) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      handleUserClick(userId);
+    }, 400);
+  };
+
+  const handleUserHoverLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
   };
 
   // ISOLATED TOPIC REACTION - Only updates topic reactions
@@ -271,7 +300,7 @@ export function TopicDetailPage() {
       console.error("Error submitting comment:", error);
       showToast(
         error.response?.data?.message || "Failed to post comment",
-        "error"
+        "error",
       );
     } finally {
       setSubmittingComment(false);
@@ -385,7 +414,7 @@ export function TopicDetailPage() {
       console.error("Error deleting comment:", error);
       showToast(
         error.response?.data?.message || "Failed to delete comment",
-        "error"
+        "error",
       );
 
       // Refresh comments on error to restore accurate state
@@ -424,6 +453,8 @@ export function TopicDetailPage() {
           <div className="flex items-start gap-3">
             <button
               onClick={() => handleUserClick(comment.user_id)}
+              onMouseEnter={() => handleUserHover(comment.user_id)}
+              onMouseLeave={handleUserHoverLeave}
               className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 hover:shadow-lg transition-all"
             >
               {comment.user_profile?.avatar || "👤"}
@@ -433,9 +464,11 @@ export function TopicDetailPage() {
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <button
                   onClick={() => handleUserClick(comment.user_id)}
+                  onMouseEnter={() => handleUserHover(comment.user_id)}
+                  onMouseLeave={handleUserHoverLeave}
                   className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                 >
-                  {comment.user_profile?.username || "Anonymous User"}{" "}
+                  {comment.user_profile?.display_name || comment.user_profile?.username || "Anonymous User"}{" "}
                   {comment.user_profile?.avatar || "👤"}
                 </button>
                 {isAuthor && (
@@ -542,6 +575,8 @@ export function TopicDetailPage() {
               <div className="flex items-center gap-3 flex-1">
                 <button
                   onClick={() => handleUserClick(topic.user_id)}
+                  onMouseEnter={() => handleUserHover(topic.user_id)}
+                  onMouseLeave={handleUserHoverLeave}
                   className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg hover:shadow-lg transition-all"
                 >
                   {topic.user_profile?.avatar || "👤"}
@@ -550,9 +585,11 @@ export function TopicDetailPage() {
                 <div className="flex-1 min-w-0">
                   <button
                     onClick={() => handleUserClick(topic.user_id)}
+                    onMouseEnter={() => handleUserHover(topic.user_id)}
+                    onMouseLeave={handleUserHoverLeave}
                     className="font-bold text-gray-900 hover:text-blue-600 transition-colors block"
                   >
-                    {topic.user_profile?.username || "Anonymous User"}
+                    {topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous User"}
                   </button>
 
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -621,10 +658,33 @@ export function TopicDetailPage() {
                       : "text-gray-600 hover:text-blue-500"
                   }`}
                 >
-                  <ThumbsUp className="w-5 h-5" />
+                  <CheckCircle2 className="w-5 h-5" />
                   <span className="font-semibold">
                     {topic.reaction_validated_count || 0}
                   </span>
+                </button>
+
+                <button
+                  onClick={() => handleReaction("inspired")}
+                  className={`flex items-center gap-2 transition-colors font-medium hover:bg-purple-50 px-3 py-2 rounded-lg ${
+                    topic.userReactions.inspired
+                      ? "text-purple-600 bg-purple-50"
+                      : "text-gray-500 hover:text-purple-600"
+                  }`}
+                >
+                  <Lightbulb className="w-5 h-5" />
+                  <span className="text-sm">{topic.reactions.inspired}</span>
+                </button>
+                <button
+                  onClick={() => handleReaction("heard")}
+                  className={`flex items-center gap-2 transition-colors font-medium hover:bg-amber-50 px-3 py-2 rounded-lg ${
+                    topic.userReactions.heard
+                      ? "text-amber-600 bg-amber-50"
+                      : "text-gray-500 hover:text-amber-600"
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-sm">{topic.reactions.heard}</span>
                 </button>
 
                 <div className="flex items-center gap-2 text-gray-600">
@@ -638,6 +698,14 @@ export function TopicDetailPage() {
                     {topic.views_count || 0}
                   </span>
                 </div>
+                <button
+                  onClick={() => setShowOkestraPanel(true)}
+                  className="flex items-center gap-2 transition-colors font-medium hover:bg-indigo-50 px-3 py-2 rounded-lg text-gray-500 hover:text-indigo-600 group ml-auto"
+                  title="Get AI insights from Okestra"
+                >
+                  <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+                  <span className="text-sm font-medium">AI Insights</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-3">
@@ -722,8 +790,8 @@ export function TopicDetailPage() {
                       {submittingComment
                         ? "Posting..."
                         : replyToComment
-                        ? "Post Reply"
-                        : "Post Comment"}
+                          ? "Post Reply"
+                          : "Post Comment"}
                     </button>
                   </div>
                 </div>
@@ -756,11 +824,27 @@ export function TopicDetailPage() {
             setSelectedUserId(null);
           }}
           onChat={(userId) => {
-            console.log("Chat:", userId);
             setShowUserProfile(false);
+            navigate("/dashboard/messages", { state: { startChatWith: userId, contextType: "regular" } });
           }}
         />
       )}
+      {showViewersModal && (
+        <ViewersModal
+          isOpen={showViewersModal}
+          onClose={() => setShowViewersModal(false)}
+          contentId={topic.id}
+          contentType="topic"
+          totalViewers={topic.reactions.seen}
+        />
+      )}
+
+      <OkestraPanel
+        isOpen={showOkestraPanel}
+        onClose={() => setShowOkestraPanel(false)}
+        topic={topic}
+        comments={comments}
+      />
     </div>
   );
 }

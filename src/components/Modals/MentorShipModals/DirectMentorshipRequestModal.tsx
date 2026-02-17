@@ -6,6 +6,7 @@ import {
   CheckMentorshipRequestHasBeenSent,
   CheckUserProfileRequirement,
 } from "../../../../api/mentorshipApis";
+import { showToast } from "../../../Helper/ShowToast";
 
 interface DirectMentorshipRequestModalProps {
   isOpen: boolean;
@@ -77,10 +78,7 @@ export function DirectMentorshipRequestModal({
     } finally {
       setIsCheckingProfile(false);
       setCheckingRequest(false);
-      // Enable button only after all checks are complete
-      if (!isCheckingProfile && !checkingRequest) {
-        setRequestButtonDisabled(false);
-      }
+      setRequestButtonDisabled(false);
     }
   };
 
@@ -166,11 +164,13 @@ export function DirectMentorshipRequestModal({
   const getStatusMessage = () => {
     if (!requestStatus || !requestStatus.hasSentRequest) return null;
 
+    const name = profile?.display_name || profile?.username || "this user";
+
     if (requestStatus.hasPendingRequest) {
       return {
         type: "warning",
         title: "Request Already Sent",
-        message: `You have already sent a ${requestType} request to ${profile?.username}. Please wait for their response.`,
+        message: `You have already sent a ${requestType} request to ${name}. Please wait for their response.`,
         icon: <Clock className="w-5 h-5 text-yellow-600" />,
       };
     }
@@ -179,7 +179,7 @@ export function DirectMentorshipRequestModal({
       return {
         type: "success",
         title: "Already Connected",
-        message: `You already have an active ${requestType} relationship with ${profile?.username}.`,
+        message: `You already have an active ${requestType} relationship with ${name}.`,
         icon: <Check className="w-5 h-5 text-green-600" />,
       };
     }
@@ -187,7 +187,7 @@ export function DirectMentorshipRequestModal({
     return {
       type: "info",
       title: "Request History",
-      message: `You have previously sent a request to ${profile?.username}.`,
+      message: `You have previously sent a request to ${name}.`,
       icon: <AlertCircle className="w-5 h-5 text-gray-600" />,
     };
   };
@@ -209,19 +209,20 @@ export function DirectMentorshipRequestModal({
     e.preventDefault();
 
     if (!message.trim()) {
-      alert("Please add a message to your request");
+      showToast("Please add a message to your request", "warning");
       return;
     }
 
     if (alreadySentRequest) {
-      alert(
-        "You have already sent a request to this user. You cannot send another one."
+      showToast(
+        "You have already sent a request to this user. You cannot send another one.",
+        "warning"
       );
       return;
     }
 
     if (!profileCheck.canCreateRequest) {
-      alert("Please complete your profile before sending requests");
+      showToast("Please complete your profile before sending requests", "warning");
       return;
     }
 
@@ -237,15 +238,16 @@ export function DirectMentorshipRequestModal({
       const response = await CreateDirectMentorShipRequest(payload);
 
       if (response.success) {
-        alert(`Request sent to ${profile.username}!`);
+        showToast(`Request sent to ${profile.display_name || profile.username}!`, "success");
         setMessage("");
         onClose();
       }
     } catch (error: any) {
       console.error("Error sending request:", error);
-      alert(
+      showToast(
         error.response?.data?.message ||
-          "Failed to send request. Please try again."
+          "Failed to send request. Please try again.",
+        "error"
       );
     } finally {
       setIsSubmitting(false);
@@ -282,7 +284,7 @@ export function DirectMentorshipRequestModal({
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 text-lg mb-1">
-                  {profile.username}
+                  {profile.display_name || profile.username}
                 </h4>
                 <p className="text-sm text-gray-600 mb-1">{profile.jobTitle}</p>
                 <p className="text-xs text-blue-600 mb-3">{profile.company}</p>
@@ -403,8 +405,8 @@ export function DirectMentorshipRequestModal({
                   <div>
                     <p className="text-sm font-medium text-blue-900 mb-1">
                       {isMentorRequest
-                        ? `You're requesting ${profile.username} as your mentor`
-                        : `You're offering to mentor ${profile.username}`}
+                        ? `You're requesting ${profile.display_name || profile.username} as your mentor`
+                        : `You're offering to mentor ${profile.display_name || profile.username}`}
                     </p>
                     <p className="text-xs text-blue-700">
                       {isMentorRequest
@@ -432,8 +434,8 @@ export function DirectMentorshipRequestModal({
                     : !profileCheck.canCreateRequest
                     ? "Please complete your profile first."
                     : isMentorRequest
-                    ? `Example: "Hi ${profile.username}, I'm impressed by your work..."`
-                    : `Example: "Hi ${profile.username}, I noticed you're looking to grow in..."`
+                    ? `Example: "Hi ${profile.display_name || profile.username}, I'm impressed by your work..."`
+                    : `Example: "Hi ${profile.display_name || profile.username}, I noticed you're looking to grow in..."`
                 }
                 rows={8}
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none resize-none ${
@@ -470,7 +472,7 @@ export function DirectMentorshipRequestModal({
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <p className="text-xs text-yellow-800">
                   <span className="font-medium">Privacy Note:</span> Your
-                  request will be sent directly to {profile.username}. They can
+                  request will be sent directly to {profile.display_name || profile.username}. They can
                   choose to accept or decline. If accepted, you'll be able to
                   connect and communicate.
                 </p>
@@ -537,7 +539,7 @@ export function DirectMentorshipRequestModal({
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <p className="text-sm font-medium">
                   Request Blocked: You have already sent a {requestType} request
-                  to {profile.username}. You cannot send another request to the
+                  to {profile.display_name || profile.username}. You cannot send another request to the
                   same user.
                 </p>
               </div>

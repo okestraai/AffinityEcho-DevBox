@@ -1,5 +1,5 @@
 // components/Views/Mentorship/MentorshipView.tsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Target,
@@ -10,12 +10,7 @@ import {
   Clock,
   Award,
   Plus,
-  Inbox,
   Loader,
-  MapPin,
-  Briefcase,
-  RefreshCw,
-  Bell,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { MentorshipUserProfileModal } from "../../Modals/MentorShipModals/MentorshipUserProfileModal";
@@ -28,43 +23,27 @@ import {
   GetMyMentors,
   GetMyMentees,
 } from "../../../../api/mentorshipApis";
-import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MentorshipUserProfile } from "../../../types/mentorship";
 
-// Interface definition
-interface MentorshipUserProfile {
-  id: string;
-  username: string;
-  avatar: string;
-  bio: string;
-  company: string;
-  jobTitle: string;
-  careerLevel: string;
-  location?: string;
-  expertise: string[];
-  industries: string[];
-  mentoringAs?: "mentor" | "mentee" | "both";
-  availability?: string;
-  responseTime?: string;
-  matchScore?: number;
-  isAvailable: boolean;
-  totalMentees?: number;
-  yearsOfExperience?: number;
-  affinityTags: string[];
-  mentorshipStyle?: string;
-  languages?: string[];
-  goals?: string;
-  mentorshipDuration?: string;
-  role?: string;
-  status?: string;
-  lastContact?: string;
+// Interface for profile check response
+interface ProfileCheckData {
+  hasProfile: boolean;
+  hasMentorProfile: boolean;
+  hasMenteeProfile: boolean;
+  isActiveMentor: boolean;
+  isActiveMentee: boolean;
+  mentoringAs: "mentor" | "mentee" | "both" | "none";
+  profileType?: string;
+  isMentorProfile?: boolean;
+  isMenteeProfile?: boolean;
 }
 
 export function MentorshipView() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<"mentors" | "mentees" | "find">(
-    "mentors"
+    "mentors",
   );
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedProfile, setSelectedProfile] =
@@ -73,12 +52,9 @@ export function MentorshipView() {
   const [showMentorProfile, setShowMentorProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [profileCheck, setProfileCheck] = useState<{
-    hasProfile: boolean;
-    profileType?: string;
-    isMentorProfile?: boolean;
-    isMenteeProfile?: boolean;
-  } | null>(null);
+  const [profileCheck, setProfileCheck] = useState<ProfileCheckData | null>(
+    null,
+  );
 
   const [myMentors, setMyMentors] = useState<any[]>([]);
   const [myMentees, setMyMentees] = useState<any[]>([]);
@@ -159,226 +135,70 @@ export function MentorshipView() {
     }
   };
 
-  // Function to decrypt company and other fields
-  const decryptProfileData = async (
-    profileData: any
-  ): Promise<MentorshipUserProfile> => {
-    try {
-      const encryptedFields = [
-        {
-          key: "company_encrypted",
-          formKey: "company",
-          type: "string",
-        },
-        {
-          key: "career_level_encrypted",
-          formKey: "careerLevel",
-          type: "string",
-        },
-        {
-          key: "location_encrypted",
-          formKey: "location",
-          type: "string",
-        },
-        {
-          key: "affinity_tags_encrypted",
-          formKey: "affinityTags",
-          type: "array",
-        },
-      ];
+  // Function to handle profile selection — maps pre-decrypted connection data to MentorshipUserProfile
+  const handleViewProfile = (connection: any, userType: "mentor" | "mentee" = "mentor") => {
+    const userData = connection[userType] || connection;
+    const mentorP = userData?.mentorProfile;
+    const menteeP = userData?.menteeProfile;
 
-      const decryptedData: Record<string, any> = {};
-      const promises = [];
+    const profile: MentorshipUserProfile = {
+      id: userData?.id || "",
+      username: userData?.username || "Unknown User",
+      display_name: userData?.display_name || userData?.username || "Unknown User",
+      avatar: userData?.avatar || "👤",
+      bio: mentorP?.bio || menteeP?.bio || userData?.bio || "",
+      company: userData?.company || "",
+      jobTitle: userData?.jobTitle || "",
+      careerLevel: userData?.careerLevel || "",
+      location: userData?.location || "",
+      expertise: mentorP?.expertise || userData?.skills || [],
+      industries: mentorP?.industries || menteeP?.industries || [],
+      mentoringAs: userData?.mentoringAs,
+      availability: mentorP?.availability || menteeP?.availability,
+      responseTime: mentorP?.responseTime,
+      matchScore: connection.matchScore,
+      isAvailable: true,
+      yearsOfExperience: userData?.yearsExperience,
+      affinityTags: userData?.affinityTags || [],
+      mentorshipStyle: mentorP?.style,
+      languages: mentorP?.languages || menteeP?.languages || [],
+      goals: menteeP?.goals || connection.goals,
+      role: userType,
+      status: connection.status,
+      lastContact: connection.connectedSince,
+    };
 
-      encryptedFields.forEach((field) => {
-        if (profileData[field.key]) {
-          promises.push(
-            DecryptData({
-              encryptedData: profileData[field.key],
-            }).then((result) => ({
-              key: field.formKey,
-              value: result.data.decryptedData,
-              type: field.type,
-            }))
-          );
-        }
-      });
-
-      const results = await Promise.all(promises);
-
-      const ensureArray = (value: any): string[] => {
-        if (value == null) return [];
-        if (Array.isArray(value)) return value;
-        if (typeof value === "string") {
-          try {
-            const trimmed = value.trim();
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-              const parsed = JSON.parse(trimmed);
-              return Array.isArray(parsed) ? parsed : [];
-            }
-            if (trimmed.includes(",")) {
-              return trimmed
-                .split(",")
-                .map((item) => item.trim())
-                .filter((item) => item);
-            }
-            return trimmed ? [trimmed] : [];
-          } catch (error) {
-            return [];
-          }
-        }
-        return [].concat(value).filter((item) => item != null);
-      };
-
-      const ensureString = (value: any): string => {
-        if (value == null) return "";
-        if (Array.isArray(value)) {
-          return value.length > 0 ? String(value[0]) : "";
-        }
-        return String(value);
-      };
-
-      results.forEach((result) => {
-        let processedValue;
-
-        if (result.type === "array") {
-          processedValue = ensureArray(result.value);
-        } else {
-          processedValue = ensureString(result.value);
-        }
-
-        decryptedData[result.key] = processedValue;
-      });
-
-      // Helper functions to get data from profile
-      const getStringFromProfile = (key: string, defaultValue = ""): string => {
-        const value = profileData[key];
-        if (value == null) return defaultValue;
-        if (Array.isArray(value)) {
-          return value.length > 0 ? String(value[0]) : defaultValue;
-        }
-        return String(value);
-      };
-
-      const getArrayFromProfile = (
-        key: string,
-        defaultValue: string[] = []
-      ): string[] => {
-        const value = profileData[key];
-        if (value == null) return defaultValue;
-        return ensureArray(value);
-      };
-
-      // Map API fields to interface fields
-      const mappedProfile: MentorshipUserProfile = {
-        id: profileData.id || profileData.user_id || "",
-        username:
-          profileData.username || profileData.full_name || "Unknown User",
-        avatar: profileData.avatar || profileData.profile_picture || "👤",
-        bio:
-          profileData.bio ||
-          profileData.mentor_bio ||
-          profileData.mentee_bio ||
-          "",
-        company: decryptedData.company || getStringFromProfile("company", ""),
-        jobTitle: profileData.job_title || profileData.position || "",
-        careerLevel:
-          decryptedData.careerLevel || getStringFromProfile("career_level", ""),
-        location:
-          decryptedData.location || getStringFromProfile("location", ""),
-        expertise: getArrayFromProfile("expertise", []).concat(
-          getArrayFromProfile("mentor_expertise", [])
-        ),
-        industries: getArrayFromProfile("industries", []),
-        mentoringAs: profileData.mentoring_as || profileData.role || undefined,
-        availability: profileData.availability || undefined,
-        responseTime: profileData.response_time || undefined,
-        matchScore:
-          profileData.match_score || profileData.matchScore || undefined,
-        isAvailable: Boolean(
-          profileData.is_available || profileData.isAvailable || true
-        ),
-        totalMentees: profileData.total_mentees || undefined,
-        yearsOfExperience: profileData.years_of_experience || undefined,
-        affinityTags:
-          decryptedData.affinityTags ||
-          getArrayFromProfile("affinity_tags", []),
-        mentorshipStyle: profileData.mentorship_style || undefined,
-        languages: getArrayFromProfile("languages", []),
-        goals: profileData.goals || undefined,
-        mentorshipDuration: profileData.mentorship_duration || undefined,
-        role: profileData.role || undefined,
-        status: profileData.status || undefined,
-        lastContact: profileData.last_contact || undefined,
-      };
-
-      return mappedProfile;
-    } catch (error) {
-      console.error("Error decrypting profile data:", error);
-      // Return basic profile if decryption fails
-      return {
-        id: profileData.id || "",
-        username: profileData.username || "Unknown User",
-        avatar: profileData.avatar || "👤",
-        bio: profileData.bio || "",
-        company: profileData.company || "",
-        jobTitle: profileData.job_title || "",
-        careerLevel: profileData.career_level || "",
-        location: profileData.location || "",
-        expertise: [],
-        industries: [],
-        isAvailable: true,
-        affinityTags: [],
-      };
-    }
-  };
-
-  // Function to handle profile selection
-  const handleViewProfile = async (profileData: any) => {
-    try {
-      const decryptedProfile = await decryptProfileData(profileData);
-      setSelectedProfile(decryptedProfile);
-      setShowUserProfile(true);
-    } catch (error) {
-      console.error("Error preparing profile for modal:", error);
-      // Fallback to basic profile data
-      setSelectedProfile({
-        id: profileData.id || "",
-        username: profileData.username || "Unknown User",
-        avatar: profileData.avatar || "👤",
-        bio: profileData.bio || "",
-        company: "Company information not available",
-        jobTitle: profileData.job_title || "",
-        careerLevel: "",
-        location: "",
-        expertise: [],
-        industries: [],
-        isAvailable: true,
-        affinityTags: [],
-      });
-      setShowUserProfile(true);
-    }
+    setSelectedProfile(profile);
+    setShowUserProfile(true);
   };
 
   // Handle chat function for the modal
   const handleStartChat = (userId: string) => {
     try {
       console.log("Starting chat with user:", userId);
-      const messagesUrl = `/dashboard/messages?user=${userId}`;
-
-      // Try React Router navigation first
-      if (navigate && typeof navigate === "function") {
-        navigate(messagesUrl);
-      } else {
-        // Fallback to window location
-        window.location.href = window.location.origin + messagesUrl;
-      }
+      navigate("/dashboard/messages", {
+        state: { startChatWith: userId, contextType: "mentorship" },
+      });
     } catch (error) {
       console.error("Error navigating to messages:", error);
-      // Fallback to window location
-      window.location.href = `/dashboard/messages?user=${userId}`;
+      window.location.href = `/dashboard/messages?user=${userId}&chat_type=mentorship`;
     }
   };
+
+  //  const handleChatUser = async (userId: string) => {
+  //   setShowUserProfile(false);
+  //   log('handleChatUser', 'Chat initiated with user', { userId });
+
+  //   const mentor = myMentors.find(m => m.id === userId);
+  //   const mentee = myMentees.find(m => m.id === userId);
+
+  //   if (mentor?.connectionId || mentee?.connectionId) {
+  //     const connectionId = mentor?.connectionId || mentee?.connectionId;
+  //     navigate(`/dashboard/mentorship-chat?connection=${connectionId}`);
+  //   } else {
+  //     navigate('/dashboard/messages');
+  //   }
+  // };
 
   // Fetch mentorship metrics
   const fetchMentorshipMetrics = async () => {
@@ -442,6 +262,18 @@ export function MentorshipView() {
     }
   };
 
+  // Helper function to determine profile type based on new response
+  const getProfileType = (profileData: any): string => {
+    if (!profileData) return "none";
+
+    const { hasMentorProfile, hasMenteeProfile, mentoringAs } = profileData;
+
+    if (hasMentorProfile && hasMenteeProfile) return "both";
+    if (hasMentorProfile) return "mentor";
+    if (hasMenteeProfile) return "mentee";
+    return "none";
+  };
+
   const checkProfileStatus = async () => {
     try {
       const response = await CheckUserProfileExist();
@@ -459,14 +291,34 @@ export function MentorshipView() {
         profileData = profileData.data;
       }
 
-      setProfileCheck({
+      // Set profile check with new structure
+      const profileCheckData: ProfileCheckData = {
         hasProfile: profileData?.hasProfile || false,
-        profileType: profileData?.profileType,
-        isMentorProfile: profileData?.profileType === "mentor",
-        isMenteeProfile: profileData?.profileType === "mentee",
-      });
+        hasMentorProfile: profileData?.hasMentorProfile || false,
+        hasMenteeProfile: profileData?.hasMenteeProfile || false,
+        isActiveMentor: profileData?.isActiveMentor || false,
+        isActiveMentee: profileData?.isActiveMentee || false,
+        mentoringAs: profileData?.mentoringAs || "none",
+        profileType: getProfileType(profileData),
+        isMentorProfile: profileData?.hasMentorProfile || false,
+        isMenteeProfile: profileData?.hasMenteeProfile || false,
+      };
+
+      setProfileCheck(profileCheckData);
     } catch (error) {
       console.error("Error checking profile:", error);
+      // Set default values
+      setProfileCheck({
+        hasProfile: false,
+        hasMentorProfile: false,
+        hasMenteeProfile: false,
+        isActiveMentor: false,
+        isActiveMentee: false,
+        mentoringAs: "none",
+        profileType: "none",
+        isMentorProfile: false,
+        isMenteeProfile: false,
+      });
     }
   };
 
@@ -550,21 +402,38 @@ export function MentorshipView() {
 
   // Handle profile updates
   const handleMentorProfileUpdated = () => {
-    // Refresh mentor data and profile check
-    Promise.all([
-      fetchMentorshipConnections(),
-      checkProfileStatus(),
-    ]);
-    showToast("Mentor profile updated successfully", "success");
+    // Refresh mentor data and profile check (toast already shown by modal)
+    Promise.all([fetchMentorshipConnections(), checkProfileStatus()]);
   };
 
   const handleMenteeProfileUpdated = () => {
-    // Refresh mentee data and profile check
-    Promise.all([
-      fetchMentorshipConnections(),
-      checkProfileStatus(),
-    ]);
-    showToast("Mentee profile updated successfully", "success");
+    // Refresh mentee data and profile check (toast already shown by modal)
+    Promise.all([fetchMentorshipConnections(), checkProfileStatus()]);
+  };
+
+  // Handle mentorship request button click
+  const handleMentorshipRequestClick = () => {
+    if (!profileCheck?.hasMenteeProfile) {
+      setShowMentorshipRequest(true);
+    } else if (!profileCheck?.isActiveMentee) {
+      // Show activation modal or message
+      showToast("Please activate your mentee profile first", "warning");
+      setShowMentorshipRequest(true); // Still open modal for activation
+    } else {
+      setShowMentorshipRequest(true);
+    }
+  };
+
+  // Handle mentor profile button click
+  const handleMentorProfileClick = () => {
+    if (!profileCheck?.hasMentorProfile) {
+      setShowMentorProfile(true);
+    } else if (!profileCheck?.isActiveMentor) {
+      showToast("Please activate your mentor profile first", "warning");
+      setShowMentorProfile(true);
+    } else {
+      setShowMentorProfile(true);
+    }
   };
 
   // Skeleton Loader Components
@@ -610,16 +479,21 @@ export function MentorshipView() {
       );
     }
 
-    const hasMenteeProfile = profileCheck?.isMenteeProfile;
+    // Use new response structure
+    const hasMenteeProfile = profileCheck?.hasMenteeProfile || false;
+    const isActiveMentee = profileCheck?.isActiveMentee || false;
     const hasMentors = myMentors.length > 0;
-    const buttonText = hasMenteeProfile
-      ? "Update Mentee Profile"
-      : "Setup Mentee Profile";
-    const buttonIcon = hasMenteeProfile ? (
-      <Plus className="w-4 h-4" />
-    ) : (
-      <UserPlus className="w-4 h-4" />
-    );
+
+    // Update button text logic based on new structure
+    let buttonText = "Setup Mentee Profile";
+    let buttonIcon = <UserPlus className="w-4 h-4" />;
+
+    if (hasMenteeProfile) {
+      buttonText = isActiveMentee
+        ? "Update Mentee Profile"
+        : "Setup Mentee Profile";
+      buttonIcon = <Plus className="w-4 h-4" />;
+    }
 
     return (
       <div className="space-y-6">
@@ -640,7 +514,7 @@ export function MentorshipView() {
             {/* Show button at top-right ONLY when there ARE mentors */}
             {hasMentors && (
               <button
-                onClick={() => setShowMentorshipRequest(true)}
+                onClick={handleMentorshipRequestClick}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
               >
                 {buttonIcon}
@@ -668,20 +542,20 @@ export function MentorshipView() {
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <button
-                      onClick={() => handleViewProfile(mentorUser)}
+                      onClick={() => handleViewProfile(mentor, "mentor")}
                       className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl hover:scale-105 transition-transform cursor-pointer"
                     >
                       {mentorUser?.avatar || "👤"}
                     </button>
                     <div className="flex-1">
                       <button
-                        onClick={() => handleViewProfile(mentorUser)}
+                        onClick={() => handleViewProfile(mentor, "mentor")}
                         className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer text-left"
                       >
-                        {mentorUser?.username || "Unknown User"}
+                        {mentorUser?.display_name || mentorUser?.username || "Unknown User"}
                       </button>
                       <p className="text-sm text-gray-600">
-                        {mentorUser?.job_title || "Professional"}
+                        {mentorUser?.jobTitle || "Professional"}
                       </p>
                       <p className="text-xs text-blue-600">
                         {mentorUser?.company || "Company not specified"}
@@ -706,10 +580,10 @@ export function MentorshipView() {
                     </div>
                   </div>
 
-                  {mentorUser?.mentor_expertise &&
-                    mentorUser.mentor_expertise.length > 0 && (
+                  {mentorUser?.mentorProfile?.expertise &&
+                    mentorUser.mentorProfile.expertise.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {mentorUser.mentor_expertise
+                        {mentorUser.mentorProfile.expertise
                           .slice(0, 3)
                           .map((skill: string, idx: number) => (
                             <span
@@ -722,9 +596,9 @@ export function MentorshipView() {
                       </div>
                     )}
 
-                  {mentorUser?.mentor_bio && (
+                  {(mentorUser?.mentorProfile?.bio || mentorUser?.bio) && (
                     <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                      {mentorUser.mentor_bio}
+                      {mentorUser.mentorProfile?.bio || mentorUser.bio}
                     </p>
                   )}
 
@@ -743,7 +617,7 @@ export function MentorshipView() {
                       Message
                     </button>
                     <button
-                      onClick={() => handleViewProfile(mentorUser)}
+                      onClick={() => handleViewProfile(mentor, "mentor")}
                       className="py-2 px-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                     >
                       View Profile
@@ -759,12 +633,14 @@ export function MentorshipView() {
             <h3 className="font-medium text-gray-500 mb-2">No mentors yet</h3>
             <p className="text-sm text-gray-400 mb-4">
               {hasMenteeProfile
-                ? "Request mentorship to get matched with experienced professionals"
+                ? isActiveMentee
+                  ? "Request mentorship to get matched with experienced professionals"
+                  : "Setup your mentee profile first to start requesting mentors"
                 : "Setup your mentee profile first to start requesting mentors"}
             </p>
             {/* Show button inside card when there are NO mentors */}
             <button
-              onClick={() => setShowMentorshipRequest(true)}
+              onClick={handleMentorshipRequestClick}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors mx-auto"
             >
               {buttonIcon}
@@ -796,16 +672,21 @@ export function MentorshipView() {
       );
     }
 
-    const hasMentorProfile = profileCheck?.isMentorProfile;
+    // Use new response structure
+    const hasMentorProfile = profileCheck?.hasMentorProfile || false;
+    const isActiveMentor = profileCheck?.isActiveMentor || false;
     const hasMentees = myMentees.length > 0;
-    const buttonText = hasMentorProfile
-      ? "Update Mentor Profile"
-      : "Setup Mentor Profile";
-    const buttonIcon = hasMentorProfile ? (
-      <Award className="w-4 h-4" />
-    ) : (
-      <UserPlus className="w-4 h-4" />
-    );
+
+    // Update button text logic based on new structure
+    let buttonText = "Setup Mentor Profile";
+    let buttonIcon = <UserPlus className="w-4 h-4" />;
+
+    if (hasMentorProfile) {
+      buttonText = isActiveMentor
+        ? "Update Mentor Profile"
+        : "Setup Mentor Profile";
+      buttonIcon = <Award className="w-4 h-4" />;
+    }
 
     return (
       <div className="space-y-6">
@@ -826,7 +707,7 @@ export function MentorshipView() {
             {/* Show button at top-right ONLY when there ARE mentees */}
             {hasMentees && (
               <button
-                onClick={() => setShowMentorProfile(true)}
+                onClick={handleMentorProfileClick}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
               >
                 {buttonIcon}
@@ -854,20 +735,20 @@ export function MentorshipView() {
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <button
-                      onClick={() => handleViewProfile(menteeUser)}
+                      onClick={() => handleViewProfile(mentee, "mentee")}
                       className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl hover:scale-105 transition-transform cursor-pointer"
                     >
                       {menteeUser?.avatar || "👤"}
                     </button>
                     <div className="flex-1">
                       <button
-                        onClick={() => handleViewProfile(menteeUser)}
+                        onClick={() => handleViewProfile(mentee, "mentee")}
                         className="font-semibold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left"
                       >
-                        {menteeUser?.username || "Unknown User"}
+                        {menteeUser?.display_name || menteeUser?.username || "Unknown User"}
                       </button>
                       <p className="text-sm text-gray-600">
-                        {menteeUser?.job_title || "Professional"}
+                        {menteeUser?.jobTitle || "Professional"}
                       </p>
                       <p className="text-xs text-blue-600">
                         {menteeUser?.company || "Company not specified"}
@@ -892,10 +773,10 @@ export function MentorshipView() {
                     </div>
                   </div>
 
-                  {menteeUser?.mentor_expertise &&
-                    menteeUser.mentor_expertise.length > 0 && (
+                  {(menteeUser?.menteeProfile?.interests || menteeUser?.mentorProfile?.expertise) &&
+                    (menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {menteeUser.mentor_expertise
+                        {(menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)
                           .slice(0, 3)
                           .map((skill: string, idx: number) => (
                             <span
@@ -908,9 +789,9 @@ export function MentorshipView() {
                       </div>
                     )}
 
-                  {menteeUser?.mentor_bio && (
+                  {(menteeUser?.menteeProfile?.bio || menteeUser?.mentorProfile?.bio || menteeUser?.bio) && (
                     <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                      {menteeUser.mentor_bio}
+                      {menteeUser.menteeProfile?.bio || menteeUser.mentorProfile?.bio || menteeUser.bio}
                     </p>
                   )}
 
@@ -929,7 +810,7 @@ export function MentorshipView() {
                       Message
                     </button>
                     <button
-                      onClick={() => handleViewProfile(menteeUser)}
+                      onClick={() => handleViewProfile(mentee, "mentee")}
                       className="py-2 px-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                     >
                       View Profile
@@ -948,12 +829,13 @@ export function MentorshipView() {
                   No mentees yet
                 </h3>
                 <p className="text-sm text-gray-400 mb-4">
-                  Update your mentor profile to start receiving mentorship
-                  requests
+                  {isActiveMentor
+                    ? "Update your mentor profile to start receiving mentorship requests"
+                    : "Setup your mentor profile first to start receiving mentorship requests"}
                 </p>
                 {/* Show update button inside card when there are NO mentees but HAS mentor profile */}
                 <button
-                  onClick={() => setShowMentorProfile(true)}
+                  onClick={handleMentorProfileClick}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors mx-auto"
                 >
                   {buttonIcon}
@@ -971,7 +853,7 @@ export function MentorshipView() {
                 </p>
                 {/* Show setup button inside card when there are NO mentees and NO mentor profile */}
                 <button
-                  onClick={() => setShowMentorProfile(true)}
+                  onClick={handleMentorProfileClick}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors mx-auto"
                 >
                   {buttonIcon}
@@ -1088,14 +970,14 @@ export function MentorshipView() {
       <MentorshipRequestModal
         isOpen={showMentorshipRequest}
         onClose={() => setShowMentorshipRequest(false)}
-        mode={profileCheck?.isMenteeProfile ? "edit" : "create"}
+        mode={profileCheck?.hasMenteeProfile ? "edit" : "create"}
         onProfileUpdated={handleMenteeProfileUpdated}
       />
 
       <MentorshipProfileModal
         isOpen={showMentorProfile}
         onClose={() => setShowMentorProfile(false)}
-        mode={profileCheck?.isMentorProfile ? "edit" : "create"}
+        mode={profileCheck?.hasMentorProfile ? "edit" : "create"}
         onProfileUpdated={handleMentorProfileUpdated}
       />
     </div>

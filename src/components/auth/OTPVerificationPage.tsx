@@ -1,18 +1,19 @@
 // src/components/auth/OTPVerificationPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { VerifyOTP, ResendOTP } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function OTPVerificationPage() {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { loadUser } = useAuth();
 
-  const email = searchParams.get('email') || '';
-  const type = searchParams.get('type') || 'signup';
+  const state = location.state as { email?: string; type?: string } | null;
+  const email = state?.email || '';
+  const type = state?.type || 'signup';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -72,7 +73,7 @@ export function OTPVerificationPage() {
 
       if (type === 'password-reset') {
         showToast('Code verified!', 'success');
-        navigate(`/reset-password?email=${encodeURIComponent(email)}&token=${code}`);
+        navigate('/reset-password', { state: { email, token: code }, replace: true });
         return;
       }
 

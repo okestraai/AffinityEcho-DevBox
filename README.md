@@ -1,162 +1,144 @@
-# Affinity Echo
 
-An anonymous-first professional networking platform designed for underrepresented communities in tech.
+Project Overview
+AffinityEcho is an anonymous-first professional networking platform for underrepresented communities in tech. It combines forums, mentorship, job referrals, and secure messaging with a unique progressive identity reveal system where all interactions start anonymous and users control when to reveal their real identity.
 
-## Quick Start
+Tech Stack
+Frontend:
 
-### Installation
+React 18.3.1 + TypeScript 5.5.3
+Vite 5.4.2 (build tool)
+React Router 7.9.5
+Tailwind CSS 3.4.1
+Lucide React (icons)
+Backend Integration:
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/affinity-echo.git
-cd affinity-echo
+Supabase (PostgreSQL, Auth, Real-time subscriptions)
+Socket.IO (WebSocket messaging)
+Axios (HTTP client with interceptors)
+vLLM service (Llama 3.1 8B for AI insights)
+Core Features
+1. Forums (TopicDetailPage.tsx)
+Anonymous discussions with 4 reaction types (seen, validated, inspired, heard)
+Nested comment threads
+Real-time updates via Supabase subscriptions
+Global and affinity-scoped topics
+2. Okestra AI (OkestraPanel.tsx)
+NEW FEATURE - AI-powered thread analysis providing:
 
-# Install dependencies
-npm install
+TL;DR summaries
+Key themes identification
+Consensus/disagreement detection
+Personalized action items
+Safety flags (PII, self-harm, harassment detection)
+User-aware context (different insights for topic authors vs. community members)
+3. Mentorship (MentorshipView.tsx)
+Mentor/mentee profile creation with expertise, industries, availability
+AI-powered matching and compatibility scoring
+Advanced filtering (career level, expertise, location, affinity tags)
+Direct mentorship requests
+Anonymous chat with identity reveal option
+Follow system
+4. Messaging (MessagesView.tsx)
+Anonymous messaging with encrypted content
+Progressive identity reveal (mutual consent required)
+Real-time delivery via WebSocket
+Typing indicators
+Read receipts
+5. Referral Marketplace
+Two-track system: job seeker requests + employee offers
+Connection requests with identity reveal
+Status tracking
+6. Nooks (NooksView.tsx)
+Specialized interest groups (company, identity, role, or interest-based)
+Private membership with join requests
+7. Notifications
+Real-time dropdown with unread count
+Color-coded by type (forum, mentorship, referral, messages)
+Action buttons (accept/decline)
+Architecture Highlights
+State Management
+AuthContext (src/contexts/AuthContext.tsx) - Global authentication state
+Local component state for features
+Supabase real-time subscriptions for notifications
+API Layer (api/)
+Dedicated API files per domain:
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your Supabase credentials
+authApis.ts - Authentication
+forumApis.ts - Forums
+mentorshipApis.ts - Mentorship
+messaging.ts - Messages & identity reveal
+nookApis.ts - Nooks
+referralsApis.ts - Referrals
+Real-time Services
+WebSocket (websocket.service.ts) - Messaging, presence, typing indicators
+Supabase subscriptions - Notifications, forum updates
+Key Patterns
+Request/response interceptor for auth tokens
+Centralized error handling with toast notifications
+Error boundaries for crash prevention
+Progressive enhancement with fallbacks
+Recent Development (Git Status)
+Active development areas:
 
-# Start development server
-npm run dev
-```
+✅ Okestra LLM integration (new AI insights panel)
+✅ Mentorship chat system (dedicated chat view)
+✅ WebSocket real-time messaging service
+✅ Identity reveal system
+✅ Message modals and UI enhancements
+✅ Onboarding flow improvements
+New files added:
 
-### Environment Setup
+OKESTRA_LLM_PAYLOAD_SPEC.md - LLM integration spec
+OkestraPanel.tsx - AI insights panel
+okestraLLM.ts - LLM analysis logic
+websocket.service.ts - Real-time service
+MentorshipChatView.tsx - Mentorship chat
+Security & Privacy
+✅ Anonymous by default - No real names exposed initially
 
-See [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for detailed setup instructions.
+✅ Progressive identity reveal - Mutual consent required
 
-## Features
+✅ Message encryption - Encrypted content field
 
-- **Anonymous Forums**: Safe space discussions with affinity-based communities
-- **Nooks**: Specialized interest groups for deeper connections
-- **Referral Marketplace**: Connect job seekers with employees offering referrals
-- **Mentorship Platform**: Find and match with mentors based on goals and experience
-- **Secure Messaging**: End-to-end encrypted conversations with progressive identity reveal
-- **Real-time Notifications**: Dropdown notification system with live updates
-- **Connection Requests**: Manage referral connections and identity reveals
-- **Find Mentorship**: Browse and search for available mentors
+✅ Supabase RLS policies - Row-level security
 
-## Available Routes
+✅ Token-based auth - Access + refresh tokens
 
-### Dashboard Routes
-- `/dashboard/forums` - Community discussions
-- `/dashboard/nooks` - Interest groups
-- `/dashboard/messages` - Secure messaging
-- `/dashboard/mentorship` - Your mentorship relationships
-- `/dashboard/find-mentorship` - Search for mentors
-- `/dashboard/referrals` - Job referral marketplace
-- `/dashboard/connections` - Connection requests management
-- `/dashboard/profile` - User profile
+✅ Safety detection - LLM flags PII, threats, self-harm content
 
-### Notifications
-- Accessible via bell icon dropdown (no dedicated route)
-- Real-time updates via Supabase subscriptions
-- Mark as read, delete, and take actions directly from dropdown
+Project Structure
 
-## Technology Stack
-
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Auth + Real-time)
-- **Icons**: Lucide React
-- **Routing**: React Router v7
-
-## Available Scripts
-
-```bash
-# Development
-npm run dev          # Start dev server at http://localhost:5173
-
-# Production
-npm run build        # Build for production
-npm run preview      # Preview production build
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run lint --fix   # Fix auto-fixable issues
-```
-
-## Project Structure
-
-```
 src/
 ├── components/
-│   ├── auth/              # Authentication components
-│   ├── dashboard/         # Dashboard views and components
-│   │   ├── ForumsView.tsx
-│   │   ├── NooksView.tsx
-│   │   ├── MessagesView.tsx
-│   │   ├── MentorshipView.tsx
-│   │   ├── FindMentorshipView.tsx
-│   │   ├── ReferralsView.tsx
-│   │   ├── ConnectionRequestsView.tsx
-│   │   ├── ProfileView.tsx
-│   │   ├── NotificationsDropdown.tsx
-│   │   └── ...
-│   └── onboarding/        # Onboarding flow
-├── contexts/              # React contexts
-├── hooks/                 # Custom hooks
-├── lib/                   # Utilities and services
-├── types/                 # TypeScript types
-└── App.tsx               # Main app with routing
+│   ├── auth/              # Authentication screens
+│   ├── dashboard/         # Main features (Forum, Mentorship, Messages, Nooks)
+│   ├── Modals/           # Feature-specific modals
+│   └── onboarding/       # Onboarding flow
+├── contexts/             # React Context (AuthContext)
+├── lib/                  # Utilities (Supabase, LLM, notifications)
+├── services/             # WebSocket service
+├── routes/               # Routing configuration
+└── Helper/               # Error boundaries, toast, interceptors
 
-supabase/
-└── migrations/           # Database migrations
-```
+api/                      # Backend API calls
+supabase/migrations/      # Database schema
+Strengths
+✅ Clear separation of concerns (API, UI, state)
 
-## Key Features
+✅ Privacy-first architecture baked into every feature
 
-### Progressive Identity Revelation
-All users start anonymous. Identities can only be revealed through mutual consent after meaningful connections are established.
+✅ Modern tech stack with real-time capabilities
 
-### Real-time Notifications System
-- Dropdown modal accessed via bell icon
-- Live updates using Supabase real-time subscriptions
-- Action buttons for direct responses
-- Mark as read/delete functionality
-- Unread count badge
+✅ Sophisticated LLM integration with user-aware context
 
-### Connection Management
-- Send and receive connection requests
-- Anonymous chat phase
-- Identity reveal request system
-- Full profile access post-reveal
+✅ Type-safe codebase (TypeScript throughout)
 
-### Security
-- Row Level Security (RLS) policies
-- Email/password authentication via Supabase
-- Secure data storage
-- Privacy-first architecture
+✅ Scalable API layer
 
-## Documentation
-
-- [Feature Summary](./FEATURE_SUMMARY.md) - Comprehensive feature documentation
-- [Executive Summary](./EXECUTIVE_SUMMARY.md) - Business overview and vision
-- [Environment Variables](./ENVIRONMENT_VARIABLES.md) - Setup and configuration guide
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run linter and fix issues
-5. Test thoroughly
-6. Submit a pull request
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues and questions:
-- Create a GitHub issue
-- Check documentation in `/docs`
-- Review [Supabase documentation](https://supabase.com/docs)
-
----
-
-**Built with ❤️ for underrepresented professionals in tech**
+Areas for Enhancement
+State management could benefit from Redux/Zustand for complex app state
+Some loose any types (especially in modals)
+Form validation library (Zod/Yup) not yet integrated
+No visible test files (Jest/Vitest setup)
+Could benefit from code splitting at route level
+Overall Assessment: This is a well-architected, feature-rich application with a clear mission to serve underrepresented professionals in tech. The codebase demonstrates thoughtful design patterns, modern development practices, and active ongoing development with recent AI capabilities and real-time messaging features.

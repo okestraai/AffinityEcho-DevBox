@@ -34,7 +34,7 @@ export function MentorshipRequestModal({
   const [decryptedCareerLevel, setDecryptedCareerLevel] = useState("");
   const [decryptedLocation, setDecryptedLocation] = useState("");
   const [decryptedAffinityTags, setDecryptedAffinityTags] = useState<string[]>(
-    []
+    [],
   );
 
   const [formData, setFormData] = useState({
@@ -45,7 +45,7 @@ export function MentorshipRequestModal({
     urgency: "low" as "low" | "medium" | "high",
     jobTitle: "",
     company: "",
-    yearsOfExperience: 0,
+    yearsExperience: 0,
     location: "",
     careerLevel: "",
     bio: "",
@@ -149,14 +149,14 @@ export function MentorshipRequestModal({
                 try {
                   const parsedTags = JSON.parse(tagsResult.data.decryptedData);
                   setDecryptedAffinityTags(
-                    Array.isArray(parsedTags) ? parsedTags : [parsedTags]
+                    Array.isArray(parsedTags) ? parsedTags : [parsedTags],
                   );
                 } catch {
                   setDecryptedAffinityTags(
                     tagsResult.data.decryptedData
                       .split(",")
                       .map((tag: string) => tag.trim())
-                      .filter((tag: string) => tag)
+                      .filter((tag: string) => tag),
                   );
                 }
               } else if (Array.isArray(tagsResult.data.decryptedData)) {
@@ -172,8 +172,7 @@ export function MentorshipRequestModal({
         setFormData((prev) => ({
           ...prev,
           jobTitle: currentUser.job_title || prev.jobTitle,
-          yearsOfExperience:
-            currentUser.years_experience || prev.yearsOfExperience,
+          yearsExperience: currentUser.years_experience || prev.yearsExperience,
           bio: currentUser.bio || prev.bio,
           location: decryptedLocation || prev.location,
           careerLevel: decryptedCareerLevel || prev.careerLevel,
@@ -192,20 +191,31 @@ export function MentorshipRequestModal({
       const profileCheckResponse = await CheckUserProfileExist();
 
       let profileData = profileCheckResponse.data;
+
+      // Handle new response structure with nested success/data
       if (profileData?.success && profileData?.data) {
         profileData = profileData.data;
       }
-      if (profileData?.data?.hasProfile !== undefined) {
+
+      // Also check if it's a nested API response
+      if (profileData?.data?.id !== undefined) {
         profileData = profileData.data;
       }
 
-      const profileExists =
-        profileData?.hasProfile && profileData.profileType === "mentee";
+      // Check if user has mentee profile in the new structure
+      const hasMenteeProfile = profileData?.menteeProfile !== undefined;
+      const hasMentorProfile = profileData?.mentorProfile !== undefined;
+      const isActiveMentee = profileData?.menteeProfile?.isActive || false;
+      const isActiveMentor = profileData?.mentorProfile?.isActive || false;
+      const mentoringAs = profileData?.status?.mentoringAs || "none";
+
+      // Determine if user has a profile (mentee profile exists)
+      const profileExists = hasMenteeProfile;
 
       setHasProfile(!!profileExists);
 
-      if (profileExists && profileData.profileId) {
-        setProfileId(profileData.profileId);
+      if (profileExists && profileData.id) {
+        setProfileId(profileData.id);
       }
 
       return profileExists;
@@ -230,32 +240,48 @@ export function MentorshipRequestModal({
     try {
       const response = await GetMyMenteeProfile();
 
-      if (response.data?.data) {
-        const profile = response.data.data.menteeProfile || {};
+      // Handle different response structures
+      let profileData = response.data;
 
-        setFormData((prev) => ({
-          ...prev,
-          topic: profile.topic || "",
-          goals: profile.goals || "",
-          availability: profile.availability || "",
-          communicationMethod: profile.communicationMethod || "",
-          urgency: profile.urgency || "low",
-          jobTitle: profile.jobTitle || prev.jobTitle,
-          yearsOfExperience:
-            profile.yearsOfExperience || prev.yearsOfExperience,
-          bio: profile.bio || prev.bio,
-          location: profile.location || prev.location,
-          languages: Array.isArray(profile.languages) ? profile.languages : [],
-          mentoringStyle: profile.mentoringStyle || "",
-          industries: Array.isArray(profile.industries)
-            ? profile.industries
-            : [],
-          expertise: Array.isArray(profile.expertise) ? profile.expertise : [],
-          newLanguage: "",
-          newIndustry: "",
-          newExpertise: "",
-        }));
+      if (profileData?.success && profileData?.data) {
+        profileData = profileData.data;
       }
+
+      if (profileData?.data?.menteeProfile !== undefined) {
+        profileData = profileData.data;
+      }
+
+      // Get mentee profile from new structure
+      const menteeProfile = profileData?.menteeProfile || {};
+      const basicProfile = profileData?.basicProfile || {};
+      const status = profileData?.status || {};
+
+      setFormData((prev) => ({
+        ...prev,
+        topic: menteeProfile.topic || "",
+        goals: menteeProfile.goals || "",
+        availability: menteeProfile.availability || "",
+        communicationMethod:
+          menteeProfile.communicationMethod || status.communicationMethod || "",
+        urgency: menteeProfile.urgency || "low",
+        jobTitle: basicProfile.jobTitle || prev.jobTitle,
+        yearsExperience: basicProfile.yearsExperience || prev.yearsExperience,
+        bio: menteeProfile.bio || basicProfile.bio || prev.bio,
+        location: basicProfile.location || prev.location,
+        languages: Array.isArray(menteeProfile.languages)
+          ? menteeProfile.languages
+          : [],
+        mentoringStyle: menteeProfile.style || prev.mentoringStyle,
+        industries: Array.isArray(menteeProfile.industries)
+          ? menteeProfile.industries
+          : [],
+        expertise: Array.isArray(menteeProfile.interests)
+          ? menteeProfile.interests
+          : [],
+        newLanguage: "",
+        newIndustry: "",
+        newExpertise: "",
+      }));
     } catch (error) {
       console.error("Error fetching mentee profile:", error);
       showToast("Could not load profile data", "error");
@@ -264,7 +290,7 @@ export function MentorshipRequestModal({
 
   const addItem = (
     field: "languages" | "industries" | "expertise",
-    newField: string
+    newField: string,
   ) => {
     const newItem = formData[newField as keyof typeof formData] as string;
     if (newItem.trim() && !formData[field].includes(newItem.trim())) {
@@ -278,7 +304,7 @@ export function MentorshipRequestModal({
 
   const removeItem = (
     field: "languages" | "industries" | "expertise",
-    item: string
+    item: string,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -292,22 +318,28 @@ export function MentorshipRequestModal({
 
     try {
       const payload = {
+        // MENTEE-SPECIFIC FIELDS (as per backend DTO)
         topic: formData.topic,
         goals: formData.goals,
         availability: formData.availability,
         communicationMethod: formData.communicationMethod,
         urgency: formData.urgency,
+        menteeBio: formData.bio,
+        mentoredStyle: formData.mentoringStyle,
+        interests: formData.expertise,
+        menteeIndustries: formData.industries,
+        menteeLanguages: formData.languages,
+
+        // SHARED FIELDS
+        bio: formData.bio,
         jobTitle: formData.jobTitle,
-        company: currentUser?.company_encrypted,
-        yearsOfExperience: formData.yearsOfExperience,
+        yearsExperience: formData.yearsExperience,
         location: formData.location,
         careerLevel: currentUser?.career_level_encrypted,
-        bio: formData.bio,
-        affinityTags: currentUser?.affinity_tags_encrypted,
-        languages: formData.languages,
-        mentoringStyle: formData.mentoringStyle,
-        industries: formData.industries,
-        expertise: formData.expertise,
+        company: currentUser?.company_encrypted,
+
+        // Send encrypted string for affinityTags, not array
+        affinityTags: currentUser?.affinity_tags_encrypted || "",
       };
 
       let response;
@@ -323,7 +355,7 @@ export function MentorshipRequestModal({
           `Mentee profile ${
             hasProfile || mode === "edit" ? "updated" : "created"
           } successfully!`,
-          "success"
+          "success",
         );
 
         // Call the callback if provided instead of reloading
@@ -338,7 +370,7 @@ export function MentorshipRequestModal({
       showToast(
         error.response?.data?.message ||
           "Error saving mentee profile. Please try again.",
-        "error"
+        "error",
       );
     } finally {
       setSaving(false);
@@ -389,9 +421,8 @@ export function MentorshipRequestModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
-          
           <div className="space-y-6">
-             {/* Job Title */}
+            {/* Job Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Current Job Title *
@@ -448,11 +479,11 @@ export function MentorshipRequestModal({
               </label>
               <input
                 type="number"
-                value={formData.yearsOfExperience}
+                value={formData.yearsExperience}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    yearsOfExperience: parseInt(e.target.value) || 0,
+                    yearsExperience: parseInt(e.target.value) || 0,
                   }))
                 }
                 min="0"

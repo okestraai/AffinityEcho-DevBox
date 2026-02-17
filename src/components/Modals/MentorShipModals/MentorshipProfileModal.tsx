@@ -31,6 +31,11 @@ export function MentorshipProfileModal({
   const [hasProfile, setHasProfile] = useState<boolean>(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [decryptedCompanyName, setDecryptedCompanyName] = useState("");
+  const [decryptedCareerLevel, setDecryptedCareerLevel] = useState("");
+  const [decryptedLocation, setDecryptedLocation] = useState("");
+  const [decryptedAffinityTags, setDecryptedAffinityTags] = useState<string[]>(
+    [],
+  );
 
   const [formData, setFormData] = useState({
     isWillingToMentor: true,
@@ -45,7 +50,7 @@ export function MentorshipProfileModal({
     affinityTags: [] as string[],
     jobTitle: "",
     company: "",
-    yearsOfExperience: 0,
+    yearsExperience: 0,
     bio: "",
     newExpertise: "",
     newIndustry: "",
@@ -68,21 +73,19 @@ export function MentorshipProfileModal({
 
       setLoading(true);
       try {
-        // Fetch filter options first
-        await fetchFilterOptions();
+        // Run independent calls in parallel
+        const [, , profileExists] = await Promise.all([
+          fetchFilterOptions(),
+          loadUserData(),
+          checkProfileStatusAndFetch(),
+        ]);
 
-        // Load and decrypt user data
-        await loadUserData();
-
-        // Check profile status
-        const profileExists = await checkProfileStatusAndFetch();
-
-        // If in edit mode or profile exists, fetch profile
+        // This depends on profileExists result
         if (mode === "edit" || profileExists) {
           await fetchMentorProfile();
         }
       } catch (error) {
-        console.error("Error initializing modal:", error);
+
         showToast("Error loading profile data", "error");
       } finally {
         setLoading(false);
@@ -95,6 +98,8 @@ export function MentorshipProfileModal({
   const loadUserData = async () => {
     try {
       if (currentUser) {
+
+
         const encryptedFields = [
           {
             key: "company_encrypted",
@@ -105,16 +110,19 @@ export function MentorshipProfileModal({
           {
             key: "career_level_encrypted",
             formKey: "careerLevel",
+            setter: setDecryptedCareerLevel,
             type: "string",
           },
           {
             key: "location_encrypted",
             formKey: "location",
+            setter: setDecryptedLocation,
             type: "string",
           },
           {
             key: "affinity_tags_encrypted",
             formKey: "affinityTags",
+            setter: setDecryptedAffinityTags,
             type: "array",
           },
         ];
@@ -124,39 +132,82 @@ export function MentorshipProfileModal({
 
         encryptedFields.forEach((field) => {
           if (currentUser[field.key]) {
+
             promises.push(
               DecryptData({
                 encryptedData: currentUser[field.key],
-              }).then((result) => ({
-                key: field.formKey,
-                value: result.data.decryptedData,
-                setter: field.setter,
-                type: field.type,
-              }))
+              })
+                .then((result) => ({
+                  key: field.formKey,
+                  value: result.data?.decryptedData || "",
+                  setter: field.setter,
+                  type: field.type,
+                }))
+                .catch((error) => {
+
+                  return {
+                    key: field.formKey,
+                    value: "",
+                    setter: field.setter,
+                    type: field.type,
+                  };
+                }),
             );
           }
         });
 
         const results = await Promise.all(promises);
+    
 
         const ensureArray = (value: any): string[] => {
-          if (value == null) return [];
+
+          if (value == null || value === "") return [];
           if (Array.isArray(value)) return value;
           if (typeof value === "string") {
             try {
               const trimmed = value.trim();
+           
+
+              // If empty string after trimming
+              if (!trimmed) return [];
+
+              // First try to parse as JSON
               if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                const parsed = JSON.parse(trimmed);
-                return Array.isArray(parsed) ? parsed : [];
+                try {
+                  const parsed = JSON.parse(trimmed);
+
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch (jsonError) {
+              
+                }
               }
+
+              // If it starts and ends with quotes, remove them and try again
+              if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+                const unquoted = trimmed.slice(1, -1).trim();
+
+                if (unquoted.startsWith("[") && unquoted.endsWith("]")) {
+                  try {
+                    const parsed = JSON.parse(unquoted);
+                    return Array.isArray(parsed) ? parsed : [];
+                  } catch (jsonError) {
+                   
+                  }
+                }
+              }
+
+              // Try comma-separated
               if (trimmed.includes(",")) {
                 return trimmed
                   .split(",")
                   .map((item) => item.trim())
                   .filter((item) => item);
               }
+
+              // Single value
               return trimmed ? [trimmed] : [];
             } catch (error) {
+
               return [];
             }
           }
@@ -172,17 +223,27 @@ export function MentorshipProfileModal({
         };
 
         results.forEach((result) => {
+
           let processedValue;
 
           if (result.type === "array") {
             processedValue = ensureArray(result.value);
+
           } else {
             processedValue = ensureString(result.value);
           }
 
           decryptedData[result.key] = processedValue;
-          if (result.setter && result.key === "company") {
-            result.setter(processedValue);
+          if (result.setter) {
+            if (result.key === "company") {
+              result.setter(processedValue);
+            } else if (result.key === "careerLevel") {
+              setDecryptedCareerLevel(processedValue);
+            } else if (result.key === "location") {
+              setDecryptedLocation(processedValue);
+            } else if (result.key === "affinityTags") {
+              setDecryptedAffinityTags(processedValue);
+            }
           }
         });
 
@@ -195,30 +256,24 @@ export function MentorshipProfileModal({
           return String(value);
         };
 
-        const getArrayFromUser = (
-          key: string,
-          defaultValue: string[] = []
-        ): string[] => {
-          const value = (currentUser as any)[key];
-          if (value == null) return defaultValue;
-          return ensureArray(value);
-        };
+        
 
         setFormData((prev) => ({
           ...prev,
           company: decryptedData.company || getStringFromUser("company", ""),
           careerLevel:
             decryptedData.careerLevel || getStringFromUser("career_level", ""),
-          affinityTags:
-            decryptedData.affinityTags || getArrayFromUser("affinity_tags", []),
+          affinityTags: Array.isArray(decryptedData.affinityTags)
+            ? decryptedData.affinityTags
+            : [],
           location: decryptedData.location || getStringFromUser("location", ""),
           jobTitle: getStringFromUser("job_title", ""),
-          yearsOfExperience: currentUser.years_experience || 0,
+          yearsExperience: currentUser.years_experience || 0,
           bio: getStringFromUser("bio", ""),
         }));
       }
     } catch (err) {
-      console.error("Error loading user data:", err);
+
       showToast("Error loading user data", "error");
     }
   };
@@ -228,25 +283,38 @@ export function MentorshipProfileModal({
       const profileCheckResponse = await CheckUserProfileExist();
 
       let profileData = profileCheckResponse.data;
+
+      // Handle new response structure with nested success/data
       if (profileData?.success && profileData?.data) {
         profileData = profileData.data;
       }
-      if (profileData?.data?.hasProfile !== undefined) {
+
+      // Also check if it's a nested API response
+      if (profileData?.data?.id !== undefined) {
         profileData = profileData.data;
       }
 
-      const profileExists =
-        profileData?.hasProfile && profileData.profileType === "mentor";
+     
+
+      // Check if user has mentor profile in the new structure
+      const hasMentorProfile = profileData?.mentorProfile !== undefined;
+      const hasMenteeProfile = profileData?.menteeProfile !== undefined;
+      const isActiveMentor = profileData?.mentorProfile?.isActive || false;
+      const isActiveMentee = profileData?.menteeProfile?.isActive || false;
+      const mentoringAs = profileData?.status?.mentoringAs || "none";
+
+      // Determine if user has a profile (mentor profile exists)
+      const profileExists = hasMentorProfile;
 
       setHasProfile(!!profileExists);
 
-      if (profileExists && profileData.profileId) {
-        setProfileId(profileData.profileId);
+      if (profileExists && profileData.id) {
+        setProfileId(profileData.id);
       }
 
       return profileExists;
     } catch (error) {
-      console.error("Error checking profile:", error);
+   
       return false;
     }
   };
@@ -266,31 +334,51 @@ export function MentorshipProfileModal({
     try {
       const response = await GetMyMentorProfile();
 
-      if (response.data?.data) {
-        const profile = response.data.data.mentorProfile || {};
 
-        setFormData((prev) => ({
-          ...prev,
-          isWillingToMentor: profile.isWillingToMentor ?? true,
-          mentorBio: profile.mentorBio || "",
-          expertise: Array.isArray(profile.expertise) ? profile.expertise : [],
-          industries: Array.isArray(profile.industries)
-            ? profile.industries
-            : [],
-          availability: profile.availability || "",
-          mentoringStyle: profile.mentoringStyle || "",
-          languages: Array.isArray(profile.languages) ? profile.languages : [],
-          jobTitle: profile.jobTitle || prev.jobTitle,
-          yearsOfExperience:
-            profile.yearsOfExperience || prev.yearsOfExperience,
-          bio: profile.bio || prev.bio,
-          location: profile.location || prev.location,
-          newExpertise: "",
-          newIndustry: "",
-          newLanguage: "",
-          newAffinityTag: "",
-        }));
+      // Handle different response structures
+      let profileData = response.data;
+
+      if (profileData?.success && profileData?.data) {
+        profileData = profileData.data;
       }
+
+      if (profileData?.data?.mentorProfile !== undefined) {
+        profileData = profileData.data;
+      }
+
+      // Get mentor profile from new structure
+      const mentorProfile = profileData?.mentorProfile || {};
+      const basicProfile = profileData?.basicProfile || {};
+
+  
+      setFormData((prev) => ({
+        ...prev,
+        isWillingToMentor: mentorProfile.isWillingToMentor ?? true,
+        mentorBio: mentorProfile.bio || "",
+        expertise: Array.isArray(mentorProfile.expertise)
+          ? mentorProfile.expertise
+          : [],
+        industries: Array.isArray(mentorProfile.industries)
+          ? mentorProfile.industries
+          : [],
+        availability: mentorProfile.availability || "",
+        mentoringStyle: mentorProfile.mentorStyle || mentorProfile.style || "",
+        languages: Array.isArray(mentorProfile.languages)
+          ? mentorProfile.languages
+          : [],
+        jobTitle: basicProfile.jobTitle || prev.jobTitle,
+        yearsExperience: basicProfile.yearsExperience || prev.yearsExperience,
+        bio: basicProfile.bio || prev.bio,
+        location: basicProfile.location || prev.location,
+        // Use affinity tags from basicProfile if available, otherwise keep existing
+        affinityTags: Array.isArray(basicProfile.affinityTags)
+          ? basicProfile.affinityTags
+          : prev.affinityTags,
+        newExpertise: "",
+        newIndustry: "",
+        newLanguage: "",
+        newAffinityTag: "",
+      }));
     } catch (error) {
       console.error("Error fetching mentor profile:", error);
       showToast("Could not load profile data", "error");
@@ -299,7 +387,7 @@ export function MentorshipProfileModal({
 
   const addItem = (
     field: "expertise" | "industries" | "languages" | "affinityTags",
-    newField: string
+    newField: string,
   ) => {
     const newItem = formData[newField as keyof typeof formData] as string;
     if (newItem.trim() && !formData[field].includes(newItem.trim())) {
@@ -313,7 +401,7 @@ export function MentorshipProfileModal({
 
   const removeItem = (
     field: "expertise" | "industries" | "languages" | "affinityTags",
-    item: string
+    item: string,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -336,10 +424,10 @@ export function MentorshipProfileModal({
         languages: formData.languages,
         careerLevel: currentUser?.career_level_encrypted,
         location: formData.location,
-        affinityTags: currentUser?.affinity_tags_encrypted,
+        affinityTags: currentUser?.affinity_tags_encrypted || "", // Send encrypted string
         jobTitle: formData.jobTitle,
         company: currentUser?.company_encrypted,
-        yearsOfExperience: formData.yearsOfExperience,
+        yearsExperience: formData.yearsExperience,
         bio: formData.bio,
       };
 
@@ -351,12 +439,13 @@ export function MentorshipProfileModal({
         response = await CreateMentorProfile(payload);
       }
 
+    
       if (response.success) {
         showToast(
           `Mentor profile ${
             hasProfile || mode === "edit" ? "updated" : "created"
           } successfully!`,
-          "success"
+          "success",
         );
 
         // Call the callback if provided instead of reloading
@@ -371,7 +460,7 @@ export function MentorshipProfileModal({
       showToast(
         error.response?.data?.message ||
           "Error saving mentor profile. Please try again.",
-        "error"
+        "error",
       );
     } finally {
       setSaving(false);
@@ -401,6 +490,12 @@ export function MentorshipProfileModal({
   const modalDescription = isUpdateMode
     ? "Update your mentor profile information"
     : "Share your expertise and help others grow";
+
+  // Use decryptedAffinityTags for display
+  const displayAffinityTags =
+    formData.affinityTags.length > 0
+      ? formData.affinityTags
+      : decryptedAffinityTags;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -677,11 +772,11 @@ export function MentorshipProfileModal({
               </label>
               <input
                 type="number"
-                value={formData.yearsOfExperience}
+                value={formData.yearsExperience}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    yearsOfExperience: parseInt(e.target.value) || 0,
+                    yearsExperience: parseInt(e.target.value) || 0,
                   }))
                 }
                 min="0"
@@ -722,15 +817,15 @@ export function MentorshipProfileModal({
                 <div>
                   <p className="text-xs text-gray-500">Career Level</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {formData.careerLevel || "Not set"}
+                    {decryptedCareerLevel || "Not set"}
                   </p>
                 </div>
+
                 <div className="col-span-2">
                   <p className="text-xs text-gray-500">Affinity Groups</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {formData.affinityTags &&
-                    formData.affinityTags.length > 0 ? (
-                      formData.affinityTags.map((tag) => (
+                    {displayAffinityTags.length > 0 ? (
+                      displayAffinityTags.map((tag) => (
                         <span
                           key={tag}
                           className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full"

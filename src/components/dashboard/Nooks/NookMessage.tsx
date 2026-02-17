@@ -20,6 +20,7 @@ interface NookMessageProps {
     user?: {
       avatar: string;
       username: string;
+      display_name?: string;
     } | null;
     replies?: any[];
   };
@@ -45,7 +46,7 @@ export function NookMessage({
 
   // Safe user data with fallbacks
   const user = message.user ?? null;
-  const displayName = user?.username ?? "Anonymous";
+  const displayName = user?.display_name || user?.username || "Anonymous";
   const avatar = user?.avatar ?? "A"; // fallback character
   const isAnonymous = displayName === "Anonymous" || !user;
 

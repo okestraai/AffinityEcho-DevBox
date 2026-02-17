@@ -1,13 +1,5 @@
 // api/mentorshipApis.ts
-import axiosInstance from "../src/Helper/AxiosInterceptor";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthInstance = () => {
-  const accessToken = localStorage.getItem("access_token");
-  const refreshToken = localStorage.getItem("refresh_token");
-  return axiosInstance(accessToken, refreshToken);
-};
+import { getAuthInstance, API_URL } from "./base";
 
 export interface MentorProfilePayload {
   isWillingToMentor: boolean;
@@ -22,7 +14,7 @@ export interface MentorProfilePayload {
   affinityTags: string[];
   jobTitle: string;
   company: string;
-  yearsOfExperience: number;
+  yearsExperience: number;
   bio: string;
 }
 
@@ -34,15 +26,16 @@ export interface MenteeProfilePayload {
   urgency: "low" | "medium" | "high";
   jobTitle: string;
   company: string;
-  yearsOfExperience: number;
+  yearsExperience: number;
   location: string;
   careerLevel: string;
   bio: string;
-  affinityTags: string[];
-  menteeLanguages: string[];
-  mentoredStyle: string;
-  menteeIndustries: string[];
-  interest: string[];
+  menteeBio?: string;
+  mentoredStyle?: string;
+  menteeIndustries?: string[];
+  menteeLanguages?: string[];
+  interests?: string[];
+  affinityTags?: string;
 }
 
 export interface DirectMentorshipRequestPayload {
@@ -98,7 +91,7 @@ export interface MentorProfileResponse {
   matchScore?: number;
   isAvailable: boolean;
   totalMentees?: number;
-  yearsOfExperience?: number;
+  yearsExperience?: number;
   affinityTags: string[];
   affinity_tags_encrypted?: string;
   mentorshipStyle?: string;
@@ -169,53 +162,7 @@ export const GetMyMentorProfile = async () => {
   return res.data;
 };
 
-// this is the new Response
-// {
-//   "success": true,
-//   "data": {
-//     "success": true,
-//     "data": {
-//       "id": "f8a421d7-c0a2-4cbd-8e9c-c528b87ec27e",
-//       "username": "BraveLion3831lightning",
-//       "email": "okestra03@yopmail.com",
-//       "avatar": "User",
-//       "basicProfile": {
-//         "bio": "fgnghgfhfhfg",
-//         "jobTitle": "VP of Marketing",
-//         "location": "San Francisco, CA",
-//         "yearsExperience": 4,
-//         "skills": [],
-//         "linkedinUrl": null,
-//         "careerLevel": "de/Nbxhp528DqYTbFx/cSR2eoFGUqb3p6PT0d+ro8sJFDyb0xSwbTYPcGXrwT33T4g==",
-//         "company": "GyoxObP2xSJ0YaB+V/T1uP0UPER6oWe4j57c5jcxwhMf",
-//         "affinityTags": "iaZb2bP/1EQnEzjU9hOVmOz+SkvUFybr9Botco+CXbFSpQCJaN1a/aNkRHAned6YhilTnL3IeqvVTs1f8YreE3xHbWFeuPwDUmnWq5/3bA5fQcyx"
-//       },
-//       "mentorProfile": null,
-//       "menteeProfile": null,
-//       "status": {
-//         "mentoringAs": "mentor",
-//         "communicationMethod": "text-chat",
-//         "isActiveMentor": false,
-//         "isActiveMentee": false
-//       },
-//       "stats": {
-//         "reputationScore": 0,
-//         "mentorshipSessionsCompleted": 0,
-//         "totalPosts": 0,
-//         "totalComments": 0,
-//         "helpfulVotesReceived": 0,
-//         "followersCount": 0,
-//         "followingCount": 0
-//       },
-//       "timestamps": {
-//         "createdAt": "2025-12-19T10:59:28.754+00:00",
-//         "updatedAt": "2026-01-08T18:25:48.371+00:00",
-//         "lastActiveAt": "2025-12-19T11:00:33.947+00:00"
-//       }
-//     }
-//   },
-//   "timestamp": "2026-01-08T21:39:39.710Z"
-// }
+
 
 // Update my mentor profile
 export const UpdateMyMentorProfile = async (payload: MentorProfilePayload) => {
@@ -241,27 +188,6 @@ export const CheckUserProfileRequirement =
     return res.data;
   };
 
-// //  response example
-	
-// Response body
-// Download
-// {
-//   "success": true,
-//   "data": {
-//     "success": true,
-//     "data": {
-//       "hasProfile": false,
-//       "hasMentorProfile": false,
-//       "hasMenteeProfile": false,
-//       "missingSharedFields": [],
-//       "missingMentorFields": [],
-//       "missingMenteeFields": [],
-//       "canCreateRequest": true
-//     }
-//   },
-//   "timestamp": "2026-01-08T21:43:03.745Z"
-// }
-
 // Check if user has a mentorship profile
 export const CheckUserProfileExist = async (): Promise<{
   data: ProfileExistsResponse;
@@ -271,19 +197,6 @@ export const CheckUserProfileExist = async (): Promise<{
   return res.data;
 };
 
-// new Response
-// {
-//   "success": true,
-//   "data": {
-//     "hasProfile": true,
-//     "hasMentorProfile": false,
-//     "hasMenteeProfile": false,
-//     "isActiveMentor": false,
-//     "isActiveMentee": false,
-//     "mentoringAs": "mentor"
-//   },
-//   "timestamp": "2026-01-08T21:41:08.574Z"
-// }
 
 // Create mentee profile
 export const CreateMenteeProfile = async (payload: MenteeProfilePayload) => {

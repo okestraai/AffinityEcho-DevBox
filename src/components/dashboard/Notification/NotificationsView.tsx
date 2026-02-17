@@ -1,26 +1,32 @@
 import React, { useState, useEffect } from "react";
 import {
   Bell,
-  Users,
   MessageCircle,
   Heart,
   Target,
   Briefcase,
   Eye,
   CheckCircle,
-  X,
   Check,
   Trash2,
-  Filter,
   RefreshCw,
   MoreVertical,
   UserPlus,
   MessageSquare,
-  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
-import { supabase } from "../../../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import {
+  GetNotifications,
+  MarkNotificationAsRead,
+  MarkAllNotificationsAsRead,
+  DeleteNotification as DeleteNotificationApi,
+  UpdateNotification,
+} from "../../../../api/notificationApis";
+import { RespondToIdentityReveal } from "../../../../api/messaging";
+import { webSocketService } from "../../../services/websocket.service";
+import { showToast } from "../../../Helper/ShowToast";
+import { NotificationsSkeleton } from "../../../Helper/SkeletonLoader";
 
 interface Notification {
   id: string;
@@ -62,199 +68,28 @@ export function NotificationsView() {
   useEffect(() => {
     if (user?.id) {
       fetchNotifications();
-      subscribeToNotifications();
     }
   }, [user?.id, filter, limit]);
 
-  const getDummyNotifications = (): Notification[] => {
-    const now = new Date();
-    const getTimeAgo = (minutes: number) => {
-      const date = new Date(now.getTime() - minutes * 60000);
-      return date.toISOString();
+  // Listen for real-time notifications via WebSocket
+  useEffect(() => {
+    const handleNewNotification = (data: any) => {
+      const notification = data?.data || data;
+      if (notification?.id) {
+        setNotifications((prev) => {
+          const exists = prev.some((n) => n.id === notification.id);
+          if (exists) return prev;
+          return [notification, ...prev];
+        });
+      }
     };
 
-    return [
-      {
-        id: "1",
-        user_id: user?.id || "",
-        actor_id: "actor1",
-        type: "follow",
-        title: "New Follower",
-        message: "TechLeader_Sarah started following you",
-        action_url: "/dashboard/profile",
-        reference_id: null,
-        reference_type: null,
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(5),
-        read_at: null,
-      },
-      {
-        id: "2",
-        user_id: user?.id || "",
-        actor_id: "actor2",
-        type: "forum_post",
-        title: "New post from someone you follow",
-        message:
-          'DataScience_Miguel posted: "Best practices for technical interviews in 2024"',
-        action_url: "/dashboard/forums",
-        reference_id: "post1",
-        reference_type: "forum",
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(30),
-        read_at: null,
-      },
-      {
-        id: "3",
-        user_id: user?.id || "",
-        actor_id: "actor3",
-        type: "mentorship_request",
-        title: "New Mentorship Request",
-        message: "AspiringEngineer_Jay has requested you as their mentor",
-        action_url: "/dashboard/mentorship",
-        reference_id: "request1",
-        reference_type: "mentorship",
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(120),
-        read_at: null,
-      },
-      {
-        id: "4",
-        user_id: user?.id || "",
-        actor_id: "actor4",
-        type: "forum_comment",
-        title: "New comment on your post",
-        message: 'Product_Manager_Lisa commented on "How to transition to PM?"',
-        action_url: "/dashboard/forums",
-        reference_id: "post2",
-        reference_type: "forum",
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(180),
-        read_at: getTimeAgo(150),
-      },
-      {
-        id: "5",
-        user_id: user?.id || "",
-        actor_id: "actor5",
-        type: "nook_post",
-        title: "New post in Black Tech Leaders",
-        message:
-          'ExperiencedEngineer posted: "Navigating microaggressions in the workplace"',
-        action_url: "/dashboard/nooks",
-        reference_id: "nook1",
-        reference_type: "nook",
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(360),
-        read_at: getTimeAgo(300),
-      },
-      {
-        id: "6",
-        user_id: user?.id || "",
-        actor_id: "actor6",
-        type: "forum_like",
-        title: "Someone liked your post",
-        message: 'Startup_Founder_Kim liked "Advice for first-time managers"',
-        action_url: "/dashboard/forums",
-        reference_id: "post3",
-        reference_type: "forum",
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(480),
-        read_at: getTimeAgo(470),
-      },
-      {
-        id: "7",
-        user_id: user?.id || "",
-        actor_id: "actor7",
-        type: "referral_connection",
-        title: "New Referral Connection Request",
-        message:
-          'GrowingAnalyst_Priya requested to connect for "Software Engineer at Google"',
-        action_url: "/dashboard/messages",
-        reference_id: "connection1",
-        reference_type: "referral",
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(600),
-        read_at: null,
-      },
-      {
-        id: "8",
-        user_id: user?.id || "",
-        actor_id: "actor8",
-        type: "identity_reveal",
-        title: "Identity Revealed",
-        message: "Anonymous_Mentor revealed their identity as David Chen",
-        action_url: "/dashboard/messages",
-        reference_id: null,
-        reference_type: null,
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(720),
-        read_at: getTimeAgo(700),
-      },
-      {
-        id: "11",
-        user_id: user?.id || "",
-        actor_id: "actor11",
-        type: "identity_reveal_request",
-        title: "Identity Reveal Request",
-        message: "ThoughtfulLeader92 wants to reveal identities with you",
-        action_url: "/dashboard/messages",
-        reference_id: "reveal1",
-        reference_type: "identity_reveal",
-        is_read: false,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(10),
-        read_at: null,
-      },
-      {
-        id: "9",
-        user_id: user?.id || "",
-        actor_id: "actor9",
-        type: "mentorship_accepted",
-        title: "Mentorship Request Accepted",
-        message: "Finance_Pro_David accepted your mentorship request!",
-        action_url: "/dashboard/mentorship",
-        reference_id: "request2",
-        reference_type: "mentorship",
-        is_read: true,
-        action_taken: true,
-        metadata: {},
-        created_at: getTimeAgo(1440),
-        read_at: getTimeAgo(1400),
-      },
-      {
-        id: "10",
-        user_id: user?.id || "",
-        actor_id: "actor10",
-        type: "referral_comment",
-        title: "New comment on your referral",
-        message: 'DesignLead_Alex commented on "UX Designer at Airbnb"',
-        action_url: "/dashboard/referrals",
-        reference_id: "referral1",
-        reference_type: "referral",
-        is_read: true,
-        action_taken: false,
-        metadata: {},
-        created_at: getTimeAgo(2880),
-        read_at: getTimeAgo(2800),
-      },
-    ];
-  };
+    webSocketService.on("new_notification", handleNewNotification);
+
+    return () => {
+      webSocketService.off("new_notification", handleNewNotification);
+    };
+  }, []);
 
   const fetchNotifications = async () => {
     if (!user?.id) return;
@@ -262,52 +97,34 @@ export function NotificationsView() {
     try {
       setLoading(true);
 
-      const { data, error, count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact" })
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      const params: { is_read?: boolean; type?: string; page?: number; limit?: number } = { limit };
+      if (filter === "unread") params.is_read = false;
+      if (filter === "follows") params.type = "follow";
+      if (filter === "posts") params.type = "forum_post";
+      if (filter === "mentorship") params.type = "mentorship_request";
 
-      if (error && error.code !== "PGRST116") {
-        throw error;
-      }
+      const response = await GetNotifications(params);
+      const raw = response?.data?.items ?? response?.data ?? response ?? [];
+      const allNotifications = Array.isArray(raw) ? raw : [];
 
-      let allNotifications = data || [];
+      setHasMore(allNotifications.length >= limit);
 
-      if (allNotifications.length === 0) {
-        allNotifications = getDummyNotifications();
-        setHasMore(false);
-      } else {
-        setHasMore((count || 0) > allNotifications.length);
-      }
-
+      // Client-side filtering for types not covered by API filter
       let filteredNotifications = allNotifications;
-
-      if (filter === "unread") {
-        filteredNotifications = allNotifications.filter((n) => !n.is_read);
-      } else if (filter === "follows") {
-        filteredNotifications = allNotifications.filter(
-          (n) => n.type === "follow"
-        );
-      } else if (filter === "posts") {
-        filteredNotifications = allNotifications.filter((n) =>
+      if (filter === "posts") {
+        filteredNotifications = allNotifications.filter((n: Notification) =>
           ["forum_post", "nook_post", "referral_post"].includes(n.type)
         );
       } else if (filter === "mentorship") {
-        filteredNotifications = allNotifications.filter((n) =>
-          [
-            "mentorship_request",
-            "mentorship_accepted",
-            "mentorship_message",
-          ].includes(n.type)
+        filteredNotifications = allNotifications.filter((n: Notification) =>
+          ["mentorship_request", "mentorship_accepted", "mentorship_message", "identity_reveal_request", "identity_reveal", "identity_reveal_rejected"].includes(n.type)
         );
       }
 
       setNotifications(filteredNotifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      setNotifications(getDummyNotifications());
+      setNotifications([]);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -318,39 +135,9 @@ export function NotificationsView() {
     setLimit((prev) => prev + 50);
   };
 
-  const subscribeToNotifications = () => {
-    if (!user?.id) return;
-
-    const subscription = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  };
-
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq("id", notificationId);
-
-      if (error) throw error;
-
+      await MarkNotificationAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
       );
@@ -363,12 +150,7 @@ export function NotificationsView() {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase.rpc("mark_all_notifications_read", {
-        p_user_id: user.id,
-      });
-
-      if (error) throw error;
-
+      await MarkAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     } catch (error) {
       console.error("Error marking all as read:", error);
@@ -377,13 +159,7 @@ export function NotificationsView() {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId);
-
-      if (error) throw error;
-
+      await DeleteNotificationApi(notificationId);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     } catch (error) {
       console.error("Error deleting notification:", error);
@@ -402,84 +178,58 @@ export function NotificationsView() {
     await markAsRead(notification.id);
 
     try {
-      if (action === "accept_mentorship" && notification.reference_id) {
-        const { error: updateError } = await supabase
-          .from("mentorship_requests")
-          .update({ status: "accepted" })
-          .eq("id", notification.reference_id);
-
-        if (updateError) throw updateError;
-
-        const { error: notificationError } = await supabase
-          .from("notifications")
-          .update({ action_taken: true })
-          .eq("id", notification.id);
-
-        if (notificationError) throw notificationError;
-
-        alert("Mentorship request accepted!");
-        navigate("/dashboard/mentorship");
-      } else if (action === "decline_mentorship" && notification.reference_id) {
-        const { error: updateError } = await supabase
-          .from("mentorship_requests")
-          .update({ status: "declined" })
-          .eq("id", notification.reference_id);
-
-        if (updateError) throw updateError;
-
-        await deleteNotification(notification.id);
-        return;
-      } else if (
-        action === "accept_identity_reveal" &&
-        notification.reference_id
-      ) {
-        const { error: updateError } = await supabase
-          .from("identity_reveals")
-          .update({ status: "accepted" })
-          .eq("id", notification.reference_id);
-
-        if (updateError) throw updateError;
-
-        const { error: notificationError } = await supabase
-          .from("notifications")
-          .update({ action_taken: true })
-          .eq("id", notification.id);
-
-        if (notificationError) throw notificationError;
-
-        alert(
-          "Identity reveal accepted! You can now see each other's identities."
+      if (action === "decline_mentorship") {
+        await UpdateNotification(notification.id, { action_taken: true });
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
+          )
         );
-        navigate("/dashboard/messages");
-      } else if (
-        action === "decline_identity_reveal" &&
-        notification.reference_id
-      ) {
-        const { error: updateError } = await supabase
-          .from("identity_reveals")
-          .update({ status: "declined" })
-          .eq("id", notification.reference_id);
-
-        if (updateError) throw updateError;
-
-        await deleteNotification(notification.id);
+        showToast("Mentorship request declined.", "info");
         return;
+      }
+
+      if (action === "decline_identity_reveal") {
+        const revealId = notification.reference_id || notification.metadata?.reveal_id;
+        if (revealId) {
+          await RespondToIdentityReveal(revealId, "rejected");
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
+          )
+        );
+        showToast("Identity reveal declined.", "info");
+        return;
+      }
+
+      if (action === "accept_identity_reveal") {
+        const revealId = notification.reference_id || notification.metadata?.reveal_id;
+        if (revealId) {
+          await RespondToIdentityReveal(revealId, "accepted");
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
+          )
+        );
+        showToast("Identity reveal accepted! You can now see each other's identities.", "success");
+        navigate("/dashboard/messages");
+        return;
+      }
+
+      await UpdateNotification(notification.id, { action_taken: true });
+
+      if (action === "accept_mentorship") {
+        showToast("Mentorship request accepted!", "success");
+        navigate("/dashboard/messages", {
+          state: { startChatWith: notification.actor_id, contextType: "mentorship" },
+        });
       } else if (action === "view_profile") {
-        const { error } = await supabase
-          .from("notifications")
-          .update({ action_taken: true })
-          .eq("id", notification.id);
-
-        if (error) throw error;
-        navigate(`/dashboard/profile`);
+        navigate("/dashboard/profile");
       } else if (action === "view_post") {
-        const { error } = await supabase
-          .from("notifications")
-          .update({ action_taken: true })
-          .eq("id", notification.id);
-
-        if (error) throw error;
-
         if (notification.reference_type === "forum") {
           navigate("/dashboard/forums");
         } else if (notification.reference_type === "nook") {
@@ -498,7 +248,7 @@ export function NotificationsView() {
       );
     } catch (error) {
       console.error("Error handling action:", error);
-      alert("An error occurred. Please try again.");
+      showToast("An error occurred. Please try again.", "error");
     }
   };
 
@@ -524,6 +274,7 @@ export function NotificationsView() {
         return <Target className="w-5 h-5 text-indigo-600" />;
       case "identity_reveal":
       case "identity_reveal_request":
+      case "identity_reveal_rejected":
         return <Eye className="w-5 h-5 text-yellow-600" />;
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
@@ -616,6 +367,22 @@ export function NotificationsView() {
           </button>
         );
 
+      case "identity_reveal":
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/dashboard/messages");
+            }}
+            className="mt-2 w-full px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
+          >
+            View Messages
+          </button>
+        );
+
+      case "identity_reveal_rejected":
+        return null;
+
       case "forum_post":
       case "nook_post":
       case "referral_post":
@@ -640,11 +407,7 @@ export function NotificationsView() {
   };
 
   if (loading && notifications.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-8 h-8 text-purple-600 animate-spin" />
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   return (
@@ -716,14 +479,28 @@ export function NotificationsView() {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="font-medium text-gray-900 mb-2">No notifications</h3>
-          <p className="text-sm text-gray-500">
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-5">
+            <Bell className="w-10 h-10 text-purple-300" />
+          </div>
+          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+            {filter === "unread" ? "All caught up!" : "No notifications yet"}
+          </h3>
+          <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
             {filter === "unread"
-              ? "You're all caught up!"
-              : "New notifications will appear here"}
+              ? "You've read all your notifications. Check back later for new updates."
+              : filter === "all"
+              ? "When someone follows you, comments on your posts, or sends you a request, it will show up here."
+              : `No ${filter} notifications to show right now.`}
           </p>
+          {filter !== "all" && (
+            <button
+              onClick={() => setFilter("all")}
+              className="mt-4 px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            >
+              View all notifications
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

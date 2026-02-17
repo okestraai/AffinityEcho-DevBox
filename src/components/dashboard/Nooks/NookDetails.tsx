@@ -9,6 +9,7 @@ import {
   Eye,
   AlertCircle,
   ScanEye,
+  Sparkles,
 } from "lucide-react";
 import { NookMessage } from "./NookMessage";
 import { NookMessageInput } from "./NookMessageInput";
@@ -16,10 +17,12 @@ import {
   GetNookMessagesByNookId,
   PostNookMessageByNookId,
   toggleMessageReaction, // ← Use the toggle function (POST only)
-  JoinNook,
 } from "../../../../api/nookApis";
 
 import { NookMessageSkeleton } from "../../../Helper/SkeletonLoader";
+import { showToast } from "../../../Helper/ShowToast";
+import { OkestraPanel } from '../OkestraPanel';
+import { Topic, Comment } from '../../../types/forum';
 
 interface NookDetailProps {
   nook: {
@@ -51,14 +54,13 @@ export function NookDetail({
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMember, setIsMember] = useState(nook.isMember);
-  const [joining, setJoining] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyingToContent, setReplyingToContent] = useState<string>("");
   const [userReactions, setUserReactions] = useState<Record<string, string[]>>(
     {}
   );
-  const [localMemberCount, setLocalMemberCount] = useState(nook.members_count);
+  const [localMemberCount] = useState(nook.members_count);
+    const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   const [localMessageCount, setLocalMessageCount] = useState(
     nook.messages_count
   );
@@ -77,10 +79,8 @@ export function NookDetail({
   };
 
   useEffect(() => {
-    if (isMember || nook.isCreator) {
-      fetchMessages();
-    }
-  }, [nook.id, isMember, nook.isCreator]);
+    fetchMessages();
+  }, [nook.id]);
 
   const fetchMessages = async () => {
     try {
@@ -113,28 +113,6 @@ export function NookDetail({
       setError(err.response?.data?.error?.message || "Failed to load messages");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleJoinNook = async () => {
-    try {
-      setJoining(true);
-      setIsMember(true);
-      setLocalMemberCount((prev) => prev + 1);
-
-      await JoinNook(nook.id, {
-        is_anonymous: true,
-        notifications_enabled: true,
-      });
-
-      onNookUpdated?.();
-    } catch (err: any) {
-      console.error("Error joining:", err);
-      alert(err.response?.data?.error?.message || "Failed to join nook");
-      setIsMember(false);
-      setLocalMemberCount((prev) => prev - 1);
-    } finally {
-      setJoining(false);
     }
   };
 
@@ -192,7 +170,7 @@ export function NookDetail({
       }
     } catch (err: any) {
       console.error("Send message error:", err);
-      alert(err.response?.data?.error?.message || "Failed to send message");
+      showToast(err.response?.data?.error?.message || "Failed to send message", "error");
       setLocalMessageCount((prev) => prev - 1);
     }
   };
@@ -226,7 +204,7 @@ export function NookDetail({
       await toggleMessageReaction(messageId, { reaction_type: reactionType });
     } catch (err: any) {
       console.error("Reaction error:", err);
-      alert(err.response?.data?.error?.message || "Failed to update reaction");
+      showToast(err.response?.data?.error?.message || "Failed to update reaction", "error");
 
       // Revert on error
       await fetchMessages();
@@ -255,47 +233,6 @@ export function NookDetail({
 
   // ── RENDER ───────────────────────────────────────────────────────────────
 
-  if (!isMember && !nook.isCreator) {
-    return (
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="bg-white rounded-2xl shadow-lg border p-8 text-center">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">{nook.title}</h2>
-            <p className="text-gray-600 mb-6">{nook.description}</p>
-          </div>
-
-          <div className="bg-purple-50 rounded-xl p-6 mb-6">
-            <div className="flex justify-center gap-10">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  {localMemberCount}
-                </div>
-                <div className="text-sm text-gray-600">Members</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {localMessageCount}
-                </div>
-                <div className="text-sm text-gray-600">Messages</div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleJoinNook}
-            disabled={joining}
-            className="px-10 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 font-medium shadow-md"
-          >
-            {joining ? "Joining..." : "Join This Nook"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -306,7 +243,7 @@ export function NookDetail({
               onClick={onBack}
               className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-xl"
             >
-              ← Back
+              ← Back to Nooks
             </button>
             <div className="flex items-center gap-2">
               {getTemperatureIcon(nook.temperature)}
@@ -334,6 +271,15 @@ export function NookDetail({
               <ScanEye className="w-3 h-3" />
               <span>{localMessageCount} views</span>
             </div>
+
+             <button
+                  onClick={() => setShowOkestraPanel(true)}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition-all font-medium group"
+                  title="Get AI insights from Okestra"
+                >
+                  <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                  <span className="text-sm">AI Insights</span>
+                </button>
           </div>
         </div>
 
@@ -412,6 +358,71 @@ export function NookDetail({
           onCancelReply={cancelReply}
         />
       </div>
+
+      {/* Okestra AI Insights Panel */}
+      {showOkestraPanel && (() => {
+        // Transform nook data to Topic format
+        const topicData: Topic = {
+          id: nook.id,
+          title: nook.title,
+          content: nook.description,
+          author: {
+            id: 'anonymous',
+            username: 'Anonymous',
+            avatar: '🔒'
+          },
+          forumId: 'nook',
+          scope: 'global',
+          reactions: {
+            seen: nook.members_count || 0,
+            validated: Math.floor((nook.messages_count || 0) * 0.3),
+            inspired: Math.floor((nook.messages_count || 0) * 0.2),
+            heard: Math.floor((nook.messages_count || 0) * 0.4)
+          },
+          userReactions: {
+            seen: false,
+            validated: false,
+            inspired: false,
+            heard: false
+          },
+          commentCount: nook.messages_count || 0,
+          createdAt: new Date(),
+          lastActivity: new Date(),
+          isPinned: false,
+          tags: []
+        };
+
+        // Transform messages to Comment format
+        const commentsData: Comment[] = messages.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          author: {
+            id: msg.user_id || 'anonymous',
+            username: msg.user?.username || 'Anonymous',
+            avatar: msg.user?.avatar || '🔒'
+          },
+          topicId: nook.id,
+          reactions: {
+            helpful: msg.helpful_count || 0,
+            supportive: msg.validated_count || 0
+          },
+          userReactions: {
+            helpful: (userReactions[msg.id] || []).includes('helpful'),
+            supportive: (userReactions[msg.id] || []).includes('validated')
+          },
+          createdAt: new Date(msg.created_at),
+          replies: msg.replies || []
+        }));
+
+        return (
+          <OkestraPanel
+            isOpen={showOkestraPanel}
+            onClose={() => setShowOkestraPanel(false)}
+            topic={topicData}
+            comments={commentsData}
+          />
+        );
+      })()}
     </div>
   );
 }

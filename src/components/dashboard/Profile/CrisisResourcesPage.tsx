@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Phone, MessageCircle, Users, Briefcase, Shield, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Heart, Phone, MessageCircle, Users, Briefcase, Shield, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { GetCrisisResources } from '../../../../api/profileApis';
 
 export function CrisisResourcesPage() {
   const navigate = useNavigate();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [apiResources, setApiResources] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const response = await GetCrisisResources();
+        if (response.success && response.data) {
+          setApiResources(response.data);
+        }
+      } catch {
+        // Fall back to static data on error
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResources();
+  }, []);
 
   const emergencyContacts = [
     {
@@ -240,6 +259,17 @@ export function CrisisResourcesPage() {
           </div>
 
           <div className="p-8">
+            {loading && (
+              <div className="flex items-center justify-center py-8 mb-6">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <span className="ml-2 text-sm text-gray-500">Loading resources...</span>
+              </div>
+            )}
+            {apiResources?.updatedAt && (
+              <p className="text-xs text-gray-400 mb-4 text-right">
+                Last updated: {new Date(apiResources.updatedAt as string).toLocaleDateString()}
+              </p>
+            )}
             <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8">
               <h2 className="text-xl font-bold text-red-900 mb-4 flex items-center gap-2">
                 <Phone className="w-6 h-6" />

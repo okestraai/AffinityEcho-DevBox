@@ -1,12 +1,13 @@
 // src/components/dashboard/DashboardLayout.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { BottomNavigation } from '../components/NavComponent/BottomNavigation';
 import { MentorshipModal } from '../components/Modals/MentorShipModals/MentorshipModal';
 import { DashboardHeader } from '../components/NavComponent/DashboardHeader';
 import { useAuth } from '../hooks/useAuth';
-import { getUnreadCount } from '../lib/notifications';
-import { supabase } from '../lib/supabase';
+import { GetUnreadCount } from '../../api/notificationApis';
+import { webSocketService } from '../services/websocket.service';
+import { TestLLMButton } from '../components/dashboard/TestLLMButton';
 
 export function DashboardLayout() {
   const { user } = useAuth();
@@ -20,39 +21,55 @@ export function DashboardLayout() {
 
   const activeTab = location.pathname.split('/')[2] || 'feeds';
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) return;
-    const count = await getUnreadCount(user.id);
-    setUnreadCount(count);
-  };
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchUnreadCount();
-
-      const subscription = supabase
-        .channel('notifications-count')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`,
-          },
-          fetchUnreadCount
-        )
-        .subscribe();
-
-      return () => {
-        subscription.unsubscribe();
-      };
+    try {
+      const response = await GetUnreadCount();
+      // Handle all possible response shapes from the API after unwrap:
+      // - number directly: response = 5
+      // - nested: response = { data: { count: 5 } }
+      // - flat: response = { count: 5 } or { unread_count: 5 }
+      let count = 0;
+      if (typeof response === 'number') {
+        count = response;
+      } else if (response) {
+        count = response?.data?.count
+          ?? response?.data?.unread_count
+          ?? response?.count
+          ?? response?.unread_count
+          ?? 0;
+      }
+      setUnreadCount(typeof count === 'number' ? count : Number(count) || 0);
+    } catch {
+      // Silent failure for unread count
     }
   }, [user?.id]);
 
-  const handleTabChange = (tab: string) => {
+  // Fetch initial unread count on mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchUnreadCount();
+    }
+  }, [user?.id, fetchUnreadCount]);
+
+  // Listen for real-time notifications via WebSocket instead of polling
+  useEffect(() => {
+    const handleNewNotification = () => {
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    webSocketService.on("new_notification", handleNewNotification);
+
+    return () => {
+      webSocketService.off("new_notification", handleNewNotification);
+    };
+  }, []);
+
+  const handleTabChange = useCallback((tab: string) => {
     navigate(`/dashboard/${tab}`);
-  };
+  }, [navigate]);
+
+  const closeMentorshipModal = useCallback(() => setShowMentorshipModal(false), []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 relative">
@@ -80,8 +97,10 @@ export function DashboardLayout() {
 
       <MentorshipModal
         isOpen={showMentorshipModal}
-        onClose={() => setShowMentorshipModal(false)}
+        onClose={closeMentorshipModal}
       />
+
+      <TestLLMButton />
     </div>
   );
 }

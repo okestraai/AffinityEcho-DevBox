@@ -21,6 +21,7 @@ export interface Topic {
   author: {
     id: string;
     username: string;
+    display_name?: string;
     avatar: string;
   };
   forumId: string;
@@ -58,6 +59,7 @@ export interface Comment {
   author: {
     id: string;
     username: string;
+    display_name?: string;
     avatar: string;
   };
   topicId: string;
@@ -76,6 +78,7 @@ export interface Comment {
 export interface UserProfile {
   id: string;
   username: string;
+  display_name?: string;
   avatar: string;
   bio?: string;
   demographics: {

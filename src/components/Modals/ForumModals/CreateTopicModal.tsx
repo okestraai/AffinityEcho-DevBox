@@ -20,6 +20,7 @@ import {
 } from "../../../../api/forumApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export function CreateTopicModal({
   const [hashtagInput, setHashtagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(true);
-
+  const navigate = useNavigate();
   // API State
   const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
   const [companyType, setCompanyType] = useState<string>("");
@@ -102,7 +103,7 @@ export function CreateTopicModal({
         }
 
         const uniqueForums = Array.from(
-          new Map(forums.map((f) => [f.id, f])).values()
+          new Map(forums.map((f) => [f.id, f])).values(),
         );
 
         setAllJoinedForums(uniqueForums);
@@ -131,7 +132,7 @@ export function CreateTopicModal({
 
       if (scope === "local") {
         const companyForums = allJoinedForums.filter(
-          (f: any) => !f.is_global && f.company_name === apiCompanyName
+          (f: any) => !f.is_global && f.company_name === apiCompanyName,
         );
         setAvailableForums(companyForums);
       } else {
@@ -195,7 +196,7 @@ export function CreateTopicModal({
       showToast(
         error.response?.data?.message ||
           "Failed to create topic. Please try again.",
-        "error"
+        "error",
       );
     } finally {
       setIsSubmitting(false);
@@ -334,12 +335,12 @@ export function CreateTopicModal({
                   {loading
                     ? "Loading forums..."
                     : scope === "local" && !apiCompanyName
-                    ? "Set your company to view company forums"
-                    : availableForums.length === 0
-                    ? `No ${
-                        scope === "local" ? "company" : ""
-                      } forums available`
-                    : "Choose a forum..."}
+                      ? "Set your company to view company forums"
+                      : availableForums.length === 0
+                        ? `No ${
+                            scope === "local" ? "company" : ""
+                          } forums available`
+                        : "Choose a forum..."}
                 </option>
 
                 {scope === "global" && globalForums.length > 0 && (
@@ -379,7 +380,7 @@ export function CreateTopicModal({
               <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 {(() => {
                   const selectedForum = availableForums.find(
-                    (f) => f.id === selectedForumId
+                    (f) => f.id === selectedForumId,
                   );
                   if (!selectedForum) return null;
 
@@ -461,7 +462,7 @@ export function CreateTopicModal({
                     type="button"
                     onClick={() => {
                       onClose();
-                      window.location.href = "/dashboard/forums";
+                      navigate("/dashboard/forums");
                     }}
                     className="mt-2 text-xs text-orange-600 hover:text-orange-800 font-medium underline"
                   >
@@ -483,7 +484,7 @@ export function CreateTopicModal({
                   type="button"
                   onClick={() => {
                     onClose();
-                    window.location.href = "/dashboard/forums";
+                    navigate("/dashboard/forums");
                   }}
                   className="text-xs text-orange-600 hover:text-orange-800 font-medium underline"
                 >
