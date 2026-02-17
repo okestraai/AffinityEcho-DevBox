@@ -145,15 +145,15 @@ export function NookMessage({
             <div className="flex items-center gap-4">
               <button
                 onClick={() => onReact(message.id, "heard")}
-                className={`flex items-center gap-1.5 text-sm transition-all ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-red ${
                   hasReacted("heard")
-                    ? "text-red-600 hover:text-red-700 bg-red-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-red-600 hover:text-red-700 bg-red-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
                     : "text-gray-500 hover:text-red-500 hover:bg-red-50 px-2 py-1 -mx-2 -my-1 rounded-md"
                 }`}
               >
                 <Heart
-                  className={`w-4 h-4 ${
-                    hasReacted("heard") ? "fill-current text-red-600" : ""
+                  className={`w-4 h-4 transition-all duration-200 ${
+                    hasReacted("heard") ? "fill-current text-red-600 animate-reaction-pop" : ""
                   }`}
                 />
                 <span>
@@ -168,15 +168,15 @@ export function NookMessage({
 
               <button
                 onClick={() => onReact(message.id, "validated")}
-                className={`flex items-center gap-1.5 text-sm transition-all ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-blue ${
                   hasReacted("validated")
-                    ? "text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
                     : "text-gray-500 hover:text-blue-500 hover:bg-blue-50 px-2 py-1 -mx-2 -my-1 rounded-md"
                 }`}
               >
                 <CheckCircle
-                  className={`w-4 h-4 ${
-                    hasReacted("validated") ? "fill-current text-blue-600" : ""
+                  className={`w-4 h-4 transition-all duration-200 ${
+                    hasReacted("validated") ? "fill-current text-blue-600 animate-reaction-pop" : ""
                   }`}
                 />
                 <span>
@@ -191,15 +191,15 @@ export function NookMessage({
 
               <button
                 onClick={() => onReact(message.id, "helpful")}
-                className={`flex items-center gap-1.5 text-sm transition-all ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-green ${
                   hasReacted("helpful")
-                    ? "text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
                     : "text-gray-500 hover:text-green-500 hover:bg-green-50 px-2 py-1 -mx-2 -my-1 rounded-md"
                 }`}
               >
                 <ThumbsUp
-                  className={`w-4 h-4 ${
-                    hasReacted("helpful") ? "fill-current text-green-600" : ""
+                  className={`w-4 h-4 transition-all duration-200 ${
+                    hasReacted("helpful") ? "fill-current text-green-600 animate-reaction-pop" : ""
                   }`}
                 />
                 <span>

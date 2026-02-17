@@ -332,13 +332,13 @@ export function OverviewMode(props: any) {
                           {/* Reaction buttons */}
                           <button
                             onClick={(e) => handleReaction(topic.id, "seen", e)}
-                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-green-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-green ${
                               topic.userReactions?.seen
-                                ? "text-green-600"
+                                ? "text-green-600 burst-active"
                                 : "text-gray-500 hover:text-green-600"
                             }`}
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.views_count || 0}
                             </span>
@@ -347,13 +347,13 @@ export function OverviewMode(props: any) {
                             onClick={(e) =>
                               handleReaction(topic.id, "validated", e)
                             }
-                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-blue-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-blue ${
                               topic.userReactions?.validated
-                                ? "text-blue-600"
+                                ? "text-blue-600 burst-active"
                                 : "text-gray-500 hover:text-blue-600"
                             }`}
                           >
-                            <ThumbsUp className="w-4 h-4" />
+                            <ThumbsUp className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.validated ||
                                 topic.reaction_validated_count ||
@@ -364,13 +364,13 @@ export function OverviewMode(props: any) {
                             onClick={(e) =>
                               handleReaction(topic.id, "inspired", e)
                             }
-                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-yellow-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-yellow ${
                               topic.userReactions?.inspired
-                                ? "text-yellow-600"
+                                ? "text-yellow-600 burst-active"
                                 : "text-gray-500 hover:text-yellow-600"
                             }`}
                           >
-                            <Star className="w-4 h-4" />
+                            <Star className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.inspired ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.inspired ||
                                 topic.reaction_inspired_count ||
@@ -381,13 +381,13 @@ export function OverviewMode(props: any) {
                             onClick={(e) =>
                               handleReaction(topic.id, "heard", e)
                             }
-                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium hover:bg-purple-50 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-purple-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-purple ${
                               topic.userReactions?.heard
-                                ? "text-purple-600"
+                                ? "text-purple-600 burst-active"
                                 : "text-gray-500 hover:text-purple-600"
                             }`}
                           >
-                            <HeartIcon className="w-4 h-4" />
+                            <HeartIcon className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.heard ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.heard ||
                                 topic.reaction_heard_count ||
@@ -396,7 +396,7 @@ export function OverviewMode(props: any) {
                           </button>
                           <button
                             onClick={(e) => handleCommentClick(topic.id, e)}
-                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-105 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                               activeCommentId === topic.id
                                 ? "text-purple-600 bg-purple-50"
                                 : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
@@ -409,7 +409,7 @@ export function OverviewMode(props: any) {
                           </button>
                           <button
                             onClick={(e) => handleOkestraClick(topic as Topic, e)}
-                            className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-105 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
                             title="AI Insights"
                           >
                             <Sparkles className="w-4 h-4" />

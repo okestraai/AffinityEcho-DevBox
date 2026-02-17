@@ -1001,22 +1001,22 @@ export function FeedsView() {
                   <div className="flex items-center justify-around">
                     <button
                       onClick={(e) => handleLikeClick(item.id, e)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex-1 justify-center ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110 active:scale-95 flex-1 justify-center reaction-burst burst-blue ${
                         item.user_has_liked
-                          ? "text-blue-600 font-semibold"
+                          ? "text-blue-600 font-semibold burst-active"
                           : "text-gray-600"
                       }`}
                     >
                       <Heart
-                        className={`w-5 h-5 ${
-                          item.user_has_liked ? "fill-blue-600" : ""
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          item.user_has_liked ? "fill-blue-600 animate-reaction-pop" : ""
                         }`}
                       />
                       <span>Like</span>
                     </button>
                     <button
                       onClick={(e) => handleCommentClick(item.id, e)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex-1 justify-center ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-105 active:scale-95 flex-1 justify-center ${
                         activeCommentId === item.id
                           ? "text-blue-600 font-semibold bg-blue-50"
                           : "text-gray-600"
@@ -1027,7 +1027,7 @@ export function FeedsView() {
                     </button>
                     <button
                       onClick={(e) => handleShare(item.id, e)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors flex-1 justify-center"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-all duration-200 hover:scale-105 active:scale-95 flex-1 justify-center"
                     >
                       <Share2 className="w-5 h-5" />
                       <span>Share</span>
@@ -1037,16 +1037,16 @@ export function FeedsView() {
                         e.stopPropagation();
                         handleBookmark(item.id);
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex-1 justify-center ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110 active:scale-95 flex-1 justify-center reaction-burst burst-amber ${
                         item.user_has_bookmarked
-                          ? "text-amber-600 font-semibold"
+                          ? "text-amber-600 font-semibold burst-active"
                           : "text-gray-600"
                       }`}
                       title={item.user_has_bookmarked ? "Saved" : "Save"}
                     >
                       <Bookmark
-                        className={`w-5 h-5 ${
-                          item.user_has_bookmarked ? "fill-amber-600" : ""
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          item.user_has_bookmarked ? "fill-amber-600 animate-reaction-pop" : ""
                         }`}
                       />
                       <span>Save</span>

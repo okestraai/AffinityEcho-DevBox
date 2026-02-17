@@ -211,9 +211,9 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleCommentReaction(comment.id)}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-colors"
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-red"
                 >
-                  <Heart className="w-3 h-3" />
+                  <Heart className="w-3 h-3 transition-all duration-200" />
                   <span>{comment.reaction_helpful_count || 0} helpful</span>
                 </button>
 

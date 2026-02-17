@@ -652,13 +652,13 @@ export function TopicDetailPage() {
               <div className="flex items-center gap-6">
                 <button
                   onClick={() => handleReaction("validated")}
-                  className={`flex items-center gap-2 transition-colors ${
+                  className={`flex items-center gap-2 transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-blue ${
                     topic.userReactions?.validated
-                      ? "text-blue-500"
+                      ? "text-blue-500 burst-active"
                       : "text-gray-600 hover:text-blue-500"
                   }`}
                 >
-                  <CheckCircle2 className="w-5 h-5" />
+                  <CheckCircle2 className={`w-5 h-5 transition-all duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                   <span className="font-semibold">
                     {topic.reaction_validated_count || 0}
                   </span>
@@ -666,24 +666,24 @@ export function TopicDetailPage() {
 
                 <button
                   onClick={() => handleReaction("inspired")}
-                  className={`flex items-center gap-2 transition-colors font-medium hover:bg-purple-50 px-3 py-2 rounded-lg ${
+                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-purple-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg reaction-burst burst-purple ${
                     topic.userReactions.inspired
-                      ? "text-purple-600 bg-purple-50"
+                      ? "text-purple-600 bg-purple-50 burst-active"
                       : "text-gray-500 hover:text-purple-600"
                   }`}
                 >
-                  <Lightbulb className="w-5 h-5" />
+                  <Lightbulb className={`w-5 h-5 transition-all duration-200 ${topic.userReactions.inspired ? "animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reactions.inspired}</span>
                 </button>
                 <button
                   onClick={() => handleReaction("heard")}
-                  className={`flex items-center gap-2 transition-colors font-medium hover:bg-amber-50 px-3 py-2 rounded-lg ${
+                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-amber-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg reaction-burst burst-amber ${
                     topic.userReactions.heard
-                      ? "text-amber-600 bg-amber-50"
+                      ? "text-amber-600 bg-amber-50 burst-active"
                       : "text-gray-500 hover:text-amber-600"
                   }`}
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className={`w-5 h-5 transition-all duration-200 ${topic.userReactions.heard ? "animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reactions.heard}</span>
                 </button>
 
