@@ -100,7 +100,7 @@ export function DashboardLayout() {
         onClose={closeMentorshipModal}
       />
 
-      <TestLLMButton />
+      {import.meta.env.DEV && <TestLLMButton />}
     </div>
   );
 }
