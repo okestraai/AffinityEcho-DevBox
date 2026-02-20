@@ -25,17 +25,11 @@ export function DashboardLayout() {
     if (!user?.id) return;
     try {
       const response = await GetUnreadCount();
-      // Handle all possible response shapes from the API after unwrap:
-      // - number directly: response = 5
-      // - nested: response = { data: { count: 5 } }
-      // - flat: response = { count: 5 } or { unread_count: 5 }
       let count = 0;
       if (typeof response === 'number') {
         count = response;
       } else if (response) {
-        count = response?.data?.count
-          ?? response?.data?.unread_count
-          ?? response?.count
+        count = response?.count
           ?? response?.unread_count
           ?? 0;
       }

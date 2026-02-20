@@ -1,10 +1,10 @@
 // api/nookApis.ts
-import { getAuthInstance, API_URL } from "./base";
+import { getAuthInstance, API_URL, unwrap } from "./base";
 
 export const CreateNook = async (payload: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/nooks`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 // this is the payload
@@ -56,31 +56,31 @@ export const GetNooks = async (
   const url = `${API_URL}/nooks${queryString ? `?${queryString}` : ""}`;
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetNookMetrics = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/nooks/stats`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetNookById = async (nookId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/nooks/${nookId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const DeleteNooksById = async (nookId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.delete(`${API_URL}/nooks/${nookId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const FlagMessage = async (nookId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/nooks/${nookId}/flag`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetNookMessagesByNookId = async (
@@ -106,7 +106,7 @@ export const GetNookMessagesByNookId = async (
   }`; // Fixed URL construction
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const PostNookMessageByNookId = async (
@@ -118,7 +118,7 @@ export const PostNookMessageByNookId = async (
     `${API_URL}/nooks/${nookId}/messages`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const DeleteNooksMessageById = async (
@@ -129,7 +129,7 @@ export const DeleteNooksMessageById = async (
   const res = await authFetch.delete(
     `${API_URL}/nooks/${nookId}/messages/${messageId}`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const JoinNook = async (nookId: string | number, payload: any) => {
@@ -138,19 +138,19 @@ export const JoinNook = async (nookId: string | number, payload: any) => {
     `${API_URL}/nooks/${nookId}/members/join`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const LeaveNook = async (nookId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/nooks/${nookId}/members/leave`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetNookMembers = async (nookId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/nooks/${nookId}/members`);
-  return res.data;
+  return unwrap(res);
 };
 
 /**
@@ -165,7 +165,7 @@ export const addNookReaction = async (
     `${API_URL}/nooks/${nookId}/reactions`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 /**
@@ -181,7 +181,7 @@ export const removeNookReaction = async (
   const url = `${API_URL}/nooks/${nookId}/reactions?${params.toString()}`;
 
   const res = await authFetch.delete(url);
-  return res.data;
+  return unwrap(res);
 };
 
 /**
@@ -199,7 +199,7 @@ export const toggleMessageReaction = async (
     `${API_URL}/nooks/messages/${messageId}/reactions`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 /**
@@ -216,5 +216,36 @@ export const removeMessageReaction = async (
   const url = `${API_URL}/nooks/messages/${messageId}/reactions?${params.toString()}`;
 
   const res = await authFetch.delete(url);
-  return res.data;
+  return unwrap(res);
+};
+
+/**
+ * Get nooks created by the authenticated user
+ */
+export const GetMyNooks = async (page: number = 1, limit: number = 8) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(
+    `${API_URL}/nooks/my-nooks?page=${page}&limit=${limit}`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Get nooks bookmarked by the authenticated user
+ */
+export const GetBookmarkedNooks = async (page: number = 1, limit: number = 8) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(
+    `${API_URL}/nooks/bookmarked?page=${page}&limit=${limit}`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Toggle bookmark on a nook
+ */
+export const ToggleNookBookmark = async (nookId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/nooks/${nookId}/bookmark`);
+  return unwrap(res);
 };

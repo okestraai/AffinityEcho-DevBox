@@ -1,18 +1,18 @@
 // api/forumApis.ts
-import { getAuthInstance, API_URL } from "./base";
+import { getAuthInstance, API_URL, unwrap } from "./base";
 
 export const GetLocalScopeMetrics = async (companyName: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(
     `${API_URL}/forum/metrics/local/${companyName}`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetGlobalScopeMetrics = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/forum/metrics/global`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetRecentDiscussions = async (
@@ -47,13 +47,13 @@ export const GetRecentDiscussions = async (
   )}${queryString ? `?${queryString}` : ""}`;
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetFoundationForums = async (companyName: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/forum/foundation/${companyName}`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetUserJoinedForums = async (companyName: string) => {
@@ -65,37 +65,37 @@ export const GetUserJoinedForums = async (companyName: string) => {
   const url = `${API_URL}/forum/joined?${queryParams.toString()}`;
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const CreateForumTopic = async (payload: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/forum/topics`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetForumTopicById = async (topicId: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/forum/topics/${topicId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetForumById = async (forumId: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/forum/${forumId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const UserJoinForum = async (forumId: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/forum/${forumId}/join`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const UserLeaveForum = async (forumId: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/forum/${forumId}/leave`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const ForumTopicsReactions = async (payload: any) => {
@@ -104,12 +104,12 @@ export const ForumTopicsReactions = async (payload: any) => {
     `${API_URL}/forum/topics/reactions`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 export const CreateForumTopicsComments = async (payload: any) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/forum/comments`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetAllCommentsForATopic = async (topicId: any) => {
@@ -117,7 +117,7 @@ export const GetAllCommentsForATopic = async (topicId: any) => {
   const res = await authFetch.get(
     `${API_URL}/forum/topics/${topicId}/comments`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const TopicsCommentsReactions = async (payload: string | number) => {
@@ -126,11 +126,42 @@ export const TopicsCommentsReactions = async (payload: string | number) => {
     `${API_URL}/forum/comments/reactions`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const DeleteTopicsComments = async (commentId: string | number) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.delete(`${API_URL}/forum/comments/${commentId}`);
-  return res.data;
+  return unwrap(res);
+};
+
+/**
+ * Get topics created by the authenticated user
+ */
+export const GetMyForumTopics = async (page: number = 1, limit: number = 20) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(
+    `${API_URL}/forum/topics/my-posts?page=${page}&limit=${limit}`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Get topics bookmarked by the authenticated user
+ */
+export const GetBookmarkedForumTopics = async (page: number = 1, limit: number = 20) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(
+    `${API_URL}/forum/topics/bookmarked?page=${page}&limit=${limit}`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Toggle bookmark on a forum topic
+ */
+export const ToggleTopicBookmark = async (topicId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/forum/topics/${topicId}/bookmark`);
+  return unwrap(res);
 };

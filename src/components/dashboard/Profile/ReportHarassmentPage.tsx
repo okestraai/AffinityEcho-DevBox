@@ -49,8 +49,8 @@ export function ReportHarassmentPage() {
         contactEmail: formData.contactEmail || undefined,
         immediateRisk: formData.immediateRisk
       });
-      if (response.data?.referenceNumber) {
-        setReferenceNumber(response.data.referenceNumber);
+      if (response?.referenceNumber) {
+        setReferenceNumber(response.referenceNumber);
       }
       if (response.message) {
         setResponseMessage(response.message);
@@ -115,7 +115,7 @@ export function ReportHarassmentPage() {
 
             <div className="space-y-2">
               <button
-                onClick={() => navigate('/dashboard/profile')}
+                onClick={() => navigate(-1)}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
               >
                 Return to Profile
@@ -138,7 +138,7 @@ export function ReportHarassmentPage() {
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-6">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate('/dashboard/profile')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

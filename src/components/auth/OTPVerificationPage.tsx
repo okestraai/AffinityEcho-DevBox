@@ -78,7 +78,7 @@ export function OTPVerificationPage() {
       }
 
       // SAVE TOKENS
-      const { access_token, refresh_token } = response.data;
+      const { access_token, refresh_token } = response;
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
 

@@ -26,12 +26,11 @@ export function NookDetailPage() {
       try {
         const response = await GetNookById(nookId);
 
-        if (response.success && response.data?.success) {
-          const nook = response.data.data.nook;
+        if (response?.nook) {
           setNookData({
-            ...nook,
-            isMember: true,
-            isCreator: response.data.data.isCreator ?? false,
+            ...response.nook,
+            isMember: response.isMember ?? true,
+            isCreator: response.isCreator ?? false,
           });
         } else {
           setError(true);

@@ -65,21 +65,19 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
         hashtags: formData.hashtags
       };
 
-      const response = await CreateNook(payload);
+      await CreateNook(payload);
 
-      if (response.success) {
-        // Reset form
-        setFormData({
-          title: '',
-          description: '',
-          urgency: 'medium',
-          scope: 'company',
-          hashtags: [],
-          hashtagInput: ''
-        });
-        onSuccess();
-        onClose();
-      }
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        urgency: 'medium',
+        scope: 'company',
+        hashtags: [],
+        hashtagInput: ''
+      });
+      onSuccess();
+      onClose();
     } catch (err: any) {
       console.error('Error creating nook:', err);
       setError(err.response?.data?.error?.message || 'Failed to create nook. Please try again.');

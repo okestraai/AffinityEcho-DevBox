@@ -65,7 +65,7 @@ const AxiosInterceptor = (
             { refreshToken }
           );
 
-          const token = newAccessToken.data.data.access_token;
+          const token = newAccessToken.data?.data?.access_token ?? newAccessToken.data?.access_token;
 
           // Save refreshed token to both cookies and localStorage
           CookieUtil.set('access_token', token, 7);

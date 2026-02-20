@@ -2,15 +2,24 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Loader2 } from 'lucide-react';
-
 import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './publicOnlyRoute';
 
-// Lightweight loading fallback
+// Branded loading screen with animated logo
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30">
+    <div className="animate-logo-pulse">
+      <img
+        src="/affinity-echo-logo-hd.png"
+        alt="Affinity Echo"
+        className="w-16 h-16 md:w-20 md:h-20 rounded-2xl shadow-xl object-contain"
+      />
+    </div>
+    <div className="mt-4 flex items-center gap-1.5">
+      <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" />
+      <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce bounce-delay-150" />
+      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce bounce-delay-300" />
+    </div>
   </div>
 );
 
@@ -45,6 +54,7 @@ const CommunityGuidelinesPage = React.lazy(() => import('../components/dashboard
 const CrisisResourcesPage = React.lazy(() => import('../components/dashboard/Profile/CrisisResourcesPage').then(m => ({ default: m.CrisisResourcesPage })));
 const ReportHarassmentPage = React.lazy(() => import('../components/dashboard/Profile/ReportHarassmentPage').then(m => ({ default: m.ReportHarassmentPage })));
 const ExportDataPage = React.lazy(() => import('../components/dashboard/Profile/ExportDataPage').then(m => ({ default: m.ExportDataPage })));
+const MyCasesPage = React.lazy(() => import('../components/dashboard/Profile/MyCasesPage').then(m => ({ default: m.MyCasesPage })));
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, hasCompletedOnboarding, isLoading } = useAuth();
@@ -92,6 +102,7 @@ const AppRoutes: React.FC = () => {
           <Route path="mentorship-chat" element={<Navigate to="messages" replace />} />
           <Route path="profile" element={<ProfileView />} />
           <Route path="notifications" element={<NotificationsView />} />
+          <Route path="my-cases" element={<MyCasesPage />} />
         </Route>
 
         {/* PROFILE SUBPAGES — standalone protected pages */}
@@ -105,7 +116,7 @@ const AppRoutes: React.FC = () => {
           path="/"
           element={
             isLoading ? (
-              <div />
+              <PageLoader />
             ) : (
               <Navigate
                 to={

@@ -1,5 +1,6 @@
 // components/Views/Mentorship/FindMentorshipView.tsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   Search,
   Filter,
@@ -84,6 +85,7 @@ export function FindMentorshipView() {
     affinityTags: [] as string[],
     location: "",
     mentoringAs: "all" as "all" | "mentor" | "mentee" | "both",
+    matchScoreRange: null as { min: number; max: number } | null,
   });
 
   const [filterOptions, setFilterOptions] = useState({
@@ -93,6 +95,7 @@ export function FindMentorshipView() {
     affinityTags: [] as string[],
     availabilityOptions: [] as string[],
     languages: [] as string[],
+    matchScoreRanges: [] as { label: string; min: number; max: number }[],
   });
 
   // Fetch initial data
@@ -117,19 +120,9 @@ export function FindMentorshipView() {
     try {
       const response = await CheckUserProfileExist();
 
-      let profileData = response.data;
-
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      if (profileData?.data?.hasProfile !== undefined) {
-        profileData = profileData.data;
-      }
-
       setProfileCheck({
-        hasProfile: profileData?.hasProfile || false,
-        profileType: profileData?.profileType,
+        hasProfile: response?.hasProfile || false,
+        profileType: response?.profileType,
       });
     } catch (error) {
       console.error("Error checking profile status:", error);
@@ -139,7 +132,9 @@ export function FindMentorshipView() {
   const fetchFilterOptions = async () => {
     try {
       const response = await GetFilterOptions();
-      setFilterOptions(response.data.data);
+      if (response) {
+        setFilterOptions(response);
+      }
     } catch (error) {
       console.error("Error fetching filter options:", error);
     }
@@ -157,7 +152,7 @@ export function FindMentorshipView() {
     }
 
     try {
-      const apiFilters = {
+      const apiFilters: Parameters<typeof GetMentorsAndMentees>[0] = {
         viewMode: viewMode === "all" ? undefined : viewMode,
         search: searchTerm || undefined,
         careerLevel:
@@ -172,6 +167,9 @@ export function FindMentorshipView() {
           filters.availabilityOptions.length > 0
             ? filters.availabilityOptions
             : undefined,
+        minMatchScore: filters.matchScoreRange?.min,
+        maxMatchScore: filters.matchScoreRange?.max,
+        sortBy: filters.matchScoreRange ? "match_score" : undefined,
         sortOrder: "desc" as const,
         page: pageNum,
         limit: PROFILES_PER_PAGE,
@@ -182,33 +180,13 @@ export function FindMentorshipView() {
       let profilesData: any[] = [];
       let paginationData: { totalPages?: number; total?: number } = {};
 
-      if (response && response.data) {
-        const outerData = response.data;
-
-        if (outerData && outerData.data) {
-          const innerData = outerData.data;
-
-          if (innerData.profiles && Array.isArray(innerData.profiles)) {
-            profilesData = innerData.profiles;
-          } else if (Array.isArray(innerData)) {
-            profilesData = innerData;
-          }
-          // Extract pagination from inner data
-          paginationData = { totalPages: innerData.totalPages, total: innerData.total };
-        } else if (outerData.profiles && Array.isArray(outerData.profiles)) {
-          profilesData = outerData.profiles;
-          paginationData = { totalPages: outerData.totalPages, total: outerData.total };
-        } else if (Array.isArray(outerData)) {
-          profilesData = outerData;
+      if (response) {
+        if (response.profiles && Array.isArray(response.profiles)) {
+          profilesData = response.profiles;
+          paginationData = { totalPages: response.totalPages, total: response.total };
+        } else if (Array.isArray(response)) {
+          profilesData = response;
         }
-      }
-
-      if (
-        profilesData.length === 0 &&
-        response.profiles &&
-        Array.isArray(response.profiles)
-      ) {
-        profilesData = response.profiles;
       }
 
       setProfiles(profilesData);
@@ -224,79 +202,43 @@ export function FindMentorshipView() {
       const profilesWithDecryption = await Promise.all(
         profilesData.map(async (profile: any) => {
           try {
-            const decryptedProfile = { ...profile };
+            const mapped = { ...profile };
 
-            decryptedProfile.jobTitle =
-              profile.job_title || profile.jobTitle || "";
-            decryptedProfile.company = profile.company || "";
-            decryptedProfile.careerLevel =
-              profile.career_level || profile.careerLevel || "";
-            decryptedProfile.expertise =
-              profile.mentor_expertise || profile.expertise || [];
-            decryptedProfile.industries =
-              profile.mentor_industries || profile.industries || [];
-            decryptedProfile.availability =
-              profile.mentor_availability || profile.availability || "";
-            decryptedProfile.mentoringAs =
-              profile.mentoring_as || profile.mentoringAs;
-            decryptedProfile.affinityTags =
-              profile.affinity_tags || profile.affinityTags || [];
+            mapped.jobTitle = profile.job_title || profile.jobTitle || "";
+            mapped.company = profile.company || "";
+            mapped.careerLevel = profile.career_level || profile.careerLevel || "";
+            mapped.expertise = profile.mentor_expertise || profile.expertise || [];
+            mapped.industries = profile.mentor_industries || profile.industries || [];
+            mapped.availability = profile.mentor_availability || profile.availability || "";
+            mapped.mentoringAs = profile.mentoring_as || profile.mentoringAs;
+            mapped.affinityTags = profile.affinity_tags || profile.affinityTags || [];
 
+            // Decrypt company if encrypted
             if (profile.company_encrypted) {
               try {
                 const companyResult = await DecryptData({
                   encryptedData: profile.company_encrypted,
                 });
-                decryptedProfile.company =
-                  companyResult.data?.decryptedData || decryptedProfile.company;
+                mapped.company = companyResult?.decryptedData || mapped.company;
               } catch (decryptError) {
                 console.error("Error decrypting company:", decryptError);
               }
             }
 
-            if (profile.career_level_encrypted) {
+            // Decrypt career_level if it looks encrypted (base64/ciphertext)
+            const rawCareer = profile.career_level || profile.careerLevel || "";
+            if (rawCareer && !rawCareer.includes("(") && rawCareer.length > 20) {
               try {
-                const careerResult = await DecryptData({
-                  encryptedData: profile.career_level_encrypted,
-                });
-                decryptedProfile.careerLevel =
-                  careerResult.data?.decryptedData ||
-                  decryptedProfile.careerLevel;
-              } catch (decryptError) {
-                console.error("Error decrypting career level:", decryptError);
+                const careerResult = await DecryptData({ encryptedData: rawCareer });
+                mapped.careerLevel = careerResult?.decryptedData || rawCareer;
+              } catch {
+                mapped.careerLevel = rawCareer;
               }
             }
 
-            if (profile.affinity_tags_encrypted) {
-              try {
-                const tagsResult = await DecryptData({
-                  encryptedData: profile.affinity_tags_encrypted,
-                });
-                if (tagsResult.data?.decryptedData) {
-                  if (typeof tagsResult.data.decryptedData === "string") {
-                    try {
-                      decryptedProfile.affinityTags = JSON.parse(
-                        tagsResult.data.decryptedData
-                      );
-                    } catch {
-                      decryptedProfile.affinityTags =
-                        tagsResult.data.decryptedData
-                          .split(",")
-                          .map((tag: string) => tag.trim());
-                    }
-                  } else if (Array.isArray(tagsResult.data.decryptedData)) {
-                    decryptedProfile.affinityTags =
-                      tagsResult.data.decryptedData;
-                  }
-                }
-              } catch (decryptError) {
-                console.error("Error decrypting affinity tags:", decryptError);
-              }
-            }
-
-            return decryptedProfile;
+            return mapped;
           } catch (error) {
-            console.error("Error decrypting profile:", error);
+            console.error("Error mapping profile:", error);
             return profile;
           }
         })
@@ -334,7 +276,7 @@ export function FindMentorshipView() {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (profile) =>
-          (profile.display_name || profile.username).toLowerCase().includes(search) ||
+          resolveDisplayName(profile.displayName, profile.display_name, profile.username).toLowerCase().includes(search) ||
           profile.bio.toLowerCase().includes(search) ||
           (profile.company && profile.company.toLowerCase().includes(search)) ||
           (profile.jobTitle &&
@@ -398,6 +340,14 @@ export function FindMentorshipView() {
       );
     }
 
+    if (filters.matchScoreRange) {
+      const { min, max } = filters.matchScoreRange;
+      filtered = filtered.filter((profile) => {
+        const score = profile.matchScore || 0;
+        return score >= min && score <= max;
+      });
+    }
+
     return filtered.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
   }, [decryptedProfiles, searchTerm, filters, viewMode]);
 
@@ -428,6 +378,7 @@ export function FindMentorshipView() {
       affinityTags: [],
       location: "",
       mentoringAs: "all",
+      matchScoreRange: null,
     });
   };
 
@@ -445,7 +396,8 @@ export function FindMentorshipView() {
     filters.industries.length +
     filters.affinityTags.length +
     filters.availabilityOptions.length +
-    (filters.location ? 1 : 0);
+    (filters.location ? 1 : 0) +
+    (filters.matchScoreRange ? 1 : 0);
 
   const handleUserClick = (userId: string) => {
     const profile = filteredProfiles.find((p) => p.id === userId);
@@ -748,6 +700,44 @@ export function FindMentorshipView() {
                 </div>
               </div>
 
+              {filterOptions.matchScoreRanges.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Match Score
+                  </label>
+                  <div className="space-y-2">
+                    {filterOptions.matchScoreRanges.map((range) => (
+                      <label
+                        key={range.label}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="matchScoreRange"
+                          checked={
+                            filters.matchScoreRange?.min === range.min &&
+                            filters.matchScoreRange?.max === range.max
+                          }
+                          onChange={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              matchScoreRange:
+                                range.min === 0 && range.max === 100
+                                  ? null
+                                  : { min: range.min, max: range.max },
+                            }))
+                          }
+                          className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {range.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Location
@@ -829,7 +819,7 @@ export function FindMentorshipView() {
                       onClick={() => handleUserClick(profile.id)}
                       className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer truncate"
                     >
-                      {profile.display_name || profile.username}
+                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
                     </button>
                     {profile.matchScore && (
                       <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full flex-shrink-0">

@@ -13,6 +13,10 @@ import {
   MoreVertical,
   UserPlus,
   MessageSquare,
+  AtSign,
+  Shield,
+  Mail,
+  Reply,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -22,8 +26,10 @@ import {
   MarkAllNotificationsAsRead,
   DeleteNotification as DeleteNotificationApi,
   UpdateNotification,
+  ClearAllNotifications,
 } from "../../../../api/notificationApis";
 import { RespondToIdentityReveal } from "../../../../api/messaging";
+import { RespondToDirectMentorshipRequest } from "../../../../api/mentorshipApis";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
 import { NotificationsSkeleton } from "../../../Helper/SkeletonLoader";
@@ -100,24 +106,29 @@ export function NotificationsView() {
       const params: { is_read?: boolean; type?: string; page?: number; limit?: number } = { limit };
       if (filter === "unread") params.is_read = false;
       if (filter === "follows") params.type = "follow";
+      if (filter === "mentions") params.type = "mention";
       if (filter === "posts") params.type = "forum_post";
       if (filter === "mentorship") params.type = "mentorship_request";
 
       const response = await GetNotifications(params);
-      const raw = response?.data?.items ?? response?.data ?? response ?? [];
+      const raw = response?.items ?? (Array.isArray(response) ? response : []);
       const allNotifications = Array.isArray(raw) ? raw : [];
 
       setHasMore(allNotifications.length >= limit);
 
       // Client-side filtering for types not covered by API filter
       let filteredNotifications = allNotifications;
-      if (filter === "posts") {
+      if (filter === "mentions") {
         filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["forum_post", "nook_post", "referral_post"].includes(n.type)
+          ["mention"].includes(n.type)
+        );
+      } else if (filter === "posts") {
+        filteredNotifications = allNotifications.filter((n: Notification) =>
+          ["forum_post", "nook_post", "referral_post", "forum_comment", "forum_like", "feed_like", "post_reaction", "topic_comment", "nook_reply", "nook_comment"].includes(n.type)
         );
       } else if (filter === "mentorship") {
         filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["mentorship_request", "mentorship_accepted", "mentorship_message", "identity_reveal_request", "identity_reveal", "identity_reveal_rejected"].includes(n.type)
+          ["mentorship_request", "mentorship_accepted", "mentorship_message", "mentorship_declined", "identity_reveal_request", "identity_reveal", "identity_reveal_rejected"].includes(n.type)
         );
       }
 
@@ -166,11 +177,63 @@ export function NotificationsView() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm("Are you sure you want to clear all notifications? This cannot be undone.")) return;
+
+    try {
+      await ClearAllNotifications();
+      setNotifications([]);
+      showToast("All notifications cleared.", "success");
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+      showToast("Failed to clear notifications.", "error");
+    }
+  };
+
+  // Normalize backend action_url to frontend route paths
+  const normalizeActionUrl = (actionUrl: string): string => {
+    let url = actionUrl;
+    // Strip leading /dashboard if present — we'll re-add it
+    url = url.replace(/^\/dashboard/, "");
+    // Fix backend path mismatches:
+    // /forum/topics/:id → /forums/topic/:id
+    url = url.replace(/^\/forum\/topics\//, "/forums/topic/");
+    // /forum/topic/:id (singular forum) → /forums/topic/:id
+    url = url.replace(/^\/forum\/topic\//, "/forums/topic/");
+    // /feed/posts/:id → /feeds (no individual post route)
+    url = url.replace(/^\/feed\/posts\/.*/, "/feeds");
+    // /feed/:id → /feeds
+    url = url.replace(/^\/feed\/.*/, "/feeds");
+    // /nook/:id → /nooks/:id
+    url = url.replace(/^\/nook\/([^/])/, "/nooks/$1");
+    // Ensure it starts with /dashboard
+    if (!url.startsWith("/dashboard")) {
+      url = `/dashboard${url.startsWith("/") ? "" : "/"}${url}`;
+    }
+    return url;
+  };
+
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
 
+    // Use action_url first for precise routing
     if (notification.action_url) {
-      navigate(notification.action_url);
+      navigate(normalizeActionUrl(notification.action_url));
+      return;
+    }
+
+    // Build specific route from reference_id and type
+    if (notification.reference_id) {
+      const refType = notification.reference_type;
+      const nType = notification.type;
+      if (refType === "topic" || refType === "forum" || nType.includes("topic") || nType.includes("forum_comment")) {
+        navigate(`/dashboard/forums/topic/${notification.reference_id}`);
+        return;
+      }
+      if (refType === "nook" || refType === "nook_message" || nType.startsWith("nook")) {
+        navigate(`/dashboard/nooks/${notification.reference_id}`);
+        return;
+      }
     }
   };
 
@@ -179,6 +242,10 @@ export function NotificationsView() {
 
     try {
       if (action === "decline_mentorship") {
+        const requestId = notification.reference_id || notification.metadata?.request_id;
+        if (requestId) {
+          await RespondToDirectMentorshipRequest(requestId, { action: "decline" });
+        }
         await UpdateNotification(notification.id, { action_taken: true });
         setNotifications((prev) =>
           prev.map((n) =>
@@ -220,23 +287,75 @@ export function NotificationsView() {
         return;
       }
 
-      await UpdateNotification(notification.id, { action_taken: true });
-
       if (action === "accept_mentorship") {
+        const requestId = notification.reference_id || notification.metadata?.request_id;
+        if (requestId) {
+          await RespondToDirectMentorshipRequest(requestId, { action: "accept" });
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
         showToast("Mentorship request accepted!", "success");
         navigate("/dashboard/messages", {
           state: { startChatWith: notification.actor_id, contextType: "mentorship" },
         });
-      } else if (action === "view_profile") {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
+          )
+        );
+        return;
+      }
+
+      await UpdateNotification(notification.id, { action_taken: true });
+
+      if (action === "view_profile") {
         navigate("/dashboard/profile");
       } else if (action === "view_post") {
-        if (notification.reference_type === "forum") {
-          navigate("/dashboard/forums");
-        } else if (notification.reference_type === "nook") {
-          navigate("/dashboard/nooks");
-        } else if (notification.reference_type === "referral") {
-          navigate("/dashboard/referrals");
+        // Use action_url first, then build specific routes from reference_id
+        if (notification.action_url) {
+          navigate(normalizeActionUrl(notification.action_url));
+        } else if (notification.reference_id) {
+          // Route to specific content using reference_id
+          const refType = notification.reference_type;
+          if (refType === "topic" || refType === "forum" || refType === "forum_post" || refType === "forum_comment") {
+            navigate(`/dashboard/forums/topic/${notification.reference_id}`);
+          } else if (refType === "nook" || refType === "nook_message" || refType === "nook_reply") {
+            navigate(`/dashboard/nooks/${notification.reference_id}`);
+          } else if (refType === "post" || refType === "feed") {
+            navigate("/dashboard/feeds");
+          } else {
+            navigate("/dashboard/feeds");
+          }
+        } else {
+          // Fallback based on notification type
+          const nType = notification.type;
+          if (nType.startsWith("forum") || nType.startsWith("topic")) {
+            navigate("/dashboard/forums");
+          } else if (nType.startsWith("nook")) {
+            navigate("/dashboard/nooks");
+          } else {
+            navigate("/dashboard/feeds");
+          }
         }
+      } else if (action === "view_mention") {
+        // Route mentions to specific content if reference_id is available
+        if (notification.action_url) {
+          navigate(normalizeActionUrl(notification.action_url));
+        } else if (notification.reference_id) {
+          const refType = notification.reference_type;
+          if (refType === "topic" || refType === "forum") {
+            navigate(`/dashboard/forums/topic/${notification.reference_id}`);
+          } else if (refType === "nook" || refType === "nook_message") {
+            navigate(`/dashboard/nooks/${notification.reference_id}`);
+          } else {
+            navigate("/dashboard/feeds");
+          }
+        } else {
+          navigate("/dashboard/feeds");
+        }
+      } else if (action === "view_case") {
+        navigate(notification.action_url ? normalizeActionUrl(notification.action_url) : "/dashboard/my-cases");
+      } else if (action === "view_message") {
+        navigate("/dashboard/messages");
       }
 
       setNotifications((prev) =>
@@ -255,21 +374,35 @@ export function NotificationsView() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "follow":
+      case "user_followed":
         return <UserPlus className="w-5 h-5 text-blue-600" />;
+      case "mention":
+        return <AtSign className="w-5 h-5 text-purple-600" />;
       case "forum_post":
       case "forum_comment":
+      case "topic_comment":
         return <MessageSquare className="w-5 h-5 text-purple-600" />;
       case "forum_like":
+      case "feed_like":
+      case "post_reaction":
+      case "referral_like":
         return <Heart className="w-5 h-5 text-red-500" />;
       case "nook_post":
       case "nook_comment":
-        return <MessageCircle className="w-5 h-5 text-green-600" />;
+      case "nook_message":
+      case "nook_reply":
+        return <Reply className="w-5 h-5 text-green-600" />;
+      case "message_received":
+        return <Mail className="w-5 h-5 text-blue-500" />;
+      case "report_status_update":
+        return <Shield className="w-5 h-5 text-red-600" />;
       case "referral_post":
       case "referral_comment":
       case "referral_connection":
         return <Briefcase className="w-5 h-5 text-orange-600" />;
       case "mentorship_request":
       case "mentorship_accepted":
+      case "mentorship_declined":
       case "mentorship_message":
         return <Target className="w-5 h-5 text-indigo-600" />;
       case "identity_reveal":
@@ -308,13 +441,13 @@ export function NotificationsView() {
     switch (notification.type) {
       case "mentorship_request":
         return (
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 justify-end">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleAction(notification, "accept_mentorship");
               }}
-              className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
             >
               Accept
             </button>
@@ -323,7 +456,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "decline_mentorship");
               }}
-              className="flex-1 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
             >
               Decline
             </button>
@@ -332,13 +465,13 @@ export function NotificationsView() {
 
       case "identity_reveal_request":
         return (
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 justify-end">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleAction(notification, "accept_identity_reveal");
               }}
-              className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
             >
               Accept
             </button>
@@ -347,7 +480,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "decline_identity_reveal");
               }}
-              className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
             >
               Decline
             </button>
@@ -355,50 +488,156 @@ export function NotificationsView() {
         );
 
       case "follow":
+      case "user_followed":
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAction(notification, "view_profile");
-            }}
-            className="mt-2 w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            View Profile
-          </button>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_profile");
+              }}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+            >
+              View Profile
+            </button>
+          </div>
         );
 
       case "identity_reveal":
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate("/dashboard/messages");
-            }}
-            className="mt-2 w-full px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
-          >
-            View Messages
-          </button>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/dashboard/messages");
+              }}
+              className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xs font-medium"
+            >
+              View Messages
+            </button>
+          </div>
+        );
+
+      case "mentorship_accepted":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_message");
+              }}
+              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+            >
+              View Messages
+            </button>
+          </div>
+        );
+
+      case "mentorship_declined":
+        return null;
+
+      case "mentorship_message":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_message");
+              }}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium"
+            >
+              View Message
+            </button>
+          </div>
         );
 
       case "identity_reveal_rejected":
         return null;
 
+      case "mention":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_mention");
+              }}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+            >
+              View Mention
+            </button>
+          </div>
+        );
+
+      case "nook_reply":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_post");
+              }}
+              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+            >
+              View Reply
+            </button>
+          </div>
+        );
+
+      case "report_status_update":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_case");
+              }}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+            >
+              View Case
+            </button>
+          </div>
+        );
+
+      case "message_received":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_message");
+              }}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+            >
+              View Message
+            </button>
+          </div>
+        );
+
       case "forum_post":
       case "nook_post":
+      case "nook_message":
       case "referral_post":
       case "forum_comment":
       case "nook_comment":
       case "referral_comment":
+      case "feed_like":
+      case "post_reaction":
+      case "topic_comment":
+      case "forum_like":
+      case "referral_like":
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAction(notification, "view_post");
-            }}
-            className="mt-2 w-full px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-          >
-            View Post
-          </button>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_post");
+              }}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+            >
+              View Post
+            </button>
+          </div>
         );
 
       default:
@@ -412,17 +651,17 @@ export function NotificationsView() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center">
-              <Bell className="w-6 h-6 text-purple-600" />
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Bell className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 Notifications
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs md:text-sm text-gray-500">
                 {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
               </p>
             </div>
@@ -430,6 +669,7 @@ export function NotificationsView() {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={fetchNotifications}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Refresh"
@@ -438,11 +678,23 @@ export function NotificationsView() {
             </button>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
               >
-                <CheckCircle className="w-4 h-4" />
-                Mark all read
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mark all</span> read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear all</span>
+                <span className="sm:hidden">Clear</span>
               </button>
             )}
           </div>

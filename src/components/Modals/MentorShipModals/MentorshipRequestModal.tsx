@@ -108,7 +108,7 @@ export function MentorshipRequestModal({
             const companyResult = await DecryptData({
               encryptedData: currentUser.company_encrypted,
             });
-            setDecryptedCompanyName(companyResult.data?.decryptedData || "");
+            setDecryptedCompanyName(companyResult?.decryptedData || "");
           } catch (error) {
             console.error("Error decrypting company:", error);
           }
@@ -120,7 +120,7 @@ export function MentorshipRequestModal({
             const careerResult = await DecryptData({
               encryptedData: currentUser.career_level_encrypted,
             });
-            setDecryptedCareerLevel(careerResult.data?.decryptedData || "");
+            setDecryptedCareerLevel(careerResult?.decryptedData || "");
           } catch (error) {
             console.error("Error decrypting career level:", error);
           }
@@ -132,7 +132,7 @@ export function MentorshipRequestModal({
             const locationResult = await DecryptData({
               encryptedData: currentUser.location_encrypted,
             });
-            setDecryptedLocation(locationResult.data?.decryptedData || "");
+            setDecryptedLocation(locationResult?.decryptedData || "");
           } catch (error) {
             console.error("Error decrypting location:", error);
           }
@@ -144,23 +144,23 @@ export function MentorshipRequestModal({
             const tagsResult = await DecryptData({
               encryptedData: currentUser.affinity_tags_encrypted,
             });
-            if (tagsResult.data?.decryptedData) {
-              if (typeof tagsResult.data.decryptedData === "string") {
+            if (tagsResult?.decryptedData) {
+              if (typeof tagsResult.decryptedData === "string") {
                 try {
-                  const parsedTags = JSON.parse(tagsResult.data.decryptedData);
+                  const parsedTags = JSON.parse(tagsResult.decryptedData);
                   setDecryptedAffinityTags(
                     Array.isArray(parsedTags) ? parsedTags : [parsedTags],
                   );
                 } catch {
                   setDecryptedAffinityTags(
-                    tagsResult.data.decryptedData
+                    tagsResult.decryptedData
                       .split(",")
                       .map((tag: string) => tag.trim())
                       .filter((tag: string) => tag),
                   );
                 }
-              } else if (Array.isArray(tagsResult.data.decryptedData)) {
-                setDecryptedAffinityTags(tagsResult.data.decryptedData);
+              } else if (Array.isArray(tagsResult.decryptedData)) {
+                setDecryptedAffinityTags(tagsResult.decryptedData);
               }
             }
           } catch (error) {
@@ -190,17 +190,7 @@ export function MentorshipRequestModal({
     try {
       const profileCheckResponse = await CheckUserProfileExist();
 
-      let profileData = profileCheckResponse.data;
-
-      // Handle new response structure with nested success/data
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      // Also check if it's a nested API response
-      if (profileData?.data?.id !== undefined) {
-        profileData = profileData.data;
-      }
+      const profileData = profileCheckResponse;
 
       // Check if user has mentee profile in the new structure
       const hasMenteeProfile = profileData?.menteeProfile !== undefined;
@@ -228,8 +218,8 @@ export function MentorshipRequestModal({
   const fetchFilterOptions = async () => {
     try {
       const response = await GetFilterOptions();
-      if (response.data?.data) {
-        setFilterOptions(response.data.data);
+      if (response) {
+        setFilterOptions(response);
       }
     } catch (error) {
       console.error("Error fetching filter options:", error);
@@ -240,21 +230,10 @@ export function MentorshipRequestModal({
     try {
       const response = await GetMyMenteeProfile();
 
-      // Handle different response structures
-      let profileData = response.data;
-
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      if (profileData?.data?.menteeProfile !== undefined) {
-        profileData = profileData.data;
-      }
-
-      // Get mentee profile from new structure
-      const menteeProfile = profileData?.menteeProfile || {};
-      const basicProfile = profileData?.basicProfile || {};
-      const status = profileData?.status || {};
+      // Get mentee profile from response
+      const menteeProfile = response?.menteeProfile || {};
+      const basicProfile = response?.basicProfile || {};
+      const status = response?.status || {};
 
       setFormData((prev) => ({
         ...prev,
@@ -342,29 +321,25 @@ export function MentorshipRequestModal({
         affinityTags: currentUser?.affinity_tags_encrypted || "",
       };
 
-      let response;
-
       if (hasProfile || mode === "edit") {
-        response = await UpdateMyMenteeProfile(payload);
+        await UpdateMyMenteeProfile(payload);
       } else {
-        response = await CreateMenteeProfile(payload);
+        await CreateMenteeProfile(payload);
       }
 
-      if (response.success) {
-        showToast(
-          `Mentee profile ${
-            hasProfile || mode === "edit" ? "updated" : "created"
-          } successfully!`,
-          "success",
-        );
+      showToast(
+        `Mentee profile ${
+          hasProfile || mode === "edit" ? "updated" : "created"
+        } successfully!`,
+        "success",
+      );
 
-        // Call the callback if provided instead of reloading
-        if (onProfileUpdated) {
-          onProfileUpdated();
-        }
-
-        onClose();
+      // Call the callback if provided instead of reloading
+      if (onProfileUpdated) {
+        onProfileUpdated();
       }
+
+      onClose();
     } catch (error: any) {
       console.error("Error saving mentee profile:", error);
       showToast(

@@ -1,5 +1,6 @@
 // src/components/Modals/CommentsModal.tsx
 import React, { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   X,
   MessageCircle,
@@ -20,6 +21,8 @@ import {
 } from "../../../../api/forumApis";
 import { getTimeAgo } from "../../../utils/forumUtils";
 import { showToast } from "../../../Helper/ShowToast";
+import { MentionTextarea } from "../../shared/MentionTextarea";
+import { MentionText } from "../../shared/MentionText";
 import { UserProfileModal } from "../UserProfileModal";
 
 interface Props {
@@ -50,7 +53,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       try {
         setLoading(true);
         const result = await GetAllCommentsForATopic(topic.id);
-        setComments(result.data || []);
+        setComments(Array.isArray(result) ? result : (result?.comments || []));
       } catch (error) {
         console.error("Error fetching comments:", error);
       } finally {
@@ -191,7 +194,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                   onClick={() => handleUserClick(comment.user_id)}
                   className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                 >
-                  {comment.user_profile?.display_name || comment.user_profile?.username || "Anonymous"}
+                  {resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username)}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -204,16 +207,17 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                 </span>
               </div>
 
-              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
-                {comment.content}
-              </p>
+              <MentionText
+                text={comment.content}
+                className="text-sm text-gray-700 mb-3 leading-relaxed block"
+              />
 
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleCommentReaction(comment.id)}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-red"
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-colors"
                 >
-                  <Heart className="w-3 h-3 transition-all duration-200" />
+                  <Heart className="w-3 h-3 transition-transform duration-200" />
                   <span>{comment.reaction_helpful_count || 0} helpful</span>
                 </button>
 
@@ -247,10 +251,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                 {isCurrentUser && (
                   <button
                     onClick={() => handleDeleteComment(comment.id)}
-                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors"
+                    className="flex items-center text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete comment"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span>Delete</span>
                   </button>
                 )}
               </div>
@@ -266,12 +270,12 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                       {user?.username?.[0]?.toUpperCase() || "👤"}
                     </div>
                     <div className="flex-1">
-                      <textarea
+                      <MentionTextarea
                         value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
+                        onChange={setReplyText}
                         placeholder={`Reply to ${
-                          comment.user_profile?.display_name || comment.user_profile?.username || "comment"
-                        }...`}
+                          resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username) || "comment"
+                        }... Use @ to mention`}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm"
                       />
@@ -365,10 +369,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                 {user?.username?.[0]?.toUpperCase() || "👤"}
               </div>
               <div className="flex-1">
-                <textarea
+                <MentionTextarea
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Share your thoughts or advice..."
+                  onChange={setNewComment}
+                  placeholder="Share your thoughts or advice... Use @ to mention"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                 />

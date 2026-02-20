@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Zap, Eye } from "lucide-react";
+import { Flame, Zap, Eye, Bookmark } from "lucide-react";
 
 interface NookCardProps {
   nook: {
@@ -14,11 +14,13 @@ interface NookCardProps {
     scope: "company" | "global";
     temperature: "hot" | "warm" | "cool";
     hashtags: string[];
+    user_has_bookmarked?: boolean;
   };
   onClick: (id: string) => void;
+  onBookmark?: (id: string, e: React.MouseEvent) => void;
 }
 
-export function NookCard({ nook, onClick }: NookCardProps) {
+export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case "high":
@@ -127,9 +129,27 @@ export function NookCard({ nook, onClick }: NookCardProps) {
               {nook.scope === "global" ? "GLOBAL" : "COMPANY"}
             </span>
           </div>
-          <span className="text-xs text-gray-400 font-medium">
-            Active {nook.lastActivity}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 font-medium">
+              Active {nook.lastActivity}
+            </span>
+            {onBookmark && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBookmark(nook.id, e);
+                }}
+                className={`p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
+                  nook.user_has_bookmarked
+                    ? "text-amber-500 bg-amber-50"
+                    : "text-gray-400 hover:text-amber-500 hover:bg-amber-50"
+                }`}
+                title="Bookmark"
+              >
+                <Bookmark className={`w-4 h-4 transition-transform duration-200 ${nook.user_has_bookmarked ? "fill-amber-500 animate-reaction-pop" : ""}`} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

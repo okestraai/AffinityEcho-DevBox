@@ -1,5 +1,6 @@
 // MessagesView.tsx - Production Ready
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   Search,
   MessageCircle,
@@ -29,6 +30,8 @@ import {
   GetConnectableUsers,
   SendAMessage,
 } from "../../../../api/messaging";
+import { MentionInput } from "../../shared/MentionTextarea";
+import { MentionText } from "../../shared/MentionText";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
 import { MentorshipRequestModal } from "../../Modals/MentorShipModals/MentorshipRequestModal";
@@ -164,12 +167,20 @@ function UserSearchSkeleton() {
   );
 }
 
-// ==================== GROUPED CONVERSATION LIST ====================
+// ==================== CONVERSATION LIST ====================
+type ChatFilter = "all" | "mentorship" | "regular";
+
 interface ConversationListProps {
   conversations: Conversation[];
   onSelect: (conv: Conversation) => void;
   getIdentityRevealStatus: (conv: Conversation) => boolean | null;
   getTimeAgo: (dateString: string) => string;
+  chatFilter: ChatFilter;
+  onFilterChange: (filter: ChatFilter) => void;
+  hasMore: boolean;
+  onLoadMore: () => void;
+  loadingMore: boolean;
+  onNewChat: () => void;
 }
 
 function ConversationList({
@@ -177,121 +188,197 @@ function ConversationList({
   onSelect,
   getIdentityRevealStatus,
   getTimeAgo,
+  chatFilter,
+  onFilterChange,
+  hasMore,
+  onNewChat,
+  onLoadMore,
+  loadingMore,
 }: ConversationListProps) {
-  const mentorshipChats = conversations.filter(
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const filtered = conversations.filter((c) => {
+    if (chatFilter === "all") return true;
+    const isMentorship = c.context_type === "mentorship" || c.chat_type === "mentorship";
+    return chatFilter === "mentorship" ? isMentorship : !isMentorship;
+  });
+
+  const mentorshipCount = conversations.filter(
     (c) => c.context_type === "mentorship" || c.chat_type === "mentorship",
-  );
-  const regularChats = conversations.filter(
-    (c) => c.context_type !== "mentorship" && c.chat_type !== "mentorship",
-  );
+  ).length;
+  const regularCount = conversations.length - mentorshipCount;
 
-  const renderCard = (conv: Conversation) => {
-    const identityRevealed = getIdentityRevealStatus(conv);
-    const isMentorship =
-      conv.context_type === "mentorship" || conv.chat_type === "mentorship";
+  // Infinite scroll handler
+  useEffect(() => {
+    const container = listRef.current;
+    if (!container || !hasMore) return;
 
-    return (
-      <button
-        key={conv.id}
-        type="button"
-        onClick={() => onSelect(conv)}
-        className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div
-              className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-lg`}
-            >
-              {conv.other_user?.avatar || "👤"}
-            </div>
-            {identityRevealed && (
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-                <Eye className="w-2 h-2 text-white m-auto" />
-              </div>
-            )}
-          </div>
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      if (scrollHeight - scrollTop - clientHeight < 200 && !loadingMore) {
+        onLoadMore();
+      }
+    };
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-medium text-gray-900 truncate">
-                  {conv.other_user?.display_name || conv.other_user?.username || "Unknown User"}
-                </span>
-                {isMentorship && (
-                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
-                    Mentorship
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {conv.last_activity_at && (
-                  <span className="text-xs text-gray-500">
-                    {getTimeAgo(conv.last_activity_at)}
-                  </span>
-                )}
-                {Number(conv.unread_count) > 0 && (
-                  <div
-                    className={`w-5 h-5 ${isMentorship ? "bg-orange-600" : "bg-blue-600"} rounded-full flex items-center justify-center`}
-                  >
-                    <span className="text-xs text-white">
-                      {conv.unread_count}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-gray-500 truncate flex-1">
-                {conv.last_message?.content_preview || "No messages yet"}
-              </p>
-              {!identityRevealed && (
-                <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
-              )}
-            </div>
-          </div>
-        </div>
-      </button>
-    );
-  };
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasMore, loadingMore, onLoadMore]);
 
   return (
-    <div className="space-y-4">
-      {/* Mentorship Chats — always on top */}
-      {mentorshipChats.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <Target className="w-4 h-4 text-orange-600" />
-            <h3 className="text-sm font-semibold text-orange-700 uppercase tracking-wide">
-              Mentorship Chats
-            </h3>
-            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-              {mentorshipChats.length}
-            </span>
-          </div>
-          <div className="grid gap-2">
-            {mentorshipChats.map(renderCard)}
-          </div>
-        </div>
-      )}
+    <div>
+      {/* Filter chips */}
+      <div className="flex gap-2 mb-3">
+        {([
+          { key: "all" as ChatFilter, label: "All", count: conversations.length },
+          { key: "mentorship" as ChatFilter, label: "Mentorship", count: mentorshipCount },
+          { key: "regular" as ChatFilter, label: "Regular", count: regularCount },
+        ]).map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => onFilterChange(f.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              chatFilter === f.key
+                ? f.key === "mentorship"
+                  ? "bg-orange-600 text-white"
+                  : "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {f.label}
+            {f.count > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+                {f.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-      {/* Regular Chats — below mentorship */}
-      {regularChats.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <MessageCircle className="w-4 h-4 text-blue-600" />
-            <h3 className="text-sm font-semibold text-blue-700 uppercase tracking-wide">
-              Conversations
-            </h3>
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-              {regularChats.length}
-            </span>
+      {/* Flat conversation list */}
+      <div ref={listRef} className="grid gap-2 max-h-[calc(100vh-320px)] overflow-y-auto">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            {chatFilter === "mentorship" ? (
+              <>
+                <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h4 className="font-medium text-gray-900 mb-1">No mentorship conversations</h4>
+                <p className="text-sm text-gray-500 mb-4">Find a mentor or mentee to start a mentorship conversation</p>
+                <button
+                  type="button"
+                  onClick={() => onFilterChange("all")}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 transition-colors"
+                >
+                  Find Mentorship
+                </button>
+              </>
+            ) : chatFilter === "regular" ? (
+              <>
+                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h4 className="font-medium text-gray-900 mb-1">No regular conversations</h4>
+                <p className="text-sm text-gray-500 mb-4">Connect with others to start chatting</p>
+                <button
+                  type="button"
+                  onClick={onNewChat}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                >
+                  Start New Chat
+                </button>
+              </>
+            ) : (
+              <>
+                <Inbox className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h4 className="font-medium text-gray-900 mb-1">No conversations yet</h4>
+                <p className="text-sm text-gray-500">Start a conversation to connect with others</p>
+              </>
+            )}
           </div>
-          <div className="grid gap-2">
-            {regularChats.map(renderCard)}
+        ) : filtered.map((conv) => {
+          const identityRevealed = getIdentityRevealStatus(conv);
+          const isMentorship =
+            conv.context_type === "mentorship" || conv.chat_type === "mentorship";
+
+          return (
+            <button
+              key={conv.id}
+              type="button"
+              onClick={() => onSelect(conv)}
+              className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div
+                    className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-lg`}
+                  >
+                    {conv.other_user?.avatar || "👤"}
+                  </div>
+                  {identityRevealed && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                      <Eye className="w-2 h-2 text-white m-auto" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium text-gray-900 truncate">
+                        {resolveDisplayName(conv.other_user?.display_name, conv.other_user?.username) || "Unknown User"}
+                      </span>
+                      {isMentorship && (
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
+                          Mentorship
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {conv.last_activity_at && (
+                        <span className="text-xs text-gray-500">
+                          {getTimeAgo(conv.last_activity_at)}
+                        </span>
+                      )}
+                      {Number(conv.unread_count) > 0 && (
+                        <div
+                          className={`w-5 h-5 ${isMentorship ? "bg-orange-600" : "bg-blue-600"} rounded-full flex items-center justify-center`}
+                        >
+                          <span className="text-xs text-white">
+                            {conv.unread_count}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500 truncate flex-1">
+                      {conv.last_message?.content_preview || "No messages yet"}
+                    </p>
+                    {!identityRevealed && (
+                      <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+
+        {filtered.length > 0 && hasMore && (
+          <div className="py-3 text-center">
+            {loadingMore ? (
+              <Loader2 className="w-5 h-5 text-gray-400 animate-spin mx-auto" />
+            ) : (
+              <button
+                type="button"
+                onClick={onLoadMore}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Load more conversations
+              </button>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -363,8 +450,7 @@ function MessageInputComponent({
     };
   }, [conversationId, sendTypingStatus]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleInputChange = (value: string) => {
     setMessage(value);
     handleTyping();
   };
@@ -403,13 +489,12 @@ function MessageInputComponent({
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <div className="flex gap-2">
-        <input
-          type="text"
+        <MentionInput
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className={`flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 ${isMentorship ? "focus:ring-orange-500" : "focus:ring-blue-500"} outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+          placeholder="Type a message... Use @ to mention"
+          className={`w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 ${isMentorship ? "focus:ring-orange-500" : "focus:ring-blue-500"} outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
           disabled={disabled || isSending}
           autoFocus
         />
@@ -449,10 +534,12 @@ export function MessagesView() {
     identityStatus: false,
     sendingMessage: false,
   });
-  const [activeTab, setActiveTab] = useState<"messages" | "mentorship">(
-    "messages",
-  );
+  const [chatFilter, setChatFilter] = useState<ChatFilter>("all");
+  const [showMentorshipRequests, setShowMentorshipRequests] = useState(false);
   const [showMentorshipRequest, setShowMentorshipRequest] = useState(false);
+  const [conversationLimit, setConversationLimit] = useState(50);
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
+  const [loadingMoreConversations, setLoadingMoreConversations] = useState(false);
   const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [searchUsername, setSearchUsername] = useState("");
@@ -479,15 +566,9 @@ export function MessagesView() {
   // ==================== HELPERS ====================
 
   const parseConversationsResponse = (response: any): Conversation[] => {
-    if (response && typeof response === "object") {
-      if (response.success && response.data) {
-        const innerData = response.data;
-        if (innerData.success && innerData.data) return innerData.data.conversations || [];
-        if (Array.isArray(innerData.conversations)) return innerData.conversations;
-        if (Array.isArray(innerData)) return innerData;
-      }
-      if (Array.isArray(response)) return response;
-    }
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response.conversations)) return response.conversations;
     return [];
   };
 
@@ -507,31 +588,16 @@ export function MessagesView() {
 
       let usersArray: any[] = [];
 
-      if (response && typeof response === "object") {
-        if (response.success && response.data) {
-          const innerData = response.data;
-          if (
-            innerData.success &&
-            innerData.data &&
-            Array.isArray(innerData.data.users)
-          ) {
-            usersArray = innerData.data.users;
-          } else if (Array.isArray(innerData.users)) {
-            usersArray = innerData.users;
-          } else if (Array.isArray(innerData)) {
-            usersArray = innerData;
-          }
-        } else if (Array.isArray(response.users)) {
-          usersArray = response.users;
-        } else if (Array.isArray(response.data)) {
-          usersArray = response.data;
-        }
+      if (Array.isArray(response)) {
+        usersArray = response;
+      } else if (Array.isArray(response?.users)) {
+        usersArray = response.users;
       }
 
       const formattedUsers = usersArray.map((userData: any) => ({
         id: userData.id,
         username: userData.username || "Unknown User",
-        display_name: userData.display_name || userData.username || "Unknown User",
+        display_name: resolveDisplayName(userData.display_name, userData.username) || "Unknown User",
         avatar: userData.avatar || "👤",
         job_title:
           userData.job_title || userData.job_title_encrypted || "Not specified",
@@ -559,16 +625,12 @@ export function MessagesView() {
         const response =
           await GetIdentityRevealStatusForConversation(conversationId);
 
-        // Unwrap: { success, data: { success, data: { identity_revealed, pending_request, can_request } } }
-        const outer = response?.data || response;
-        const inner = outer?.data || outer;
-
-        if (inner && typeof inner === "object") {
+        if (response && typeof response === "object") {
           setIdentityRevealStatus({
-            is_revealed: inner.identity_revealed ?? inner.is_revealed ?? false,
-            pending_request: inner.pending_request || null,
-            can_request: inner.can_request ?? true,
-            status: inner.pending_request?.status,
+            is_revealed: response.identity_revealed ?? response.is_revealed ?? false,
+            pending_request: response.pending_request || null,
+            can_request: response.can_request ?? true,
+            status: response.pending_request?.status,
           });
         }
       } catch {
@@ -580,27 +642,56 @@ export function MessagesView() {
     [],
   );
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (limit?: number) => {
     if (!user?.id) return;
+
+    const fetchLimit = limit || conversationLimit;
 
     setLoading((prev) => ({ ...prev, conversations: true }));
     try {
       const response = await GetConversations({
         chat_type: "all",
-        limit: 50,
+        limit: fetchLimit,
         offset: 0,
         search: "",
       });
 
       const conversationsArray = parseConversationsResponse(response);
       setConversations(conversationsArray);
+      setHasMoreConversations(conversationsArray.length >= fetchLimit);
     } catch {
       setConversations([]);
+      setHasMoreConversations(false);
     } finally {
       setConversationsLoaded(true);
       setLoading((prev) => ({ ...prev, conversations: false }));
     }
-  }, [user?.id]);
+  }, [user?.id, conversationLimit]);
+
+  const loadMoreConversations = useCallback(async () => {
+    if (loadingMoreConversations || !hasMoreConversations) return;
+
+    setLoadingMoreConversations(true);
+    const newLimit = conversationLimit + 50;
+    setConversationLimit(newLimit);
+
+    try {
+      const response = await GetConversations({
+        chat_type: "all",
+        limit: newLimit,
+        offset: 0,
+        search: "",
+      });
+
+      const conversationsArray = parseConversationsResponse(response);
+      setConversations(conversationsArray);
+      setHasMoreConversations(conversationsArray.length >= newLimit);
+    } catch {
+      // Keep existing conversations on failure
+    } finally {
+      setLoadingMoreConversations(false);
+    }
+  }, [conversationLimit, loadingMoreConversations, hasMoreConversations]);
 
   const fetchMessages = useCallback(
     async (conversationId: string) => {
@@ -615,19 +706,10 @@ export function MessagesView() {
 
         let messagesArray: Message[] = [];
 
-        if (response && typeof response === "object") {
-          if (response.success && response.data) {
-            const innerData = response.data;
-            if (innerData.success && innerData.data) {
-              messagesArray = innerData.data.messages || [];
-            } else if (Array.isArray(innerData.messages)) {
-              messagesArray = innerData.messages;
-            } else if (Array.isArray(innerData)) {
-              messagesArray = innerData;
-            }
-          } else if (Array.isArray(response)) {
-            messagesArray = response;
-          }
+        if (Array.isArray(response)) {
+          messagesArray = response;
+        } else if (Array.isArray(response?.messages)) {
+          messagesArray = response.messages;
         }
 
         setMessages(messagesArray);
@@ -702,7 +784,7 @@ export function MessagesView() {
       });
 
       // Add the sent message to the UI immediately
-      const sentMsg = response?.data || response;
+      const sentMsg = response;
       if (sentMsg?.id) {
         setMessages((prev) => {
           const exists = prev.some((msg) => msg.id === sentMsg.id);
@@ -758,7 +840,7 @@ export function MessagesView() {
     if (value.length < 20 || /^[a-zA-Z0-9 ,.\-_()]+$/.test(value)) return value;
     try {
       const res = await DecryptData({ encryptedData: value });
-      return res?.data?.decryptedData ?? res?.decryptedData ?? value;
+      return res?.decryptedData ?? value;
     } catch {
       return value;
     }
@@ -769,8 +851,7 @@ export function MessagesView() {
     if (!userId) return;
     try {
       const response = await GetMentorProfileByUserId(userId);
-      let profile = response?.data?.data || response?.data || response;
-      if (profile?.data) profile = profile.data;
+      const profile = response;
 
       if (profile) {
         const basic = profile.basicProfile || {};
@@ -799,7 +880,7 @@ export function MessagesView() {
         setMentorProfileData({
           id: profile.id || userId,
           username: profile.username || "Unknown",
-          display_name: profile.display_name || profile.username || "Unknown",
+          display_name: resolveDisplayName(profile.display_name, profile.username) || "Unknown",
           avatar: profile.avatar || "👤",
           bio: basic.bio || mentor?.bio || "",
           company: decryptedCompany,
@@ -1146,7 +1227,7 @@ export function MessagesView() {
 
     GetTypingStatus(selectedConversation.id)
       .then((status) => {
-        setTypingUsers(status?.data?.active_typers || []);
+        setTypingUsers(status?.active_typers || []);
       })
       .catch(() => {});
 
@@ -1352,7 +1433,7 @@ export function MessagesView() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-gray-900">
-                  {otherUser.display_name || otherUser.username || "User"}
+                  {resolveDisplayName(otherUser.display_name, otherUser.username) || "User"}
                 </h3>
                 {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
@@ -1469,7 +1550,7 @@ export function MessagesView() {
                   key={message.id}
                   className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-xs ${isOwn ? "text-right" : ""}`}>
+                  <div className={`max-w-xs md:max-w-[40vw] ${isOwn ? "text-right" : ""}`}>
                     <div
                       className={`inline-block px-3 py-2 rounded-2xl ${
                         isOwn
@@ -1477,7 +1558,7 @@ export function MessagesView() {
                           : "bg-white border border-gray-200 rounded-bl-md"
                       }`}
                     >
-                      <p className="text-sm">{message.content_encrypted}</p>
+                      <MentionText text={message.content_encrypted} className="text-sm block" />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {getTimeAgo(message.sent_at || message.created_at)}
@@ -1519,180 +1600,162 @@ export function MessagesView() {
     );
   }
 
+  // ==================== RENDER MENTORSHIP REQUESTS VIEW ====================
+  if (showMentorshipRequests) {
+    return (
+      <MentorshipRequestsView onBack={() => setShowMentorshipRequests(false)} />
+    );
+  }
+
   // ==================== RENDER MAIN VIEW ====================
   return (
     <>
       <div className="max-w-4xl mx-auto">
         <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Messages & Requests
+                Messages
               </h1>
               <p className="text-gray-500">
-                Manage your conversations and requests
+                All your conversations in one place
               </p>
             </div>
-          </div>
-
-          <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setActiveTab("messages")}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                activeTab === "messages"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              onClick={() => setShowMentorshipRequests(true)}
+              className="px-3 py-2 bg-orange-50 text-orange-700 border border-orange-200 rounded-xl hover:bg-orange-100 transition-colors flex items-center gap-2 text-sm font-medium"
             >
-              <div className="flex items-center justify-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                <span>Messages</span>
-                {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("mentorship")}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                activeTab === "mentorship"
-                  ? "bg-orange-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Target className="w-4 h-4" />
-                <span>Mentorship</span>
-              </div>
+              <Inbox className="w-4 h-4" />
+              <span className="hidden sm:inline">Mentorship Requests</span>
+              <span className="sm:hidden">Requests</span>
             </button>
           </div>
         </header>
 
-        {activeTab === "messages" ? (
-          <div>
-            <div className="mb-4 flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div>
+          <div className="mb-4 flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateNewChat}
+              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" />
+              New
+            </button>
+          </div>
+
+          {showNewConversation && (
+            <div className="mb-4 p-4 bg-white border border-blue-200 rounded-xl shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Start New Conversation
+              </h3>
+              <div className="relative mb-3">
                 <input
                   type="text"
-                  placeholder="Search conversations..."
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  placeholder="Search users by username..."
+                  value={searchUsername}
+                  onChange={(e) => setSearchUsername(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  autoFocus
                 />
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {loading.users ? (
+                  <UserSearchSkeleton />
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handleStartConversation(user.id)}
+                      disabled={!user.can_message}
+                      className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        !user.can_message ? "Cannot message this user" : ""
+                      }
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        {user.avatar}
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-medium text-gray-900 block">
+                          {resolveDisplayName(user.display_name, user.username)}
+                        </span>
+                        <span className="text-xs text-gray-500 block">
+                          {user.job_title !== "Not specified" &&
+                          user.company !== "Not specified"
+                            ? `${user.job_title} • ${user.company}`
+                            : "User"}
+                        </span>
+                      </div>
+                      {user.privacy_level === "anonymous" && (
+                        <Shield className="w-3 h-3 text-gray-400" />
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-3">
+                    <Inbox className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">
+                      {searchUsername
+                        ? "No users found matching your search"
+                        : "No users available to chat with"}
+                    </p>
+                  </div>
+                )}
               </div>
               <button
                 type="button"
-                onClick={handleCreateNewChat}
-                className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
+                onClick={() => {
+                  setShowNewConversation(false);
+                  setSearchUsername("");
+                }}
+                className="mt-3 w-full py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
               >
-                <Plus className="w-4 h-4" />
-                New
+                Cancel
               </button>
             </div>
+          )}
 
-            {showNewConversation && (
-              <div className="mb-4 p-4 bg-white border border-blue-200 rounded-xl shadow-sm">
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  Start New Conversation
-                </h3>
-                <div className="relative mb-3">
-                  <input
-                    type="text"
-                    placeholder="Search users by username..."
-                    value={searchUsername}
-                    onChange={(e) => setSearchUsername(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    autoFocus
-                  />
-                </div>
-                <div className="max-h-48 overflow-y-auto space-y-1">
-                  {loading.users ? (
-                    <UserSearchSkeleton />
-                  ) : filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => handleStartConversation(user.id)}
-                        disabled={!user.can_message}
-                        className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={
-                          !user.can_message ? "Cannot message this user" : ""
-                        }
-                      >
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          {user.avatar}
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-medium text-gray-900 block">
-                            {user.display_name || user.username}
-                          </span>
-                          <span className="text-xs text-gray-500 block">
-                            {user.job_title !== "Not specified" &&
-                            user.company !== "Not specified"
-                              ? `${user.job_title} • ${user.company}`
-                              : "User"}
-                          </span>
-                        </div>
-                        {user.privacy_level === "anonymous" && (
-                          <Shield className="w-3 h-3 text-gray-400" />
-                        )}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="text-center py-3">
-                      <Inbox className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">
-                        {searchUsername
-                          ? "No users found matching your search"
-                          : "No users available to chat with"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewConversation(false);
-                    setSearchUsername("");
-                  }}
-                  className="mt-3 w-full py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            {loading.conversations ? (
-              <ConversationsSkeleton />
-            ) : conversations.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="font-medium text-gray-500 mb-1">
-                  No conversations yet
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Accept connection requests to start messaging
-                </p>
-              </div>
-            ) : (
-              <ConversationList
-                conversations={conversations}
-                onSelect={(conv) => {
-                  setSelectedConversation(conv);
-                  fetchMessages(conv.id);
-                }}
-                getIdentityRevealStatus={getIdentityRevealStatus}
-                getTimeAgo={getTimeAgo}
-              />
-            )}
-          </div>
-        ) : (
-          <MentorshipRequestsView onBack={() => setActiveTab("messages")} />
-        )}
+          {loading.conversations ? (
+            <ConversationsSkeleton />
+          ) : conversations.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+              <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="font-medium text-gray-500 mb-1">
+                No conversations yet
+              </h3>
+              <p className="text-sm text-gray-400">
+                Accept connection requests to start messaging
+              </p>
+            </div>
+          ) : (
+            <ConversationList
+              conversations={conversations}
+              onSelect={(conv) => {
+                setSelectedConversation(conv);
+                fetchMessages(conv.id);
+              }}
+              getIdentityRevealStatus={getIdentityRevealStatus}
+              getTimeAgo={getTimeAgo}
+              chatFilter={chatFilter}
+              onFilterChange={setChatFilter}
+              hasMore={hasMoreConversations}
+              onLoadMore={loadMoreConversations}
+              loadingMore={loadingMoreConversations}
+              onNewChat={handleCreateNewChat}
+            />
+          )}
+        </div>
 
         <MentorshipRequestModal
           isOpen={showMentorshipRequest}

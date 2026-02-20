@@ -115,7 +115,7 @@ export const UnpinPost = async (postId: string) => {
 };
 
 /**
- * Toggle like on content (post, topic, nook_message)
+ * Toggle like on content (post, topic, nook_message) — legacy
  */
 export const ToggleLike = async (
   contentType: "post" | "topic" | "nook_message",
@@ -124,6 +124,22 @@ export const ToggleLike = async (
   const authFetch = getAuthInstance();
   const res = await authFetch.post(
     `${API_URL}/feeds/${contentType}/${contentId}/like`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Toggle a reaction (heard/validated/inspired) on feed content
+ */
+export const ToggleFeedReaction = async (
+  contentType: "post" | "topic" | "nook_message",
+  contentId: string,
+  reactionType: "heard" | "validated" | "inspired"
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(
+    `${API_URL}/feeds/${contentType}/${contentId}/react`,
+    { reactionType }
   );
   return unwrap(res);
 };

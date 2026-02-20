@@ -1,5 +1,6 @@
 // components/Views/Mentorship/MentorshipView.tsx
 import { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import { useNavigate } from "react-router-dom";
 import {
   Target,
@@ -24,6 +25,7 @@ import {
   GetMyMentees,
 } from "../../../../api/mentorshipApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { DecryptData } from "../../../../api/EncrytionApis";
 import { MentorshipUserProfile } from "../../../types/mentorship";
 
 // Interface for profile check response
@@ -144,7 +146,7 @@ export function MentorshipView() {
     const profile: MentorshipUserProfile = {
       id: userData?.id || "",
       username: userData?.username || "Unknown User",
-      display_name: userData?.display_name || userData?.username || "Unknown User",
+      display_name: resolveDisplayName(userData?.displayName, userData?.display_name, userData?.username) || "Unknown User",
       avatar: userData?.avatar || "👤",
       bio: mentorP?.bio || menteeP?.bio || userData?.bio || "",
       company: userData?.company || "",
@@ -204,21 +206,7 @@ export function MentorshipView() {
   const fetchMentorshipMetrics = async () => {
     try {
       const response = await GetMentorshipMetric();
-
-      // Handle nested response structure
-      let metricsData = response.data;
-
-      // If response has nested structure
-      if (metricsData?.success && metricsData?.data) {
-        metricsData = metricsData.data;
-      }
-
-      // Also check if it's a nested API response
-      if (metricsData?.data?.total !== undefined) {
-        metricsData = metricsData.data;
-      }
-
-      setMentorshipMetrics(metricsData);
+      setMentorshipMetrics(response);
     } catch (error) {
       console.error("Error fetching mentorship metrics:", error);
       // Set default metrics structure if API fails
@@ -278,30 +266,17 @@ export function MentorshipView() {
     try {
       const response = await CheckUserProfileExist();
 
-      // Handle nested response structure
-      let profileData = response.data;
-
-      // If response.data has a nested success/data structure
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      // Also check if it's a nested API response
-      if (profileData?.data?.hasProfile !== undefined) {
-        profileData = profileData.data;
-      }
-
-      // Set profile check with new structure
+      // Set profile check with response
       const profileCheckData: ProfileCheckData = {
-        hasProfile: profileData?.hasProfile || false,
-        hasMentorProfile: profileData?.hasMentorProfile || false,
-        hasMenteeProfile: profileData?.hasMenteeProfile || false,
-        isActiveMentor: profileData?.isActiveMentor || false,
-        isActiveMentee: profileData?.isActiveMentee || false,
-        mentoringAs: profileData?.mentoringAs || "none",
-        profileType: getProfileType(profileData),
-        isMentorProfile: profileData?.hasMentorProfile || false,
-        isMenteeProfile: profileData?.hasMenteeProfile || false,
+        hasProfile: response?.hasProfile || false,
+        hasMentorProfile: response?.hasMentorProfile || false,
+        hasMenteeProfile: response?.hasMenteeProfile || false,
+        isActiveMentor: response?.isActiveMentor || false,
+        isActiveMentee: response?.isActiveMentee || false,
+        mentoringAs: response?.mentoringAs || "none",
+        profileType: getProfileType(response),
+        isMentorProfile: response?.hasMentorProfile || false,
+        isMenteeProfile: response?.hasMenteeProfile || false,
       };
 
       setProfileCheck(profileCheckData);
@@ -322,6 +297,23 @@ export function MentorshipView() {
     }
   };
 
+  // Decrypt career_level_encrypted for a user object
+  const decryptConnectionUser = async (userData: any) => {
+    if (!userData) return userData;
+    const decrypted = { ...userData };
+    if (userData.career_level_encrypted) {
+      try {
+        const result = await DecryptData({ encryptedData: userData.career_level_encrypted });
+        decrypted.careerLevel = result?.decryptedData || userData.careerLevel || userData.career_level || "";
+      } catch (e) {
+        console.error("Error decrypting career level:", e);
+      }
+    } else {
+      decrypted.careerLevel = userData.careerLevel || userData.career_level || "";
+    }
+    return decrypted;
+  };
+
   const fetchMentorshipConnections = async () => {
     try {
       // Fetch mentors and mentees separately
@@ -330,33 +322,28 @@ export function MentorshipView() {
         GetMyMentees(),
       ]);
 
-      // Process mentors response
-      let mentorsData = mentorsResponse;
+      const mentors = mentorsResponse?.mentors || [];
+      const mentees = menteesResponse?.mentees || [];
 
-      // Handle different response structures
-      if (mentorsData?.success && mentorsData?.data) {
-        mentorsData = mentorsData.data;
-      }
-      if (mentorsData?.data?.mentors !== undefined) {
-        mentorsData = mentorsData.data;
-      }
+      // Decrypt career_level_encrypted for each connection's user
+      const decryptedMentors = await Promise.all(
+        mentors.map(async (m: any) => {
+          const mentorUser = m.mentor || m;
+          const decryptedUser = await decryptConnectionUser(mentorUser);
+          return m.mentor ? { ...m, mentor: decryptedUser } : decryptedUser;
+        })
+      );
 
-      const mentors = mentorsData?.mentors || [];
+      const decryptedMentees = await Promise.all(
+        mentees.map(async (m: any) => {
+          const menteeUser = m.mentee || m;
+          const decryptedUser = await decryptConnectionUser(menteeUser);
+          return m.mentee ? { ...m, mentee: decryptedUser } : decryptedUser;
+        })
+      );
 
-      // Process mentees response
-      let menteesData = menteesResponse;
-
-      if (menteesData?.success && menteesData?.data) {
-        menteesData = menteesData.data;
-      }
-      if (menteesData?.data?.mentees !== undefined) {
-        menteesData = menteesData.data;
-      }
-
-      const mentees = menteesData?.mentees || [];
-
-      setMyMentors(mentors);
-      setMyMentees(mentees);
+      setMyMentors(decryptedMentors);
+      setMyMentees(decryptedMentees);
     } catch (error) {
       console.error("Error fetching mentorship connections:", error);
       setMyMentors([]);
@@ -552,7 +539,7 @@ export function MentorshipView() {
                         onClick={() => handleViewProfile(mentor, "mentor")}
                         className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer text-left"
                       >
-                        {mentorUser?.display_name || mentorUser?.username || "Unknown User"}
+                        {resolveDisplayName(mentorUser?.displayName, mentorUser?.display_name, mentorUser?.username) || "Unknown User"}
                       </button>
                       <p className="text-sm text-gray-600">
                         {mentorUser?.jobTitle || "Professional"}
@@ -560,6 +547,11 @@ export function MentorshipView() {
                       <p className="text-xs text-blue-600">
                         {mentorUser?.company || "Company not specified"}
                       </p>
+                      {mentorUser?.careerLevel && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {mentorUser.careerLevel}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-2">
                         <Clock className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-500">
@@ -745,7 +737,7 @@ export function MentorshipView() {
                         onClick={() => handleViewProfile(mentee, "mentee")}
                         className="font-semibold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left"
                       >
-                        {menteeUser?.display_name || menteeUser?.username || "Unknown User"}
+                        {resolveDisplayName(menteeUser?.displayName, menteeUser?.display_name, menteeUser?.username) || "Unknown User"}
                       </button>
                       <p className="text-sm text-gray-600">
                         {menteeUser?.jobTitle || "Professional"}
@@ -753,6 +745,11 @@ export function MentorshipView() {
                       <p className="text-xs text-blue-600">
                         {menteeUser?.company || "Company not specified"}
                       </p>
+                      {menteeUser?.careerLevel && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {menteeUser.careerLevel}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-2">
                         <Clock className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-500">

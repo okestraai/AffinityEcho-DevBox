@@ -23,6 +23,7 @@ import {
   GetNooks,
   GetNookMetrics,
   GetNookById,
+  ToggleNookBookmark,
 } from "../../../../api/nookApis";
 
 // Logging utility
@@ -97,12 +98,11 @@ export function NooksView() {
       setStatsLoading(true);
       const response = await GetNookMetrics();
 
-      if (response.success && response.data?.success) {
-        const data = response.data.data;
+      if (response) {
         setStats({
-          activeNooks: data.activeNooks || 0,
-          anonymousUsers: data.anonymousUsers || 0,
-          totalMessageParticipants: data.totalMessageParticipants || 0,
+          activeNooks: response.activeNooks || 0,
+          anonymousUsers: response.anonymousUsers || 0,
+          totalMessageParticipants: response.totalMessageParticipants || 0,
         });
         log("fetchStats", "Stats loaded", data);
       }
@@ -121,7 +121,6 @@ export function NooksView() {
     try {
       setLoading(true);
 
-      // Build filter object
       const filterParams: any = {
         page,
         limit: NOOKS_PER_PAGE,
@@ -129,7 +128,6 @@ export function NooksView() {
         sortOrder: "desc",
       };
 
-      // Add filters only if they're not 'all'
       if (filters.urgency !== "all") filterParams.urgency = filters.urgency;
       if (filters.scope !== "all") filterParams.scope = filters.scope;
       if (filters.temperature !== "all")
@@ -138,21 +136,25 @@ export function NooksView() {
 
       const response = await GetNooks(filterParams);
 
-      if (response.success && response.data?.success) {
-        const data = response.data.data;
-        const newNooks = data.nooks || [];
-        const pagination = data.pagination;
+      const newNooks = response?.nooks || (Array.isArray(response) ? response : []);
+      const pagination = response?.pagination;
 
-        if (replace) {
-          setDisplayedNooks(newNooks);
-        } else {
-          setDisplayedNooks((prev) => [...prev, ...newNooks]);
-        }
+      if (replace) {
+        setDisplayedNooks(newNooks);
+      } else {
+        setDisplayedNooks((prev) => [...prev, ...newNooks]);
+      }
 
-        setTotalPages(pagination.totalPages);
-        setTotalCount(pagination.total);
-        setCurrentPage(pagination.page);
-        setHasMore(pagination.page < pagination.totalPages);
+      if (pagination) {
+        setTotalPages(pagination.totalPages || 1);
+        setTotalCount(pagination.total || newNooks.length);
+        setCurrentPage(pagination.page || page);
+        setHasMore(pagination.page < (pagination.totalPages || 1));
+      } else {
+        setTotalPages(1);
+        setTotalCount(newNooks.length);
+        setCurrentPage(page);
+        setHasMore(false);
       }
     } catch (error) {
       console.error("Error fetching nooks:", error);
@@ -172,11 +174,11 @@ export function NooksView() {
 
       const response = await GetNookById(nookId);
 
-      if (response.success && response.data?.success) {
+      if (response?.nook) {
         const nookData = {
-          ...response.data.data.nook,
-          isMember: response.data.data.isMember,
-          isCreator: response.data.data.isCreator,
+          ...response.nook,
+          isMember: response.isMember ?? false,
+          isCreator: response.isCreator ?? false,
         };
 
         setSelectedNookData(nookData);
@@ -326,11 +328,25 @@ export function NooksView() {
     fetchStats();
   };
 
+  const handleBookmarkNook = async (nookId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await ToggleNookBookmark(nookId);
+      setDisplayedNooks((prev) =>
+        prev.map((n) =>
+          n.id === nookId ? { ...n, user_has_bookmarked: !n.user_has_bookmarked } : n
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling nook bookmark:", error);
+    }
+  };
+
   // ========================================================================
   // RENDER LOGIC
   // ========================================================================
 
-  // Show first 4 nooks in grid mode, or all displayed nooks in "all" mode
+  // Server-side filtering is handled in fetchNooks — just slice for grid view
   const nooksToDisplay =
     viewMode === "grid" ? displayedNooks.slice(0, 4) : displayedNooks;
 
@@ -396,6 +412,7 @@ export function NooksView() {
         onCreateClick={() => setShowCreateModal(true)}
         onViewModeChange={handleViewModeChange}
         onResetFilters={resetFilters}
+        onBookmarkNook={handleBookmarkNook}
         loading={loading && displayedNooks.length === 0}
       />
 

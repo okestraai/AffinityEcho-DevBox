@@ -91,23 +91,21 @@ export function NookDetail({
         limit: 50,
       });
 
-      if (response.success && response.data?.success) {
-        const messagesData = response.data.data.messages || [];
-        setMessages(messagesData);
+      const messagesData = response?.messages || [];
+      setMessages(messagesData);
 
-        // Build current user's reactions map
-        const reactionsMap: Record<string, string[]> = {};
-        messagesData.forEach((msg: any) => {
-          if (msg.user_reactions) {
-            reactionsMap[msg.id] = msg.user_reactions
-              .filter((r: any) => r.user_id === currentUserId)
-              .map((r: any) => r.reaction_type);
-          } else {
-            reactionsMap[msg.id] = [];
-          }
-        });
-        setUserReactions(reactionsMap);
-      }
+      // Build current user's reactions map
+      const reactionsMap: Record<string, string[]> = {};
+      messagesData.forEach((msg: any) => {
+        if (msg.user_reactions) {
+          reactionsMap[msg.id] = msg.user_reactions
+            .filter((r: any) => r.user_id === currentUserId)
+            .map((r: any) => r.reaction_type);
+        } else {
+          reactionsMap[msg.id] = [];
+        }
+      });
+      setUserReactions(reactionsMap);
     } catch (err: any) {
       console.error("Error fetching messages:", err);
       setError(err.response?.data?.error?.message || "Failed to load messages");
@@ -155,8 +153,8 @@ export function NookDetail({
 
       const response = await PostNookMessageByNookId(nook.id, payload);
 
-      if (response.success && response.data?.success) {
-        const realMessage = response.data.data.message;
+      const realMessage = response?.message;
+      if (realMessage) {
         setMessages((prev) =>
           prev.map((m) => (m.id === optimisticId ? realMessage : m))
         );

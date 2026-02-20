@@ -50,6 +50,7 @@ export interface MentorshipStatsData {
 export interface MentorshipUserProfile {
   id: string;
   username: string;
+  displayName?: string;
   display_name?: string;
   avatar: string;
   bio: string;

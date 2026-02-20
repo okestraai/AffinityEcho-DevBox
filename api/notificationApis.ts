@@ -124,3 +124,12 @@ export const DeleteAllReadNotifications = async () => {
   const res = await authFetch.delete(`${API_URL}/notifications/read/all`);
   return unwrap(res);
 };
+
+/**
+ * Clear all notifications for the authenticated user
+ */
+export const ClearAllNotifications = async () => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.delete(`${API_URL}/notifications/all`);
+  return unwrap(res);
+};

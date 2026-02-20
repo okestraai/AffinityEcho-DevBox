@@ -107,7 +107,7 @@ export function ForumsView() {
           const result = await DecryptData({
             encryptedData: currentUser.company_encrypted,
           });
-          setDecryptedCompanyName(result.data.decryptedData);
+          setDecryptedCompanyName(result.decryptedData);
           setCompanyType(currentUser.company_type || "");
         }
       } catch (err) {
@@ -127,8 +127,8 @@ export function ForumsView() {
 
         // Always fetch global metrics
         const globalData = await GetGlobalScopeMetrics();
-        setGlobalMetrics(globalData.data);
-        setGlobalForums(globalData.data.forums || []);
+        setGlobalMetrics(globalData);
+        setGlobalForums(globalData?.forums || []);
 
         // Fetch company-specific data if company name is available
         if (apiCompanyName) {
@@ -138,9 +138,9 @@ export function ForumsView() {
             GetUserJoinedForums(apiCompanyName),
           ]);
 
-          setLocalMetrics(localData.data);
-          setFoundationForums(foundationData.data.forums || []);
-          setUserJoinedForums(joinedData.data || []);
+          setLocalMetrics(localData);
+          setFoundationForums(foundationData?.forums || []);
+          setUserJoinedForums(Array.isArray(joinedData) ? joinedData : (joinedData?.forums || []));
         }
       } catch (err: any) {
         console.error("Error fetching initial data:", err);
@@ -177,7 +177,7 @@ export function ForumsView() {
         }
 
         const data = await GetRecentDiscussions(apiCompanyName || "", filters);
-        setRecentDiscussions(data.data.topics || []);
+        setRecentDiscussions(data?.topics || []);
       } catch (err) {
         console.error("Error fetching recent discussions:", err);
       } finally {
@@ -342,8 +342,10 @@ export function ForumsView() {
     setViewMode("overview");
   };
 
-  const getTimeAgo = (date: string | Date) => {
+  const getTimeAgo = (date: string | Date | undefined | null) => {
+    if (!date) return "N/A";
     const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return "N/A";
     const mins = Math.floor((Date.now() - dateObj.getTime()) / 60000);
     if (mins < 60) return `${mins}m ago`;
     if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
@@ -453,13 +455,13 @@ export function ForumsView() {
           GetUserJoinedForums(apiCompanyName),
         ]);
 
-        setFoundationForums(foundationData.data.forums || []);
-        setUserJoinedForums(joinedData.data || []);
+        setFoundationForums(foundationData?.forums || []);
+        setUserJoinedForums(Array.isArray(joinedData) ? joinedData : (joinedData?.forums || []));
       }
 
       // Also refresh global forums
       const globalData = await GetGlobalScopeMetrics();
-      setGlobalForums(globalData.data.forums || []);
+      setGlobalForums(globalData?.forums || []);
 
       console.log("Forums refreshed successfully");
     } catch (err) {
@@ -489,7 +491,7 @@ export function ForumsView() {
       }
 
       const data = await GetRecentDiscussions(apiCompanyName || "", filters);
-      setRecentDiscussions(data.data.topics || []);
+      setRecentDiscussions(data?.topics || []);
 
       console.log("Topics refreshed successfully");
     } catch (err) {

@@ -1,4 +1,4 @@
-
+import React from "react";
 import { Plus, Zap } from "lucide-react";
 import { NookCard } from "./NooksCard";
 import { NooksGridSkeleton } from "../../../Helper/SkeletonLoader";
@@ -11,6 +11,7 @@ interface NooksGridProps {
   onCreateClick: () => void;
   onViewModeChange: (mode: "grid" | "all") => void;
   onResetFilters: () => void;
+  onBookmarkNook?: (id: string, e: React.MouseEvent) => void;
   loading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function NooksGrid({
   onCreateClick,
   onViewModeChange,
   onResetFilters,
+  onBookmarkNook,
   loading,
 }: NooksGridProps) {
   // Show skeleton on initial load
@@ -77,7 +79,7 @@ export function NooksGrid({
         }`}
       >
         {nooks.map((nook) => (
-          <NookCard key={nook.id} nook={nook} onClick={onNookClick} />
+          <NookCard key={nook.id} nook={nook} onClick={onNookClick} onBookmark={onBookmarkNook} />
         ))}
       </div>
 

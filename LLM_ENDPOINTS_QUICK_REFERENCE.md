@@ -75,6 +75,171 @@
 
 ---
 
+## **FEED ENDPOINTS**
+
+### Existing Endpoints (Already Implemented)
+| Endpoint | API Function | Description |
+|----------|-------------|-------------|
+| `GET /feeds` | `GetFeed(params)` | Get aggregated feed (filter, contentType, sortBy, company, tags, page, limit) |
+| `POST /feeds/posts` | `CreatePost(payload)` | Create a new post |
+| `GET /feeds/posts/{postId}` | `GetPostById(postId)` | Get a single post by ID |
+| `GET /feeds/users/{userId}/posts` | `GetUserPosts(userId, page, limit)` | Get posts by a specific user (used for "My Posts" filter) |
+| `PUT /feeds/posts/{postId}` | `UpdatePost(postId, payload)` | Update a post |
+| `DELETE /feeds/posts/{postId}` | `DeletePost(postId)` | Delete a post |
+| `POST /feeds/{contentType}/{contentId}/like` | `ToggleLike(contentType, contentId)` | Toggle like on content |
+| `POST /feeds/{contentType}/{contentId}/bookmark` | `ToggleBookmark(contentType, contentId)` | Toggle bookmark on content |
+| `GET /feeds/bookmarks` | `GetBookmarks(page, limit)` | Get user's bookmarks (used for "Bookmarked" filter) |
+| `POST /feeds/{contentType}/{contentId}/comments` | `AddComment(contentType, contentId, payload)` | Add comment to content |
+| `GET /feeds/{contentType}/{contentId}/comments` | `GetComments(contentType, contentId, page, limit)` | Get comments for content |
+| `POST /feeds/{contentType}/{contentId}/share` | `ShareItem(contentType, contentId, payload)` | Share content |
+| `DELETE /feeds/{contentType}/{contentId}/share` | `UnshareItem(contentType, contentId)` | Unshare content |
+
+**Frontend "My Posts / Bookmarked / All" filter uses existing endpoints:**
+- **All**: `GetFeed({ page, limit })`
+- **My Posts**: `GetUserPosts(userId, page, limit)`
+- **Bookmarked**: `GetBookmarks(page, limit)`
+
+---
+
+## **CONTENT FILTER ENDPOINTS — Backend TODO**
+
+The frontend now has "All / My Posts / Bookmarked" filter tabs on **Feeds**, **Forum Topics**, and **Nooks**. For Feeds, existing endpoints (`GetUserPosts`, `GetBookmarks`) already support this. For **Forum Topics** and **Nooks**, the following endpoints are needed:
+
+### Forum Topics — New Endpoints Needed
+
+| Endpoint | API Function | Description |
+|----------|-------------|-------------|
+| `GET /forum/topics/my-posts` | `GetMyForumTopics(page, limit)` | **Get topics created by the authenticated user** |
+| `GET /forum/topics/bookmarked` | `GetBookmarkedForumTopics(page, limit)` | **Get topics bookmarked by the authenticated user** |
+
+#### `GET /forum/topics/my-posts`
+**Description:** Returns all forum topics created by the authenticated user across all forums.
+**Auth:** Bearer token
+**Query Params:** `page` (default 1), `limit` (default 20)
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "topics": [...],
+    "pagination": { "page": 1, "limit": 20, "total": 5, "hasMore": false }
+  }
+}
+```
+
+#### `GET /forum/topics/bookmarked`
+**Description:** Returns all forum topics the authenticated user has bookmarked.
+**Auth:** Bearer token
+**Query Params:** `page` (default 1), `limit` (default 20)
+**Response:** Same shape as `GET /forum/topics/my-posts`
+
+**Note:** The frontend currently does client-side filtering using `topic.user_id === currentUser.id` for "My Posts" and `topic.user_has_bookmarked` for "Bookmarked". Once these server-side endpoints are available, the filtering can be moved to the API level for better performance with large datasets.
+
+### Nooks — New Endpoints Needed
+
+| Endpoint | API Function | Description |
+|----------|-------------|-------------|
+| `GET /nooks/my-nooks` | `GetMyNooks(page, limit)` | **Get nooks created by the authenticated user** |
+| `GET /nooks/bookmarked` | `GetBookmarkedNooks(page, limit)` | **Get nooks bookmarked by the authenticated user** |
+
+#### `GET /nooks/my-nooks`
+**Description:** Returns all nooks created by the authenticated user.
+**Auth:** Bearer token
+**Query Params:** `page` (default 1), `limit` (default 8)
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "nooks": [...],
+    "pagination": { "page": 1, "limit": 8, "total": 3, "hasMore": false }
+  }
+}
+```
+
+#### `GET /nooks/bookmarked`
+**Description:** Returns all nooks the authenticated user has bookmarked.
+**Auth:** Bearer token
+**Query Params:** `page` (default 1), `limit` (default 8)
+**Response:** Same shape as `GET /nooks/my-nooks`
+
+**Note:** The frontend currently does client-side filtering using `nook.created_by === user.id` for "My Nooks" and `nook.user_has_bookmarked` for "Bookmarked". Once these server-side endpoints are available, the filtering can be moved to the API level.
+
+### Bookmark Toggle — May Need Addition for Topics/Nooks
+
+If bookmark toggling for topics and nooks is not already supported, these endpoints are needed:
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /forum/topics/{topicId}/bookmark` | Toggle bookmark on a forum topic |
+| `POST /nooks/{nookId}/bookmark` | Toggle bookmark on a nook |
+
+Both should return `{ success: true, data: { bookmarked: true/false } }`.
+
+---
+
+## **NOTIFICATION ENDPOINTS**
+
+### Existing Endpoints (Already Implemented)
+| Endpoint | API Function | Description |
+|----------|-------------|-------------|
+| `GET /notifications` | `GetNotifications(params)` | Get user notifications with filters (is_read, type, page, limit) |
+| `GET /notifications/unread-count` | `GetUnreadCount()` | Get unread notification count |
+| `GET /notifications/stats` | `GetNotificationStats()` | Get notification statistics |
+| `GET /notifications/{id}` | `GetNotificationById(id)` | Get single notification by ID |
+| `PATCH /notifications/{id}` | `UpdateNotification(id, payload)` | Update notification (is_read, action_taken) |
+| `PATCH /notifications/{id}/read` | `MarkNotificationAsRead(id)` | Mark single notification as read |
+| `PATCH /notifications/mark-all-read` | `MarkAllNotificationsAsRead()` | Mark all notifications as read |
+| `POST /notifications` | `CreateNotification(payload)` | Create a notification (admin/system use) |
+| `DELETE /notifications/{id}` | `DeleteNotification(id)` | Delete a single notification |
+| `DELETE /notifications/read/all` | `DeleteAllReadNotifications()` | Delete all read notifications |
+
+### NEW Endpoint Needed (Backend TODO)
+| Endpoint | API Function | Description |
+|----------|-------------|-------------|
+| `DELETE /notifications/all` | `ClearAllNotifications()` | **Clear ALL notifications for authenticated user** |
+
+#### `DELETE /notifications/all` — Specification
+
+**Description:** Deletes all notifications (read and unread) for the authenticated user. Used by the "Clear All" button on the notifications page.
+
+**Auth:** Bearer token (same as all other notification endpoints)
+
+**Request:** No body required. User is identified from the auth token.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "All notifications cleared",
+  "data": {
+    "deleted_count": 42
+  }
+}
+```
+
+**Error Response (401):**
+```json
+{
+  "success": false,
+  "message": "Unauthorized"
+}
+```
+
+**Frontend Usage:**
+```typescript
+import { ClearAllNotifications } from "api/notificationApis";
+
+// Called when user clicks "Clear all" button (with confirmation dialog)
+const handleClearAll = async () => {
+  if (!confirm("Are you sure you want to clear all notifications?")) return;
+  await ClearAllNotifications();
+  setNotifications([]);
+};
+```
+
+---
+
 ## **CURRENT LLM INTEGRATION STATUS**
 
 ### ✅ **FORUM - FULLY INTEGRATED**

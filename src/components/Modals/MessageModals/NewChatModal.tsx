@@ -1,5 +1,6 @@
 // NewChatModal.tsx
 import React, { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   Search,
   X,
@@ -50,7 +51,7 @@ export function NewChatModal({
   const loadSuggestions = async () => {
     try {
       const data = await GetUserSuggestions(5);
-      setSuggestions(data.data?.suggestions || []);
+      setSuggestions(data?.suggestions || []);
     } catch {
       // Silent failure for suggestions
     }
@@ -71,7 +72,7 @@ export function NewChatModal({
         exclude_existing: filters.excludeExisting,
         role: selectedRole === "all" ? undefined : selectedRole,
       });
-      setUsers(data.data?.data?.users || []);
+      setUsers(data?.users || []);
     } catch {
       // Silent failure for user search
     } finally {
@@ -203,7 +204,7 @@ export function NewChatModal({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-gray-900 truncate">
-                          {user.display_name || user.username}
+                          {resolveDisplayName(user.display_name, user.username)}
                         </h4>
                         {user.is_active_mentor && !user.is_active_mentee && (
                           <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
@@ -301,7 +302,7 @@ export function NewChatModal({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-semibold text-gray-900 truncate">
-                            {user.display_name || user.username}
+                            {resolveDisplayName(user.display_name, user.username)}
                           </h4>
                           {user.is_active_mentor && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

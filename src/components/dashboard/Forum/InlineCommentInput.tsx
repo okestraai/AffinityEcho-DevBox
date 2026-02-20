@@ -1,7 +1,8 @@
 // src/components/forums/overview/InlineCommentInput.tsx - COMPLETE
-import React, { useState, useRef, useEffect } from "react";
-import { Send, X } from "lucide-react";
+import React, { useState } from "react";
+import { Send } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
+import { MentionTextarea } from "../../shared/MentionTextarea";
 
 interface InlineCommentInputProps {
   onSubmit: (comment: string) => Promise<void>;
@@ -14,18 +15,10 @@ export function InlineCommentInput({
   onSubmit,
   onCancel,
   placeholder = "Write a comment...",
-  autoFocus = true,
 }: InlineCommentInputProps) {
   const { user } = useAuth();
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (autoFocus && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [autoFocus]);
 
   const handleSubmit = async () => {
     if (!comment.trim() || submitting) return;
@@ -58,10 +51,6 @@ export function InlineCommentInput({
     e.stopPropagation();
   };
 
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setComment(e.target.value);
-  };
-
   const handleCancelClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -87,10 +76,9 @@ export function InlineCommentInput({
           {userAvatar}
         </div>
         <div className="flex-1">
-          <textarea
-            ref={textareaRef}
+          <MentionTextarea
             value={comment}
-            onChange={handleTextareaChange}
+            onChange={setComment}
             onKeyDown={handleKeyDown}
             onClick={handleTextareaClick}
             placeholder={placeholder}

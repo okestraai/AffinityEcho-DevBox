@@ -425,7 +425,7 @@ export function LoginScreen() {
                         </div>
                       </div>
 
-                      <div className="mt-6 grid grid-cols-2 gap-3">
+                      <div className="mt-6">
                         <button
                           type="button"
                           onClick={() => handleSocialLogin("google")}
@@ -455,6 +455,7 @@ export function LoginScreen() {
                           </span>
                         </button>
 
+                        {/* Facebook login commented out — pending OAuth setup
                         <button
                           type="button"
                           onClick={() => handleSocialLogin("facebook")}
@@ -472,6 +473,7 @@ export function LoginScreen() {
                             Facebook
                           </span>
                         </button>
+                        */}
                       </div>
                     </div>
 

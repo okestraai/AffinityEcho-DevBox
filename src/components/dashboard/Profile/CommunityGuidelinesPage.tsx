@@ -12,9 +12,9 @@ export function CommunityGuidelinesPage() {
   useEffect(() => {
     const fetchGuidelines = async () => {
       try {
-        const response = await GetCommunityGuidelines();
-        if (response.success && response.data) {
-          setApiGuidelines(response.data);
+        const data = await GetCommunityGuidelines();
+        if (data) {
+          setApiGuidelines(data);
         }
       } catch {
         // Fall back to static data on error
@@ -242,7 +242,7 @@ export function CommunityGuidelinesPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-5xl mx-auto">
         <button
-          onClick={() => navigate('/dashboard/profile')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

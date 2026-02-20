@@ -1,5 +1,6 @@
 // components/Modals/MentorShipModals/MentorshipUserProfileModal.tsx
 import { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -120,11 +121,8 @@ export function MentorshipUserProfileModal({
 
     try {
       const response = await GetFollowStatus(profile.id);
-      // Unwrap: { success, data: { success, data: { isFollowing, isFollowedBy } } }
-      const outer = response?.data || response;
-      const data = outer?.data || outer;
-      setIsFollowing(data?.isFollowing || false);
-      setIsFollowedBy(data?.isFollowedBy || false);
+      setIsFollowing(response?.isFollowing || false);
+      setIsFollowedBy(response?.isFollowedBy || false);
     } catch (error) {
       console.error("Error fetching follow status:", error);
     }
@@ -141,23 +139,16 @@ export function MentorshipUserProfileModal({
         CheckMentorshipRequestHasBeenSent(profile.id, "mentee_request"),
       ]);
 
-      // Unwrap: { success, data: { success, hasSentRequest, hasReceivedRequest, data: { ... } } }
-      const extractRequestData = (response: any) => {
-        const outer = response?.data || response;
-        // outer = { success, hasSentRequest, hasReceivedRequest, data: { ... } }
-        return outer;
-      };
-
-      const mentorData = extractRequestData(mentorResponse);
-      const menteeData = extractRequestData(menteeResponse);
+      const mentorData = mentorResponse;
+      const menteeData = menteeResponse;
 
       // Check sent OR received in either type
       const hasSent = mentorData?.hasSentRequest || menteeData?.hasSentRequest;
       const hasReceived = mentorData?.hasReceivedRequest || menteeData?.hasReceivedRequest;
 
       // Inner data contains hasPendingRequest, hasActiveRequest, latestStatus, latestRequest
-      const mentorInner = mentorData?.data || {};
-      const menteeInner = menteeData?.data || {};
+      const mentorInner = mentorData || {};
+      const menteeInner = menteeData || {};
 
       const hasPending = mentorInner?.hasPendingRequest || menteeInner?.hasPendingRequest;
       const hasActive = mentorInner?.hasActiveRequest || menteeInner?.hasActiveRequest;
@@ -218,7 +209,7 @@ export function MentorshipUserProfileModal({
   const getRequestStatusMessage = () => {
     if (!requestStatus) return null;
     if (!requestStatus.hasSentRequest && !requestStatus.hasReceivedRequest) return null;
-    const name = profile?.display_name || profile?.username || "this user";
+    const name = resolveDisplayName(profile?.displayName, profile?.display_name, profile?.username) || "this user";
 
     if (requestStatus.hasActiveRequest) {
       return {
@@ -336,28 +327,19 @@ export function MentorshipUserProfileModal({
         message: requestMessage.trim(),
       };
 
-      const response = await CreateDirectMentorShipRequest(payload);
+      await CreateDirectMentorShipRequest(payload);
 
-      if (response.success || response.data?.success) {
-        setShowRequestForm(false);
-        showToast("Mentorship request sent successfully!", "success");
-        setRequestStatus({
-          hasSentRequest: true,
-          hasReceivedRequest: false,
-          hasPendingRequest: true,
-          hasActiveRequest: false,
-          latestStatus: "pending",
-          direction: "sent",
-        });
-        setRequestMessage("");
-      } else {
-        showToast(
-          response.message ||
-            response.data?.message ||
-            "Failed to send request",
-          "error"
-        );
-      }
+      setShowRequestForm(false);
+      showToast("Mentorship request sent successfully!", "success");
+      setRequestStatus({
+        hasSentRequest: true,
+        hasReceivedRequest: false,
+        hasPendingRequest: true,
+        hasActiveRequest: false,
+        latestStatus: "pending",
+        direction: "sent",
+      });
+      setRequestMessage("");
     } catch (error: any) {
       console.error("Error sending mentorship request:", error);
       showToast(
@@ -372,7 +354,7 @@ export function MentorshipUserProfileModal({
 
   const getDefaultMessage = () => {
     if (!profile) return "";
-    const displayName = profile.display_name || profile.username;
+    const displayName = resolveDisplayName(profile.displayName, profile.display_name, profile.username);
 
     if (requestType === "mentee") {
       return `Hello ${
@@ -471,7 +453,7 @@ export function MentorshipUserProfileModal({
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">
-                    {profile.display_name || profile.username}
+                    {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
                   </h3>
                   <p className="text-sm text-gray-600">
                     {profile.jobTitle} at {profile.company}
@@ -503,8 +485,8 @@ export function MentorshipUserProfileModal({
                       </p>
                       <p className={`text-xs ${requestStatus?.direction === "received" ? "text-blue-700" : "text-red-700"}`}>
                         {requestStatus?.direction === "received"
-                          ? `${profile.display_name || profile.username} has already sent you a mentorship request. Check your requests tab to respond.`
-                          : `A mentorship request already exists with ${profile.display_name || profile.username}.`}
+                          ? `${resolveDisplayName(profile.displayName, profile.display_name, profile.username)} has already sent you a mentorship request. Check your requests tab to respond.`
+                          : `A mentorship request already exists with ${resolveDisplayName(profile.displayName, profile.display_name, profile.username)}.`}
                       </p>
                     </div>
                   </div>
@@ -624,7 +606,7 @@ export function MentorshipUserProfileModal({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {profile.display_name || profile.username}
+                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
                     </h3>
                     {profile.matchScore && (
                       <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">
@@ -1133,7 +1115,7 @@ export function MentorshipUserProfileModal({
                   {isFollowedBy && (
                     <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200">
                       <UserCheck className="w-4 h-4" />
-                      {isFollowing ? "You follow each other" : `${profile.display_name || profile.username} follows you`}
+                      {isFollowing ? "You follow each other" : `${resolveDisplayName(profile.displayName, profile.display_name, profile.username)} follows you`}
                     </div>
                   )}
                   <div className="flex gap-3">

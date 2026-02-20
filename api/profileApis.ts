@@ -104,6 +104,53 @@ export const GetUserActivity = async (
   return unwrap(res);
 };
 
+/**
+ * Get current user's aggregated activity (posts, comments, topics, nook messages)
+ * NEW: GET /user/me/activity
+ */
+export const GetMyActivity = async (
+  filters: {
+    type?: "posts" | "comments" | "topics" | "nooks" | "all";
+    page?: number;
+    limit?: number;
+  } = {}
+) => {
+  const authFetch = getAuthInstance();
+  const queryParams = new URLSearchParams();
+  if (filters.type && filters.type !== "all")
+    queryParams.append("type", filters.type);
+  if (filters.page) queryParams.append("page", filters.page.toString());
+  if (filters.limit) queryParams.append("limit", filters.limit.toString());
+
+  const qs = queryParams.toString();
+  const res = await authFetch.get(
+    `${API_URL}/user/me/activity${qs ? `?${qs}` : ""}`
+  );
+  return unwrap(res);
+};
+
+/**
+ * Get current user's bookmarked content
+ * NEW: GET /user/me/bookmarks
+ */
+export const GetMyBookmarks = async (
+  filters: {
+    page?: number;
+    limit?: number;
+  } = {}
+) => {
+  const authFetch = getAuthInstance();
+  const queryParams = new URLSearchParams();
+  if (filters.page) queryParams.append("page", filters.page.toString());
+  if (filters.limit) queryParams.append("limit", filters.limit.toString());
+
+  const qs = queryParams.toString();
+  const res = await authFetch.get(
+    `${API_URL}/user/me/bookmarks${qs ? `?${qs}` : ""}`
+  );
+  return unwrap(res);
+};
+
 // ============================================================================
 // 3. PRIVACY & SETTINGS ENDPOINTS
 // ============================================================================
@@ -339,15 +386,19 @@ export const SubmitHarassmentReport = async (payload: {
 
 /**
  * Get my harassment reports
+ * @param status - Filter by status: submitted, under_review, investigating, resolved, dismissed, all
  */
 export const GetMyHarassmentReports = async (
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  status?: string
 ) => {
   const authFetch = getAuthInstance();
-  const res = await authFetch.get(
-    `${API_URL}/user/reports/harassment?page=${page}&limit=${limit}`
-  );
+  let url = `${API_URL}/user/reports/harassment?page=${page}&limit=${limit}`;
+  if (status && status !== "all") {
+    url += `&status=${status}`;
+  }
+  const res = await authFetch.get(url);
   return unwrap(res);
 };
 

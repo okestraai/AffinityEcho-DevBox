@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { resolveDisplayName } from '../../utils/nameUtils';
 import { X, MessageCircle, UserPlus, UserMinus, Calendar, Shield, Loader2 } from 'lucide-react';
 import {
   GetUserProfileById,
@@ -16,12 +17,23 @@ interface UserProfileData {
   display_name?: string;
   avatar: string;
   bio?: string;
+  // API returns these at top level (not nested under demographics)
+  careerLevel?: string;
+  company?: string;
+  affinityTags?: string[];
   demographics?: {
     careerLevel?: string;
     company?: string;
     affinityTags?: string[];
   };
   joinedDate?: string;
+  isFollowing?: boolean;
+  stats?: {
+    postsCreated?: number;
+    commentsPosted?: number;
+    helpfulReactions?: number;
+    reputationScore?: number;
+  };
 }
 
 interface UserStats {
@@ -71,29 +83,29 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
           CheckFollowingStatus(userId).catch(() => null)
         ]);
 
-        if (profileRes?.success && profileRes.data) {
-          setProfileUser(profileRes.data);
-        } else if (profileRes?.data) {
-          setProfileUser(profileRes.data);
+        const profile = profileRes;
+        if (profile?.id || profile?.username) {
+          setProfileUser(profile);
         }
 
-        if (statsRes?.success && statsRes.data) {
+        if (statsRes || profile?.stats) {
+          const s = statsRes?.stats ?? statsRes ?? profile?.stats;
           setStats({
-            postsCreated: statsRes.data.postsCreated || 0,
-            commentsPosted: statsRes.data.commentsPosted || 0,
-            helpfulReactions: statsRes.data.helpfulReactions || 0,
-            reputationScore: statsRes.data.reputationScore || 0,
-            topicsCreated: statsRes.data.topicsCreated || 0,
-            nooksJoined: statsRes.data.nooksJoined || 0
+            postsCreated: s?.postsCreated || 0,
+            commentsPosted: s?.commentsPosted || 0,
+            helpfulReactions: s?.helpfulReactions || 0,
+            reputationScore: s?.reputationScore || 0,
+            topicsCreated: s?.topicsCreated || 0,
+            nooksJoined: s?.nooksJoined || 0
           });
         }
 
-        if (badgesRes?.success && badgesRes.data) {
-          setBadges(badgesRes.data.badges || []);
+        if (badgesRes) {
+          setBadges(badgesRes.badges || (Array.isArray(badgesRes) ? badgesRes : []));
         }
 
-        if (followRes?.success !== undefined) {
-          setIsFollowing(followRes.data?.isFollowing || followRes.isFollowing || false);
+        if (followRes) {
+          setIsFollowing(followRes.isFollowing || profile?.isFollowing || false);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -189,13 +201,13 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
               {profileUser.avatar}
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">{profileUser.display_name || profileUser.username}</h2>
-            {profileUser.demographics?.careerLevel && (
-              <p className="text-sm text-gray-600 mb-2">{profileUser.demographics.careerLevel}</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">{resolveDisplayName(profileUser.display_name, profileUser.username)}</h2>
+            {(profileUser.careerLevel || profileUser.demographics?.careerLevel) && (
+              <p className="text-sm text-gray-600 mb-2">{profileUser.careerLevel || profileUser.demographics?.careerLevel}</p>
             )}
-            {profileUser.demographics?.company && (
+            {(profileUser.company || profileUser.demographics?.company) && (
               <p className="text-sm text-purple-600 bg-purple-50 px-3 py-1 rounded-full inline-block font-medium">
-                {profileUser.demographics.company}
+                {profileUser.company || profileUser.demographics?.company}
               </p>
             )}
           </div>
@@ -263,11 +275,11 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
           )}
 
           {/* Affinity Groups */}
-          {profileUser.demographics?.affinityTags && profileUser.demographics.affinityTags.length > 0 && (
+          {((profileUser.affinityTags && profileUser.affinityTags.length > 0) || (profileUser.demographics?.affinityTags && profileUser.demographics.affinityTags.length > 0)) && (
             <div>
               <h4 className="font-semibold text-gray-900 mb-3">Communities</h4>
               <div className="space-y-2">
-                {profileUser.demographics.affinityTags.map((tag) => (
+                {(profileUser.affinityTags || profileUser.demographics?.affinityTags || []).map((tag) => (
                   <div key={tag} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
                     <span className="text-sm">💜</span>
                     <span className="text-sm text-purple-700 font-medium">{tag}</span>

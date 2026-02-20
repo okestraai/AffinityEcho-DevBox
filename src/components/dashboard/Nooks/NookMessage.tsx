@@ -1,12 +1,14 @@
 import {
   Heart,
   ThumbsUp,
-  CheckCircle,
+  Star,
   ChevronDown,
   ChevronUp,
   MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
+import { MentionText } from "../../shared/MentionText";
 
 interface NookMessageProps {
   message: {
@@ -46,7 +48,7 @@ export function NookMessage({
 
   // Safe user data with fallbacks
   const user = message.user ?? null;
-  const displayName = user?.display_name || user?.username || "Anonymous";
+  const displayName = resolveDisplayName(user?.display_name, user?.username);
   const avatar = user?.avatar ?? "A"; // fallback character
   const isAnonymous = displayName === "Anonymous" || !user;
 
@@ -137,79 +139,56 @@ export function NookMessage({
             )}
           </div>
 
-          <p className="text-gray-700 mb-3 leading-relaxed break-words">
-            {message.content}
-          </p>
+          <MentionText
+            text={message.content}
+            className="text-gray-700 mb-3 leading-relaxed break-words block"
+          />
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => onReact(message.id, "heard")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-red ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
                   hasReacted("heard")
-                    ? "text-red-600 hover:text-red-700 bg-red-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
-                    : "text-gray-500 hover:text-red-500 hover:bg-red-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-red-500 bg-red-50"
+                    : "text-gray-500 hover:text-red-500 hover:bg-red-50"
                 }`}
+                title="Heard"
               >
-                <Heart
-                  className={`w-4 h-4 transition-all duration-200 ${
-                    hasReacted("heard") ? "fill-current text-red-600 animate-reaction-pop" : ""
-                  }`}
-                />
-                <span>
-                  {getReactionCount("heard") > 0
-                    ? getReactionCount("heard")
-                    : ""}
-                </span>
-                <span className="hidden sm:inline">
-                  {hasReacted("heard") ? "Heard ✓" : "Heard"}
-                </span>
+                <Heart className={`w-4 h-4 transition-transform duration-200 ${hasReacted("heard") ? "fill-red-500 animate-reaction-pop" : ""}`} />
+                {getReactionCount("heard") > 0 && (
+                  <span>{getReactionCount("heard")}</span>
+                )}
               </button>
 
               <button
                 onClick={() => onReact(message.id, "validated")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-blue ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
                   hasReacted("validated")
-                    ? "text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
-                    : "text-gray-500 hover:text-blue-500 hover:bg-blue-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                 }`}
+                title="Validated"
               >
-                <CheckCircle
-                  className={`w-4 h-4 transition-all duration-200 ${
-                    hasReacted("validated") ? "fill-current text-blue-600 animate-reaction-pop" : ""
-                  }`}
-                />
-                <span>
-                  {getReactionCount("validated") > 0
-                    ? getReactionCount("validated")
-                    : ""}
-                </span>
-                <span className="hidden sm:inline">
-                  {hasReacted("validated") ? "Validated ✓" : "Validated"}
-                </span>
+                <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${hasReacted("validated") ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                {getReactionCount("validated") > 0 && (
+                  <span>{getReactionCount("validated")}</span>
+                )}
               </button>
 
               <button
                 onClick={() => onReact(message.id, "helpful")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-green ${
+                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
                   hasReacted("helpful")
-                    ? "text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 -mx-2 -my-1 rounded-md burst-active"
-                    : "text-gray-500 hover:text-green-500 hover:bg-green-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-green-600 bg-green-50"
+                    : "text-gray-500 hover:text-green-600 hover:bg-green-50"
                 }`}
+                title="Helpful"
               >
-                <ThumbsUp
-                  className={`w-4 h-4 transition-all duration-200 ${
-                    hasReacted("helpful") ? "fill-current text-green-600 animate-reaction-pop" : ""
-                  }`}
-                />
-                <span>
-                  {getReactionCount("helpful") > 0
-                    ? getReactionCount("helpful")
-                    : ""}
-                </span>
-                <span className="hidden sm:inline">
-                  {hasReacted("helpful") ? "Helpful ✓" : "Helpful"}
-                </span>
+                <Star className={`w-4 h-4 transition-transform duration-200 ${hasReacted("helpful") ? "fill-green-600 animate-reaction-pop" : ""}`} />
+                {getReactionCount("helpful") > 0 && (
+                  <span>{getReactionCount("helpful")}</span>
+                )}
               </button>
 
               <button

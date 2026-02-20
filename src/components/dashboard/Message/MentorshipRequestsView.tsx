@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   Clock,
   UserPlus,
@@ -93,41 +94,37 @@ export function MentorshipRequestsView({
     try {
       const response = await UpdateMentorshipDirectRequestToRead("received");
 
-      if (response && (response.success || response.data?.success)) {
-        const count = response?.data?.count || response?.count || 0;
+      const count = response?.count || 0;
 
-        setReceivedRequests((prev) =>
-          prev.map((request) => ({
-            ...request,
-            is_read_by_target: true,
-          }))
-        );
+      setReceivedRequests((prev) =>
+        prev.map((request) => ({
+          ...request,
+          is_read_by_target: true,
+        }))
+      );
 
-        // Also update allRequests if they contain the same requests
-        setAllRequests((prev) =>
-          prev.map((request) => {
-            // Only mark as read if it's a received request
-            if (request.requestContext?.isReceived) {
-              return {
-                ...request,
-                is_read_by_target: true,
-                requestContext: {
-                  ...request.requestContext,
-                  isRead: true
-                }
-              };
-            }
-            return request;
-          })
-        );
+      // Also update allRequests if they contain the same requests
+      setAllRequests((prev) =>
+        prev.map((request) => {
+          // Only mark as read if it's a received request
+          if (request.requestContext?.isReceived) {
+            return {
+              ...request,
+              is_read_by_target: true,
+              requestContext: {
+                ...request.requestContext,
+                isRead: true
+              }
+            };
+          }
+          return request;
+        })
+      );
 
-        setHasUnreadRequests(false);
+      setHasUnreadRequests(false);
 
-        if (count > 0) {
-          showToast(`Marked ${count} requests as read`, "success");
-        }
-      } else {
-        showToast("Failed to mark requests as read", "error");
+      if (count > 0) {
+        showToast(`Marked ${count} requests as read`, "success");
       }
     } catch {
       showToast("Failed to mark requests as read", "error");
@@ -157,14 +154,8 @@ export function MentorshipRequestsView({
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
-        if (response?.data?.data?.data?.requests) {
-          requests = response.data.data.data.requests;
-        } else if (response?.data?.data?.requests) {
-          requests = response.data.data.requests;
-        } else if (response?.data?.requests) {
-          requests = response.data.requests;
-        } else if (Array.isArray(response?.data)) {
-          requests = response.data;
+        if (response?.requests) {
+          requests = response.requests;
         } else if (Array.isArray(response)) {
           requests = response;
         }
@@ -183,12 +174,8 @@ export function MentorshipRequestsView({
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
-        if (response?.data?.data?.data?.requests) {
-          requests = response.data.data.data.requests;
-        } else if (response?.data?.requests) {
-          requests = response.data.requests;
-        } else if (Array.isArray(response?.data)) {
-          requests = response.data;
+        if (response?.requests) {
+          requests = response.requests;
         } else if (Array.isArray(response)) {
           requests = response;
         }
@@ -202,13 +189,8 @@ export function MentorshipRequestsView({
 
         let requests: ExtendedDirectMentorshipRequest[] = [];
 
-        // Based on your API response structure
-        if (response?.data?.data?.requests) {
-          requests = response.data.data.requests;
-        } else if (response?.data?.requests) {
-          requests = response.data.requests;
-        } else if (Array.isArray(response?.data)) {
-          requests = response.data;
+        if (response?.requests) {
+          requests = response.requests;
         } else if (Array.isArray(response)) {
           requests = response;
         }
@@ -268,8 +250,8 @@ export function MentorshipRequestsView({
             const companyResult = await DecryptData({
               encryptedData: profile.company_encrypted,
             });
-            if (companyResult.success && companyResult.data?.decryptedData) {
-              decryptedCompany = companyResult.data.decryptedData;
+            if (companyResult?.decryptedData) {
+              decryptedCompany = companyResult.decryptedData;
             }
           }
 
@@ -279,15 +261,15 @@ export function MentorshipRequestsView({
             const careerResult = await DecryptData({
               encryptedData: profile.career_level_encrypted,
             });
-            if (careerResult.success && careerResult.data?.decryptedData) {
-              decryptedCareerLevel = careerResult.data.decryptedData;
+            if (careerResult?.decryptedData) {
+              decryptedCareerLevel = careerResult.decryptedData;
             }
           }
 
           newDecryptedProfiles[requestId] = {
             id: profile.id,
             username: profile.username || "Unknown User",
-            display_name: profile.display_name || profile.username || "Unknown User",
+            display_name: resolveDisplayName(profile.display_name, profile.username) || "Unknown User",
             avatar: profile.avatar || "👤",
             job_title: profile.job_title || "Professional",
             company: decryptedCompany,
@@ -301,7 +283,7 @@ export function MentorshipRequestsView({
           newDecryptedProfiles[requestId] = {
             id: profile.id,
             username: profile.username || "Unknown User",
-            display_name: profile.display_name || profile.username || "Unknown User",
+            display_name: resolveDisplayName(profile.display_name, profile.username) || "Unknown User",
             avatar: profile.avatar || "👤",
             job_title: profile.job_title || "Professional",
             company: "Company information hidden",
@@ -322,22 +304,18 @@ export function MentorshipRequestsView({
 
     setProcessingId(requestId);
     try {
-      const response = await RespondToDirectMentorshipRequest(requestId, {
+      await RespondToDirectMentorshipRequest(requestId, {
         action: "accept",
       });
 
-      if (response.success) {
-        setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
-        // Also remove from allRequests
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        
-        setDecryptedProfiles((prev) => {
-          const newProfiles = { ...prev };
-          delete newProfiles[requestId];
-          return newProfiles;
-        });
-        showToast("Mentorship request accepted!", "success");
-      }
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setDecryptedProfiles((prev) => {
+        const newProfiles = { ...prev };
+        delete newProfiles[requestId];
+        return newProfiles;
+      });
+      showToast("Mentorship request accepted!", "success");
     } catch {
       showToast("Failed to accept request. Please try again.", "error");
     } finally {
@@ -350,22 +328,18 @@ export function MentorshipRequestsView({
 
     setProcessingId(requestId);
     try {
-      const response = await RespondToDirectMentorshipRequest(requestId, {
+      await RespondToDirectMentorshipRequest(requestId, {
         action: "decline",
       });
 
-      if (response.success) {
-        setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
-        // Also remove from allRequests
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        
-        setDecryptedProfiles((prev) => {
-          const newProfiles = { ...prev };
-          delete newProfiles[requestId];
-          return newProfiles;
-        });
-        showToast("Request declined", "success");
-      }
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setDecryptedProfiles((prev) => {
+        const newProfiles = { ...prev };
+        delete newProfiles[requestId];
+        return newProfiles;
+      });
+      showToast("Request declined", "success");
     } catch {
       showToast("Failed to decline request. Please try again.", "error");
     } finally {
@@ -380,20 +354,16 @@ export function MentorshipRequestsView({
 
     setProcessingId(requestId);
     try {
-      const response = await DeleteDirectMentorshipRequest(requestId);
+      await DeleteDirectMentorshipRequest(requestId);
 
-      if (response.success) {
-        setSentRequests((prev) => prev.filter((r) => r.id !== requestId));
-        // Also remove from allRequests
-        setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
-        
-        setDecryptedProfiles((prev) => {
-          const newProfiles = { ...prev };
-          delete newProfiles[requestId];
-          return newProfiles;
-        });
-        showToast("Request cancelled", "success");
-      }
+      setSentRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setDecryptedProfiles((prev) => {
+        const newProfiles = { ...prev };
+        delete newProfiles[requestId];
+        return newProfiles;
+      });
+      showToast("Request cancelled", "success");
     } catch {
       showToast("Failed to cancel request. Please try again.", "error");
     } finally {
@@ -408,38 +378,34 @@ export function MentorshipRequestsView({
     try {
       const response = await UpdateMentorshipDirectRequestToRead("received");
 
-      if (response && (response.success || response.data?.success)) {
-        const count = response?.data?.count || response?.count || 0;
-        showToast(`Marked ${count} requests as read`, "success");
+      const count = response?.count || 0;
+      showToast(`Marked ${count} requests as read`, "success");
 
-        setReceivedRequests((prev) =>
-          prev.map((request) => ({
-            ...request,
-            is_read_by_target: true,
-          }))
-        );
+      setReceivedRequests((prev) =>
+        prev.map((request) => ({
+          ...request,
+          is_read_by_target: true,
+        }))
+      );
 
-        // Also update allRequests
-        setAllRequests((prev) =>
-          prev.map((request) => {
-            if (request.requestContext?.isReceived) {
-              return {
-                ...request,
-                is_read_by_target: true,
-                requestContext: {
-                  ...request.requestContext,
-                  isRead: true
-                }
-              };
-            }
-            return request;
-          })
-        );
+      // Also update allRequests
+      setAllRequests((prev) =>
+        prev.map((request) => {
+          if (request.requestContext?.isReceived) {
+            return {
+              ...request,
+              is_read_by_target: true,
+              requestContext: {
+                ...request.requestContext,
+                isRead: true
+              }
+            };
+          }
+          return request;
+        })
+      );
 
-        setHasUnreadRequests(false);
-      } else {
-        showToast("Failed to mark requests as read", "error");
-      }
+      setHasUnreadRequests(false);
     } catch {
       showToast("Failed to mark requests as read", "error");
     } finally {
@@ -700,7 +666,7 @@ export function MentorshipRequestsView({
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-900 text-lg">
-                            {profile.display_name || profile.username}
+                            {resolveDisplayName(profile.display_name, profile.username)}
                           </h3>
                           {isUnread && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

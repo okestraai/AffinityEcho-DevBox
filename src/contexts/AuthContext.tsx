@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const loadUser = async () => {
     try {
       const res = await GetCurrentUser();
-      setUser(res.data);
+      setUser(res);
     } catch {
       clearAuth();
     } finally {
@@ -116,11 +116,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { data } = await loginUser({ email, password });
-      saveTokens(data.access_token, data.refresh_token);
+      const loginData = await loginUser({ email, password });
+      saveTokens(loginData.access_token, loginData.refresh_token);
 
       // Check if the account is deactivated (returned from backend login response)
-      if (data.is_deactivated) {
+      if (loginData.is_deactivated) {
         const shouldReactivate = await new Promise<boolean>((resolve) => {
           setReactivateResolver({ resolve });
           setShowReactivateModal(true);
@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       await loadUser();
       showToast("Welcome back!", "success");
-      navigate(data.has_completed_onboarding ? "/dashboard" : "/onboarding");
+      navigate(loginData.has_completed_onboarding ? "/dashboard" : "/onboarding");
     } catch (err: any) {
       showToast(err.response?.data?.message || "Login failed", "error");
     } finally {
@@ -172,9 +172,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const socialLogin = async (provider: "google" | "facebook") => {
     setIsLoading(true);
     try {
-      const { data } = await SocialMediaLogin(provider);
+      const socialData = await SocialMediaLogin(provider);
       // Validate redirect URL to prevent open redirect attacks
-      const url = new URL(data.url);
+      const url = new URL(socialData.url);
       const allowedHosts = [
         window.location.hostname,
         'accounts.google.com',
@@ -183,7 +183,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (!allowedHosts.some(host => url.hostname === host || url.hostname.endsWith('.' + host))) {
         throw new Error('Invalid redirect URL');
       }
-      window.location.href = data.url;
+      window.location.href = socialData.url;
     } catch {
       showToast("Social login failed", "error");
       setIsLoading(false);

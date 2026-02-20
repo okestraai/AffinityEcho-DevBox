@@ -20,9 +20,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Lightbulb,
+  Star,
   Sparkles,
-  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import {
@@ -39,6 +38,9 @@ import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
 import { OkestraPanel } from "../OkestraPanel";
 import { ViewersModal } from "../../Modals/ViewersModal";
+import { resolveDisplayName } from "../../../utils/nameUtils";
+import { MentionTextarea } from "../../shared/MentionTextarea";
+import { MentionText } from "../../shared/MentionText";
 
 export function TopicDetailPage() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -69,7 +71,7 @@ export function TopicDetailPage() {
         if (!topicId) return;
 
         const result = await GetForumTopicById(topicId);
-        setTopic(result.data);
+        setTopic(result);
       } catch (err) {
         console.error("Error fetching topic:", err);
       } finally {
@@ -87,7 +89,7 @@ export function TopicDetailPage() {
         if (!topicId) return;
 
         const result = await GetAllCommentsForATopic(topicId);
-        setComments(result.data || []);
+        setComments(Array.isArray(result) ? result : (result?.comments || []));
       } catch (err) {
         console.error("Error fetching comments:", err);
       }
@@ -275,7 +277,7 @@ export function TopicDetailPage() {
 
       // Refresh comments to get updated structure
       const result = await GetAllCommentsForATopic(topicId!);
-      const freshComments = result.data || [];
+      const freshComments = Array.isArray(result) ? result : (result?.comments || []);
 
       // Build tree structure
       const nestedComments = buildCommentTree(freshComments);
@@ -419,7 +421,7 @@ export function TopicDetailPage() {
 
       // Refresh comments on error to restore accurate state
       const result = await GetAllCommentsForATopic(topicId!);
-      const freshComments = result.data || [];
+      const freshComments = Array.isArray(result) ? result : (result?.comments || []);
       const nestedComments = buildCommentTree(freshComments);
       setComments(nestedComments);
     }
@@ -468,7 +470,7 @@ export function TopicDetailPage() {
                   onMouseLeave={handleUserHoverLeave}
                   className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                 >
-                  {comment.user_profile?.display_name || comment.user_profile?.username || "Anonymous User"}{" "}
+                  {resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username)}{" "}
                   {comment.user_profile?.avatar || "👤"}
                 </button>
                 {isAuthor && (
@@ -483,9 +485,10 @@ export function TopicDetailPage() {
                 </span>
               </div>
 
-              <p className="text-gray-700 leading-relaxed mb-3 whitespace-pre-wrap">
-                {comment.content}
-              </p>
+              <MentionText
+                text={comment.content}
+                className="text-gray-700 leading-relaxed mb-3 whitespace-pre-wrap block"
+              />
 
               <div className="flex items-center gap-4 flex-wrap">
                 <button
@@ -512,7 +515,7 @@ export function TopicDetailPage() {
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  Reply
+                  <span>{replies.length}</span>
                 </button>
 
                 {hasReplies && showReplyIndicator && (
@@ -533,10 +536,10 @@ export function TopicDetailPage() {
                 {isAuthor && (
                   <button
                     onClick={() => handleDeleteComment(comment.id)}
-                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors"
+                    className="flex items-center text-sm text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete comment"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete
                   </button>
                 )}
               </div>
@@ -589,7 +592,7 @@ export function TopicDetailPage() {
                     onMouseLeave={handleUserHoverLeave}
                     className="font-bold text-gray-900 hover:text-blue-600 transition-colors block"
                   >
-                    {topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous User"}
+                    {resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username)}
                   </button>
 
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -630,9 +633,10 @@ export function TopicDetailPage() {
             </h1>
 
             <div className="prose max-w-none mb-6">
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg">
-                {topic.content}
-              </p>
+              <MentionText
+                text={topic.content}
+                className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg block"
+              />
             </div>
 
             {topic.tags && topic.tags.length > 0 && (
@@ -651,40 +655,37 @@ export function TopicDetailPage() {
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">
               <div className="flex items-center gap-6">
                 <button
-                  onClick={() => handleReaction("validated")}
-                  className={`flex items-center gap-2 transition-all duration-200 hover:scale-110 active:scale-95 reaction-burst burst-blue ${
-                    topic.userReactions?.validated
-                      ? "text-blue-500 burst-active"
-                      : "text-gray-600 hover:text-blue-500"
+                  onClick={() => handleReaction("heard")}
+                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg ${
+                    topic.userReactions?.heard
+                      ? "text-red-500 bg-red-50"
+                      : "text-gray-500 hover:text-red-500"
                   }`}
                 >
-                  <CheckCircle2 className={`w-5 h-5 transition-all duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
-                  <span className="font-semibold">
-                    {topic.reaction_validated_count || 0}
-                  </span>
+                  <Heart className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
+                  <span className="text-sm">{topic.reaction_heard_count || topic.reactions?.heard || 0}</span>
                 </button>
-
+                <button
+                  onClick={() => handleReaction("validated")}
+                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg ${
+                    topic.userReactions?.validated
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-500 hover:text-blue-600"
+                  }`}
+                >
+                  <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                  <span className="text-sm">{topic.reaction_validated_count || topic.reactions?.validated || 0}</span>
+                </button>
                 <button
                   onClick={() => handleReaction("inspired")}
-                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-purple-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg reaction-burst burst-purple ${
-                    topic.userReactions.inspired
-                      ? "text-purple-600 bg-purple-50 burst-active"
-                      : "text-gray-500 hover:text-purple-600"
+                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg ${
+                    topic.userReactions?.inspired
+                      ? "text-yellow-500 bg-yellow-50"
+                      : "text-gray-500 hover:text-yellow-500"
                   }`}
                 >
-                  <Lightbulb className={`w-5 h-5 transition-all duration-200 ${topic.userReactions.inspired ? "animate-reaction-pop" : ""}`} />
-                  <span className="text-sm">{topic.reactions.inspired}</span>
-                </button>
-                <button
-                  onClick={() => handleReaction("heard")}
-                  className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-amber-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg reaction-burst burst-amber ${
-                    topic.userReactions.heard
-                      ? "text-amber-600 bg-amber-50 burst-active"
-                      : "text-gray-500 hover:text-amber-600"
-                  }`}
-                >
-                  <Sparkles className={`w-5 h-5 transition-all duration-200 ${topic.userReactions.heard ? "animate-reaction-pop" : ""}`} />
-                  <span className="text-sm">{topic.reactions.heard}</span>
+                  <Star className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                  <span className="text-sm">{topic.reaction_inspired_count || topic.reactions?.inspired || 0}</span>
                 </button>
 
                 <div className="flex items-center gap-2 text-gray-600">
@@ -755,13 +756,13 @@ export function TopicDetailPage() {
               </div>
 
               <div className="flex-1">
-                <textarea
+                <MentionTextarea
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
+                  onChange={setNewComment}
                   placeholder={
                     replyToComment
-                      ? "Write your reply..."
-                      : "Write a comment..."
+                      ? "Write your reply... Use @ to mention"
+                      : "Write a comment... Use @ to mention"
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={3}

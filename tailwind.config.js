@@ -5,22 +5,20 @@ export default {
     extend: {
       keyframes: {
         'reaction-pop': {
-          '0%': { transform: 'scale(0)' },
-          '15%': { transform: 'scale(1.4)' },
-          '30%': { transform: 'scale(0.8)' },
+          '0%': { transform: 'scale(1)' },
+          '15%': { transform: 'scale(1.35)' },
+          '30%': { transform: 'scale(0.85)' },
           '50%': { transform: 'scale(1.15)' },
-          '70%': { transform: 'scale(0.95)' },
           '100%': { transform: 'scale(1)' },
         },
-        'reaction-ring': {
-          '0%': { transform: 'scale(0)', opacity: '1' },
-          '50%': { transform: 'scale(2.5)', opacity: '0.4' },
-          '100%': { transform: 'scale(3)', opacity: '0' },
+        'logo-pulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.08)', opacity: '0.85' },
         },
       },
       animation: {
-        'reaction-pop': 'reaction-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        'reaction-ring': 'reaction-ring 0.5s ease-out forwards',
+        'reaction-pop': 'reaction-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        'logo-pulse': 'logo-pulse 1.5s ease-in-out infinite',
       },
     },
   },

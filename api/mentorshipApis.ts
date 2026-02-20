@@ -1,5 +1,5 @@
 // api/mentorshipApis.ts
-import { getAuthInstance, API_URL } from "./base";
+import { getAuthInstance, API_URL, unwrap } from "./base";
 
 export interface MentorProfilePayload {
   isWillingToMentor: boolean;
@@ -62,6 +62,12 @@ export interface ProfileExistsResponse {
   mentoringAs?: "mentor" | "mentee" | "both";
 }
 
+export interface MatchScoreRange {
+  label: string;
+  min: number;
+  max: number;
+}
+
 export interface FilterOptions {
   careerLevels: string[];
   expertiseAreas: string[];
@@ -70,6 +76,7 @@ export interface FilterOptions {
   availabilityOptions: string[];
   communicationMethods: string[];
   languages: string[];
+  matchScoreRanges: MatchScoreRange[];
 }
 
 export interface MentorProfileResponse {
@@ -152,14 +159,14 @@ export const CreateMentorProfile = async (payload: MentorProfilePayload) => {
     `${API_URL}/mentorship-profiles/mentor/setup`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Get my mentor profile
 export const GetMyMentorProfile = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship-profiles/me`);
-  return res.data;
+  return unwrap(res);
 };
 
 
@@ -168,14 +175,14 @@ export const GetMyMentorProfile = async () => {
 export const UpdateMyMentorProfile = async (payload: MentorProfilePayload) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.put(`${API_URL}/mentorship-profiles/mentor/update`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 // Get mentor profile by user ID
 export const GetMentorProfileByUserId = async (userId: string) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship/profile/${userId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 // Check user profile requirement
@@ -185,7 +192,7 @@ export const CheckUserProfileRequirement =
     const res = await authFetch.get(
       `${API_URL}/mentorship-profiles/check-requirement`
     );
-    return res.data;
+    return unwrap(res);
   };
 
 // Check if user has a mentorship profile
@@ -194,7 +201,7 @@ export const CheckUserProfileExist = async (): Promise<{
 }> => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship-profiles/check-exists`);
-  return res.data;
+  return unwrap(res);
 };
 
 
@@ -205,13 +212,13 @@ export const CreateMenteeProfile = async (payload: MenteeProfilePayload) => {
     `${API_URL}/mentorship-profiles/mentee/setup`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetMyMenteeProfile = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship-profiles/me`);
-  return res.data;
+  return unwrap(res);
 };
 
 // Update mentee profile
@@ -221,7 +228,7 @@ export const UpdateMyMenteeProfile = async (payload: any) => {
     `${API_URL}/mentorship-profiles/mentee/update`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Send direct mentorship request
@@ -233,7 +240,7 @@ export const CreateDirectMentorShipRequest = async (
     `${API_URL}/mentorship/requests/direct`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Get all mentorship requests
@@ -250,7 +257,7 @@ export const GetAllMentorshipRequests = async (
   const res = await authFetch.get(
     `${API_URL}/mentorship/requests${queryString ? `?${queryString}` : ""}`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Get received mentorship requests
@@ -265,7 +272,7 @@ export const GetReceivedDirectMentorshipRequests = async (status: string) => {
       queryString ? `?${queryString}` : ""
     }`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Get sent mentorship requests
@@ -280,7 +287,7 @@ export const GetSentDirectMentorshipRequests = async (status: string) => {
       queryString ? `?${queryString}` : ""
     }`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Get mentorship request by ID
@@ -289,7 +296,7 @@ export const GetMentorshipRequestById = async (requestId: string) => {
   const res = await authFetch.get(
     `${API_URL}/mentorship/requests/${requestId}`
   );
-  return res.data;
+  return unwrap(res);
 };
 export const CheckMentorshipRequestHasBeenSent = async (
   targetUserId: string,
@@ -305,14 +312,14 @@ export const CheckMentorshipRequestHasBeenSent = async (
       queryString ? `?${queryString}` : ""
     }`
   );
-  return res.data;
+  return unwrap(res);
 };
 export const GetMentorshipMetric = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(
     `${API_URL}/mentorship/requests/direct/metrics`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Update mentorship request
@@ -327,7 +334,7 @@ export const UpdateMentorshipDirectRequestToRead = async (type: string) => {
       queryString ? `?${queryString}` : ""
     }`
   );
-  return res.data;
+  return unwrap(res);
 };
 export const UpdateMentorshipRequestById = async (
   requestId: string,
@@ -338,7 +345,7 @@ export const UpdateMentorshipRequestById = async (
     `${API_URL}/mentorship/requests/${requestId}`,
     payload
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Respond to mentorship request
@@ -351,7 +358,7 @@ export const RespondToDirectMentorshipRequest = async (
     `${API_URL}/mentorship/requests/direct/${requestId}/respond`,
     data
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const DeleteDirectMentorshipRequest = async (requestId: string) => {
@@ -360,7 +367,7 @@ export const DeleteDirectMentorshipRequest = async (requestId: string) => {
     const res = await authFetch.delete(
       `/mentorship/requests/direct/${requestId}`
     );
-    return res.data;
+    return unwrap(res);
   } catch (error) {
     console.error("Error deleting direct request:", error);
     throw error;
@@ -376,8 +383,10 @@ export const GetMentorsAndMentees = async (
     expertise?: string[];
     industries?: string[];
     affinityTags?: string[];
-    availability?: "immediate" | "within_week" | "within_month" | "all";
+    availability?: string | string[];
     location?: string;
+    minMatchScore?: number;
+    maxMatchScore?: number;
     sortBy?: "match_score" | "recent" | "experience" | "availability";
     sortOrder?: "asc" | "desc";
     page?: number;
@@ -418,9 +427,16 @@ export const GetMentorsAndMentees = async (
     });
   }
 
-  if (filters.availability)
-    queryParams.append("availability", filters.availability);
+  if (filters.availability) {
+    if (Array.isArray(filters.availability)) {
+      filters.availability.forEach((a) => queryParams.append("availability", a));
+    } else {
+      queryParams.append("availability", filters.availability);
+    }
+  }
   if (filters.location) queryParams.append("location", filters.location);
+  if (filters.minMatchScore !== undefined) queryParams.append("minMatchScore", String(filters.minMatchScore));
+  if (filters.maxMatchScore !== undefined) queryParams.append("maxMatchScore", String(filters.maxMatchScore));
   if (filters.sortBy) queryParams.append("sortBy", filters.sortBy);
   if (filters.sortOrder) queryParams.append("sortOrder", filters.sortOrder);
 
@@ -436,7 +452,7 @@ export const GetMentorsAndMentees = async (
   }`;
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 // Get AI suggestions for mentors/mentees
@@ -459,7 +475,7 @@ export const GetMentorsAndMenteesBySuggestionAI = async (
   }`;
 
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 // Get filter options
@@ -468,21 +484,21 @@ export const GetFilterOptions = async (): Promise<{ data: FilterOptions }> => {
   const res = await authFetch.get(
     `${API_URL}/mentorship/discover/filters/options`
   );
-  return res.data;
+  return unwrap(res);
 };
 
 // Follow user
 export const FollowUser = async (userId: string) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/mentorship/follow/${userId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 // Unfollow user
 export const UnfollowUser = async (userId: string) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.delete(`${API_URL}/mentorship/follow/${userId}`);
-  return res.data;
+  return unwrap(res);
 };
 
 // Get follow status
@@ -491,7 +507,30 @@ export const GetFollowStatus = async (userId: string) => {
   const res = await authFetch.get(
     `${API_URL}/mentorship/follow/${userId}/status`
   );
-  return res.data;
+  return unwrap(res);
+};
+
+// Get followers list
+export const GetFollowers = async (params: { page?: number; limit?: number } = {}) => {
+  const authFetch = getAuthInstance();
+  const queryParams = new URLSearchParams();
+  if (params.page) queryParams.append("page", String(params.page));
+  if (params.limit) queryParams.append("limit", String(params.limit));
+  const qs = queryParams.toString();
+  const res = await authFetch.get(`${API_URL}/mentorship/follow/followers${qs ? `?${qs}` : ""}`);
+  return unwrap(res);
+};
+
+// Get following list
+export const GetFollowing = async (params: { type?: string; page?: number; limit?: number } = {}) => {
+  const authFetch = getAuthInstance();
+  const queryParams = new URLSearchParams();
+  if (params.type) queryParams.append("type", params.type);
+  if (params.page) queryParams.append("page", String(params.page));
+  if (params.limit) queryParams.append("limit", String(params.limit));
+  const qs = queryParams.toString();
+  const res = await authFetch.get(`${API_URL}/mentorship/follow/following${qs ? `?${qs}` : ""}`);
+  return unwrap(res);
 };
 
 
@@ -499,18 +538,18 @@ export const GetFollowStatus = async (userId: string) => {
 export const GetMyMentors = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship/requests/my-mentors`);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetMyMentees = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship/requests/my-mentees`);
-  return res.data;
+  return unwrap(res);
 };
 
 
 export const GeAllRequests = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship/requests/direct/all`);
-  return res.data;
+  return unwrap(res);
 };

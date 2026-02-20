@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   MessageSquare,
   Heart,
@@ -9,6 +10,7 @@ import {
   FileText,
   X,
   ThumbsUp,
+  Star,
   MoreHorizontal,
   Globe,
   Send,
@@ -24,6 +26,7 @@ import {
   GetFeed,
   CreatePost,
   ToggleLike,
+  ToggleFeedReaction,
   AddComment,
   GetComments,
   ShareItem,
@@ -34,7 +37,9 @@ import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { showToast } from "../../../Helper/ShowToast";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
+import { MentionTextarea } from "../../shared/MentionTextarea";
 import { FeedSkeleton } from "../../../Helper/SkeletonLoader";
+import { MentionText } from "../../shared/MentionText";
 
 interface FeedItem {
   id: string;
@@ -65,6 +70,16 @@ interface FeedItem {
     comments: number;
     shares?: number;
     seen?: number;
+  };
+  reaction_counts: {
+    heard: number;
+    validated: number;
+    inspired: number;
+  };
+  user_reactions: {
+    heard: boolean;
+    validated: boolean;
+    inspired: boolean;
   };
   created_at: string;
   user_has_liked?: boolean;
@@ -112,7 +127,7 @@ export function FeedsView() {
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    loadFeed();
+    loadFeed(1);
   }, []);
 
   const isEmojiAvatar = (avatar?: string | null): boolean => {
@@ -120,30 +135,64 @@ export function FeedsView() {
     return true; // Emoji or short text like "📦"
   };
 
-  const normalizeFeedItem = (item: any): FeedItem => ({
+  const normalizeFeedItem = (item: any): FeedItem => {
+    // Handle flat post structure where content is a string (from /feeds/users/:id/posts)
+    const contentIsString = typeof item.content === "string";
+    const contentObj = contentIsString ? null : item.content;
+
+    return {
     ...item,
-    content_type:
-      item.content_type === "nook_message" ? "nook" : item.content_type,
+    id: item.id,
+    content_type: item.content_type === "nook_message" ? "nook" : (item.content_type ?? "post"),
+    content_id: item.content_id ?? item.id,
+    user_id: item.user_id,
     is_anonymous: item.is_anonymous ?? false,
     author: {
-      display_name: item.author?.display_name || item.author?.username || "Anonymous",
+      display_name: resolveDisplayName(item.author?.display_name, item.author?.username),
       username: item.author?.username,
       avatar: item.author?.avatar || item.author?.avatar_url || null,
       bio: item.author?.bio || null,
     },
+    engagement: {
+      likes: item.engagement?.likes ?? item.likes_count ?? 0,
+      comments: item.engagement?.comments ?? item.comments_count ?? 0,
+      shares: item.engagement?.shares ?? item.shares_count,
+      seen: item.engagement?.seen ?? item.views_count,
+    },
+    content: {
+      title: contentObj?.title ?? item.title,
+      text: contentObj?.text ?? (contentIsString ? item.content : "") ?? "",
+      forum_name: contentObj?.forum_name ?? item.forum_name,
+      nook_name: contentObj?.nook_name ?? item.nook_name,
+      tags: contentObj?.tags ?? item.tags ?? [],
+      nook_urgency: contentObj?.nook_urgency ?? item.nook_urgency,
+      nook_scope: contentObj?.nook_scope ?? item.nook_scope,
+      nook_temperature: contentObj?.nook_temperature ?? item.nook_temperature,
+      nook_members: contentObj?.nook_members ?? item.nook_members,
+      nook_time_left: contentObj?.nook_time_left ?? item.nook_time_left,
+    },
+    reaction_counts: {
+      heard: item.reaction_counts?.heard ?? 0,
+      validated: item.reaction_counts?.validated ?? 0,
+      inspired: item.reaction_counts?.inspired ?? 0,
+    },
+    user_reactions: {
+      heard: item.user_reactions?.heard ?? false,
+      validated: item.user_reactions?.validated ?? false,
+      inspired: item.user_reactions?.inspired ?? false,
+    },
     user_has_liked: item.user_has_liked ?? item.user_liked ?? false,
     user_has_bookmarked: item.user_has_bookmarked ?? item.user_bookmarked ?? false,
     user_has_shared: item.user_has_shared ?? item.user_shared ?? false,
-  });
+  };
+  };
 
   const loadFeed = async (page: number = 1) => {
     try {
       setLoading(true);
       const response = await GetFeed({ page, limit: 20 });
-      // After unwrap, response is: { success, data: [...items], pagination: {...} }
-      // or response could be the items array directly
-      const innerData = response?.data ?? response;
-      const raw = Array.isArray(innerData) ? innerData : (innerData?.items ?? []);
+
+      const raw = Array.isArray(response) ? response : (response?.items ?? response?.posts ?? []);
       const items = (Array.isArray(raw) ? raw : []).map(normalizeFeedItem);
 
       if (page === 1) {
@@ -152,8 +201,7 @@ export function FeedsView() {
         setFeedItems((prev) => [...prev, ...items]);
       }
 
-      // Use pagination.hasMore from API if available, fallback to heuristic
-      const pagination = response?.pagination ?? innerData?.pagination;
+      const pagination = response?.pagination;
       setHasMore(pagination?.hasMore ?? items.length >= 20);
       setCurrentPage(page);
     } catch {
@@ -174,16 +222,14 @@ export function FeedsView() {
 
     try {
       setSubmitting(true);
-      const response = await CreatePost({
+      await CreatePost({
         content: postContent,
         visibility: "global",
       });
 
-      if (response.success) {
-        setPostContent("");
-        setShowCreatePost(false);
-        loadFeed(1);
-      }
+      setPostContent("");
+      setShowCreatePost(false);
+      loadFeed(1);
     } catch (error) {
       console.error("Error creating post:", error);
     } finally {
@@ -236,6 +282,39 @@ export function FeedsView() {
     try {
       const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
       await ToggleLike(contentType as "post" | "topic" | "nook_message", item.content_id);
+    } catch {
+      // Revert on failure
+      setFeedItems((prev) =>
+        prev.map((i) => (i.id === itemId ? item : i))
+      );
+    }
+  };
+
+  const handleReaction = async (itemId: string, reactionType: "heard" | "validated" | "inspired") => {
+    const item = feedItems.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const wasActive = item.user_reactions[reactionType];
+
+    // Optimistic update
+    setFeedItems((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? {
+              ...i,
+              user_reactions: { ...i.user_reactions, [reactionType]: !wasActive },
+              reaction_counts: {
+                ...i.reaction_counts,
+                [reactionType]: i.reaction_counts[reactionType] + (wasActive ? -1 : 1),
+              },
+            }
+          : i
+      )
+    );
+
+    try {
+      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+      await ToggleFeedReaction(contentType as "post" | "topic" | "nook_message", item.content_id, reactionType);
     } catch {
       // Revert on failure
       setFeedItems((prev) =>
@@ -327,7 +406,7 @@ export function FeedsView() {
       if (item.content_type === "topic") {
         // Use forum API for topic comments
         const response = await GetAllCommentsForATopic(item.content_id);
-        raw = response?.data ?? [];
+        raw = response?.comments ?? (Array.isArray(response) ? response : []);
       } else {
         // Use feed API for post / nook_message comments
         const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
@@ -335,7 +414,7 @@ export function FeedsView() {
           contentType as "post" | "nook_message",
           item.content_id
         );
-        raw = response?.data?.comments ?? response?.data ?? response?.comments ?? [];
+        raw = response?.comments ?? (Array.isArray(response) ? response : []);
       }
 
       const comments: FeedComment[] = Array.isArray(raw) ? raw : [];
@@ -577,10 +656,10 @@ export function FeedsView() {
                 </div>
               </div>
 
-              <textarea
+              <MentionTextarea
                 value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                placeholder="What's on your mind?"
+                onChange={setPostContent}
+                placeholder="What's on your mind? Use @ to mention someone"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px]"
                 autoFocus
               />
@@ -664,9 +743,10 @@ export function FeedsView() {
                           <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-purple-600 transition-colors">
                             {item.content.title}
                           </h3>
-                          <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
-                            {item.content.text}
-                          </p>
+                          <MentionText
+                            text={item.content.text}
+                            className="text-gray-600 text-sm leading-relaxed line-clamp-2 block"
+                          />
                         </div>
                         <div className="flex items-center gap-1 ml-4">
                           {getTemperatureIcon(item.content.nook_temperature)}
@@ -767,17 +847,18 @@ export function FeedsView() {
                       <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 mb-2">
                         {item.content.title}
                       </h3>
-                      <p className="text-gray-600 line-clamp-2 mb-3">
-                        {item.content.text}
-                      </p>
+                      <MentionText
+                        text={item.content.text}
+                        className="text-gray-600 line-clamp-2 mb-3 block"
+                      />
 
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleUserClick(item.user_id); }}
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                         >
-                          {renderAvatar(item.author.avatar, item.author.display_name || item.author.username || "Anonymous", "w-6 h-6", "text-sm")}
-                          <span>{item.author.display_name || item.author.username || "Anonymous"}</span>
+                          {renderAvatar(item.author.avatar, resolveDisplayName(item.author.display_name, item.author.username), "w-6 h-6", "text-sm")}
+                          <span>{resolveDisplayName(item.author.display_name, item.author.username)}</span>
                         </button>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -795,34 +876,54 @@ export function FeedsView() {
                             handleViewersClick(
                               item.id,
                               "topic",
-                              item.engagement.seen,
+                              item.engagement.seen ?? 0,
                               e
                             )
                           }
                           className="flex items-center gap-2 text-sm hover:text-green-600 transition-colors text-gray-600"
                         >
                           <Eye className="w-4 h-4" />
-                          <span>{formatNumber(item.engagement.seen)}</span>
+                          <span>{formatNumber(item.engagement.seen ?? 0)}</span>
                         </button>
                       )}
                       <button
-                        onClick={(e) => handleLikeClick(item.id, e)}
-                        className="flex items-center gap-2 text-sm hover:text-blue-600 transition-colors text-gray-600"
+                        onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "heard"); }}
+                        className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
+                          item.user_reactions.heard ? "text-red-500 font-semibold" : "text-gray-600 hover:text-red-500"
+                        }`}
                       >
-                        <ThumbsUp className="w-4 h-4" />
-                        <span>{formatNumber(item.engagement.likes)}</span>
+                        <Heart className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
+                        <span>{formatNumber(item.reaction_counts.heard)}</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "validated"); }}
+                        className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
+                          item.user_reactions.validated ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-600"
+                        }`}
+                      >
+                        <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                        <span>{formatNumber(item.reaction_counts.validated)}</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "inspired"); }}
+                        className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
+                          item.user_reactions.inspired ? "text-yellow-500 font-semibold" : "text-gray-600 hover:text-yellow-500"
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                        <span>{formatNumber(item.reaction_counts.inspired)}</span>
                       </button>
                       <button
                         onClick={(e) => handleCommentClick(item.id, e)}
-                        className={`flex items-center gap-2 text-sm hover:text-blue-600 transition-colors ${
+                        className={`flex items-center gap-1.5 text-sm transition-colors ${
                           activeCommentId === item.id
                             ? "text-blue-600 font-semibold"
-                            : "text-gray-600"
+                            : "text-gray-600 hover:text-blue-600"
                         }`}
                       >
                         <MessageSquare className="w-4 h-4" />
                         <span>
-                          {formatNumber(item.engagement.comments)} comments
+                          {formatNumber(item.engagement.comments)}
                         </span>
                       </button>
                     </div>
@@ -857,17 +958,17 @@ export function FeedsView() {
                         <div className="px-4 pt-3 pb-1 space-y-3 max-h-64 overflow-y-auto">
                           {expandedComments[item.id].map((c) => (
                             <div key={c.id} className="flex items-start gap-2">
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U")} text-white`}>
-                                {c.author?.avatar || c.user_profile?.avatar || (c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U").charAt(0).toUpperCase()}
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username))} text-white`}>
+                                {c.author?.avatar || c.user_profile?.avatar || resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username).charAt(0).toUpperCase()}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-semibold text-gray-800">
-                                    {c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "Anonymous"}
+                                    {resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username)}
                                   </span>
                                   <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                                 </div>
-                                <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
+                                <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
                               </div>
                             </div>
                           ))}
@@ -945,38 +1046,28 @@ export function FeedsView() {
                   </div>
 
                   <div className="mb-3">
-                    <p className="text-gray-800 leading-relaxed">
-                      {item.content.text}
-                    </p>
+                    <MentionText
+                      text={item.content.text}
+                      className="text-gray-800 leading-relaxed block"
+                    />
                   </div>
                 </div>
 
                 <div className="px-4 py-2 border-t border-gray-100">
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <div className="flex items-center gap-4">
-                      <button
-                        onClick={(e) => handleLikeClick(item.id, e)}
-                        className="flex items-center gap-1 hover:underline"
-                      >
-                        <ThumbsUp className="w-4 h-4 text-blue-500 fill-blue-500" />
-                        <span>{formatNumber(item.engagement.likes)}</span>
-                      </button>
-                      {item.engagement.seen !== undefined && (
-                        <button
-                          onClick={(e) =>
-                            handleViewersClick(
-                              item.id,
-                              item.content_type,
-                              item.engagement.seen,
-                              e
-                            )
-                          }
-                          className="flex items-center gap-1 hover:text-green-600 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>{formatNumber(item.engagement.seen)}</span>
-                        </button>
-                      )}
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-3.5 h-3.5 text-red-500" />
+                        <span>{formatNumber(item.reaction_counts.heard)}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                        <span>{formatNumber(item.reaction_counts.validated)}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-yellow-500" />
+                        <span>{formatNumber(item.reaction_counts.inspired)}</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <button
@@ -997,59 +1088,60 @@ export function FeedsView() {
                   </div>
                 </div>
 
-                <div className="px-4 py-2 border-t border-gray-100">
-                  <div className="flex items-center justify-around">
+                <div className="px-3 sm:px-4 py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-around gap-1">
                     <button
-                      onClick={(e) => handleLikeClick(item.id, e)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110 active:scale-95 flex-1 justify-center reaction-burst burst-blue ${
-                        item.user_has_liked
-                          ? "text-blue-600 font-semibold burst-active"
-                          : "text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "heard"); }}
+                      className={`p-2 rounded-lg hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        item.user_reactions.heard ? "text-red-500 bg-red-50" : "text-gray-500"
                       }`}
+                      title="Heard"
                     >
-                      <Heart
-                        className={`w-5 h-5 transition-all duration-200 ${
-                          item.user_has_liked ? "fill-blue-600 animate-reaction-pop" : ""
-                        }`}
-                      />
-                      <span>Like</span>
+                      <Heart className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                     </button>
                     <button
-                      onClick={(e) => handleCommentClick(item.id, e)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-105 active:scale-95 flex-1 justify-center ${
-                        activeCommentId === item.id
-                          ? "text-blue-600 font-semibold bg-blue-50"
-                          : "text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "validated"); }}
+                      className={`p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        item.user_reactions.validated ? "text-blue-600 bg-blue-50" : "text-gray-500"
                       }`}
+                      title="Validated"
+                    >
+                      <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "inspired"); }}
+                      className={`p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        item.user_reactions.inspired ? "text-yellow-500 bg-yellow-50" : "text-gray-500"
+                      }`}
+                      title="Inspired"
+                    >
+                      <Star className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                    </button>
+                    <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
+                    <button
+                      onClick={(e) => handleCommentClick(item.id, e)}
+                      className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${
+                        activeCommentId === item.id ? "text-blue-600 bg-blue-50" : "text-gray-500"
+                      }`}
+                      title="Comment"
                     >
                       <MessageSquare className="w-5 h-5" />
-                      <span>Comment</span>
                     </button>
                     <button
                       onClick={(e) => handleShare(item.id, e)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-all duration-200 hover:scale-105 active:scale-95 flex-1 justify-center"
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                      title="Share"
                     >
                       <Share2 className="w-5 h-5" />
-                      <span>Share</span>
                     </button>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookmark(item.id);
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110 active:scale-95 flex-1 justify-center reaction-burst burst-amber ${
-                        item.user_has_bookmarked
-                          ? "text-amber-600 font-semibold burst-active"
-                          : "text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }}
+                      className={`p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        item.user_has_bookmarked ? "text-amber-600 bg-amber-50" : "text-gray-500"
                       }`}
                       title={item.user_has_bookmarked ? "Saved" : "Save"}
                     >
-                      <Bookmark
-                        className={`w-5 h-5 transition-all duration-200 ${
-                          item.user_has_bookmarked ? "fill-amber-600 animate-reaction-pop" : ""
-                        }`}
-                      />
-                      <span>Save</span>
+                      <Bookmark className={`w-5 h-5 transition-transform duration-200 ${item.user_has_bookmarked ? "fill-amber-600 animate-reaction-pop" : ""}`} />
                     </button>
                   </div>
                 </div>
@@ -1072,11 +1164,11 @@ export function FeedsView() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-semibold text-gray-800">
-                                  {c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "Anonymous"}
+                                  {resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username)}
                                 </span>
                                 <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                               </div>
-                              <p className="text-sm text-gray-700 leading-relaxed">{c.content}</p>
+                              <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
                             </div>
                           </div>
                         ))}

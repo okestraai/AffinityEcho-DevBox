@@ -65,7 +65,7 @@ export function CreateTopicModal({
           const result = await DecryptData({
             encryptedData: user.company_encrypted,
           });
-          setDecryptedCompanyName(result.data.decryptedData);
+          setDecryptedCompanyName(result.decryptedData);
           setCompanyType(user.company_type || "");
         }
       } catch (err) {
@@ -99,7 +99,7 @@ export function CreateTopicModal({
 
         if (apiCompanyName) {
           const result = await GetUserJoinedForums(apiCompanyName);
-          forums = result.data || [];
+          forums = Array.isArray(result) ? result : (result?.forums || []);
         }
 
         const uniqueForums = Array.from(

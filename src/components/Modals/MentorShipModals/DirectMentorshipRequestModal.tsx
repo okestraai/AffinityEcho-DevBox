@@ -1,5 +1,6 @@
 // components/Modals/MentorShipModals/DirectMentorshipRequestModal.tsx
 import React, { useState, useEffect } from "react";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 import { X, Send, Loader, AlertCircle, Clock, Check } from "lucide-react";
 import {
   CreateDirectMentorShipRequest,
@@ -14,6 +15,7 @@ interface DirectMentorshipRequestModalProps {
   profile: {
     id: string;
     username: string;
+    display_name?: string;
     avatar: string;
     bio: string;
     company: string;
@@ -99,13 +101,12 @@ export function DirectMentorshipRequestModal({
   const checkProfileRequirements = async () => {
     try {
       const response = await CheckUserProfileRequirement();
-      const payload = response.data?.data;
 
       setProfileCheck({
-        hasProfile: payload?.hasProfile ?? false,
-        profileType: payload?.profileType,
-        missingFields: payload?.missingFields ?? [],
-        canCreateRequest: payload?.canCreateRequest ?? false,
+        hasProfile: response?.hasProfile ?? false,
+        profileType: response?.profileType,
+        missingFields: response?.missingFields ?? [],
+        canCreateRequest: response?.canCreateRequest ?? false,
       });
     } catch (error) {
       console.error("Error checking profile requirements:", error);
@@ -126,22 +127,11 @@ export function DirectMentorshipRequestModal({
         requestType === "mentor" ? "mentor_request" : "mentee_request"
       );
 
-      // Handle nested response structure
-      let requestData = response;
-
-      if (response?.data) {
-        requestData = response.data;
-      }
-
-      if (response?.success && response?.data) {
-        requestData = response.data;
-      }
-
       setRequestStatus({
-        hasSentRequest: requestData?.hasSentRequest || false,
-        hasPendingRequest: requestData?.hasPendingRequest || false,
-        hasActiveRequest: requestData?.hasActiveRequest || false,
-        latestStatus: requestData?.latestStatus || null,
+        hasSentRequest: response?.hasSentRequest || false,
+        hasPendingRequest: response?.hasPendingRequest || false,
+        hasActiveRequest: response?.hasActiveRequest || false,
+        latestStatus: response?.latestStatus || null,
       });
     } catch (error) {
       console.error("Error checking existing request:", error);
@@ -164,7 +154,7 @@ export function DirectMentorshipRequestModal({
   const getStatusMessage = () => {
     if (!requestStatus || !requestStatus.hasSentRequest) return null;
 
-    const name = profile?.display_name || profile?.username || "this user";
+    const name = resolveDisplayName(profile?.display_name, profile?.username) || "this user";
 
     if (requestStatus.hasPendingRequest) {
       return {
@@ -235,13 +225,11 @@ export function DirectMentorshipRequestModal({
         message: message.trim(),
       };
 
-      const response = await CreateDirectMentorShipRequest(payload);
+      await CreateDirectMentorShipRequest(payload);
 
-      if (response.success) {
-        showToast(`Request sent to ${profile.display_name || profile.username}!`, "success");
-        setMessage("");
-        onClose();
-      }
+      showToast(`Request sent to ${resolveDisplayName(profile.display_name, profile.username)}!`, "success");
+      setMessage("");
+      onClose();
     } catch (error: any) {
       console.error("Error sending request:", error);
       showToast(
@@ -284,7 +272,7 @@ export function DirectMentorshipRequestModal({
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 text-lg mb-1">
-                  {profile.display_name || profile.username}
+                  {resolveDisplayName(profile.display_name, profile.username)}
                 </h4>
                 <p className="text-sm text-gray-600 mb-1">{profile.jobTitle}</p>
                 <p className="text-xs text-blue-600 mb-3">{profile.company}</p>
@@ -405,8 +393,8 @@ export function DirectMentorshipRequestModal({
                   <div>
                     <p className="text-sm font-medium text-blue-900 mb-1">
                       {isMentorRequest
-                        ? `You're requesting ${profile.display_name || profile.username} as your mentor`
-                        : `You're offering to mentor ${profile.display_name || profile.username}`}
+                        ? `You're requesting ${resolveDisplayName(profile.display_name, profile.username)} as your mentor`
+                        : `You're offering to mentor ${resolveDisplayName(profile.display_name, profile.username)}`}
                     </p>
                     <p className="text-xs text-blue-700">
                       {isMentorRequest
@@ -434,8 +422,8 @@ export function DirectMentorshipRequestModal({
                     : !profileCheck.canCreateRequest
                     ? "Please complete your profile first."
                     : isMentorRequest
-                    ? `Example: "Hi ${profile.display_name || profile.username}, I'm impressed by your work..."`
-                    : `Example: "Hi ${profile.display_name || profile.username}, I noticed you're looking to grow in..."`
+                    ? `Example: "Hi ${resolveDisplayName(profile.display_name, profile.username)}, I'm impressed by your work..."`
+                    : `Example: "Hi ${resolveDisplayName(profile.display_name, profile.username)}, I noticed you're looking to grow in..."`
                 }
                 rows={8}
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none resize-none ${
@@ -472,7 +460,7 @@ export function DirectMentorshipRequestModal({
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <p className="text-xs text-yellow-800">
                   <span className="font-medium">Privacy Note:</span> Your
-                  request will be sent directly to {profile.display_name || profile.username}. They can
+                  request will be sent directly to {resolveDisplayName(profile.display_name, profile.username)}. They can
                   choose to accept or decline. If accepted, you'll be able to
                   connect and communicate.
                 </p>
@@ -539,7 +527,7 @@ export function DirectMentorshipRequestModal({
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <p className="text-sm font-medium">
                   Request Blocked: You have already sent a {requestType} request
-                  to {profile.display_name || profile.username}. You cannot send another request to the
+                  to {resolveDisplayName(profile.display_name, profile.username)}. You cannot send another request to the
                   same user.
                 </p>
               </div>

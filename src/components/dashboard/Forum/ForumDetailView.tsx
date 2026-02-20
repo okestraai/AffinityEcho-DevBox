@@ -30,6 +30,7 @@ import {
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { ForumCardSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 
 interface Props {
   forum: any;
@@ -67,7 +68,7 @@ export function ForumDetailView({
           const result = await DecryptData({
             encryptedData: currentUser.company_encrypted,
           });
-          setDecryptedCompanyName(result.data.decryptedData);
+          setDecryptedCompanyName(result.decryptedData);
           setCompanyType(currentUser.company_type || "");
         }
       } catch (err) {
@@ -105,7 +106,7 @@ export function ForumDetailView({
       try {
         setLoading(true);
         const result = await GetForumById(initialForum.id);
-        const forumData = result.data;
+        const forumData = result;
 
         setForum(forumData);
         setMemberCount(forumData.memberCount || forumData.member_count || 0);
@@ -147,7 +148,7 @@ export function ForumDetailView({
       const result = await GetUserJoinedForums(
         isGlobalForum ? null : companyNameForApi
       );
-      const joinedForums = result.data || [];
+      const joinedForums = Array.isArray(result) ? result : (result?.forums || []);
 
       // Check if user is in this forum
       const hasJoined = joinedForums.some((f: any) => f.id === initialForum.id);
@@ -476,7 +477,7 @@ export function ForumDetailView({
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs">
                           {topic.author.avatar}
                         </div>
-                        <span>{topic.author.display_name || topic.author.username}</span>
+                        <span>{resolveDisplayName(topic.author.display_name, topic.author.username)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />

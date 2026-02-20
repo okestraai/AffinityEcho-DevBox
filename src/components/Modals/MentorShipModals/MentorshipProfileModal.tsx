@@ -139,7 +139,7 @@ export function MentorshipProfileModal({
               })
                 .then((result) => ({
                   key: field.formKey,
-                  value: result.data?.decryptedData || "",
+                  value: result?.decryptedData || "",
                   setter: field.setter,
                   type: field.type,
                 }))
@@ -282,17 +282,7 @@ export function MentorshipProfileModal({
     try {
       const profileCheckResponse = await CheckUserProfileExist();
 
-      let profileData = profileCheckResponse.data;
-
-      // Handle new response structure with nested success/data
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      // Also check if it's a nested API response
-      if (profileData?.data?.id !== undefined) {
-        profileData = profileData.data;
-      }
+      const profileData = profileCheckResponse;
 
      
 
@@ -322,8 +312,8 @@ export function MentorshipProfileModal({
   const fetchFilterOptions = async () => {
     try {
       const response = await GetFilterOptions();
-      if (response.data?.data) {
-        setFilterOptions(response.data.data);
+      if (response) {
+        setFilterOptions(response);
       }
     } catch (error) {
       console.error("Error fetching filter options:", error);
@@ -334,21 +324,9 @@ export function MentorshipProfileModal({
     try {
       const response = await GetMyMentorProfile();
 
-
-      // Handle different response structures
-      let profileData = response.data;
-
-      if (profileData?.success && profileData?.data) {
-        profileData = profileData.data;
-      }
-
-      if (profileData?.data?.mentorProfile !== undefined) {
-        profileData = profileData.data;
-      }
-
-      // Get mentor profile from new structure
-      const mentorProfile = profileData?.mentorProfile || {};
-      const basicProfile = profileData?.basicProfile || {};
+      // Get mentor profile from response
+      const mentorProfile = response?.mentorProfile || {};
+      const basicProfile = response?.basicProfile || {};
 
   
       setFormData((prev) => ({
@@ -431,30 +409,25 @@ export function MentorshipProfileModal({
         bio: formData.bio,
       };
 
-      let response;
-
       if (hasProfile || mode === "edit") {
-        response = await UpdateMyMentorProfile(payload);
+        await UpdateMyMentorProfile(payload);
       } else {
-        response = await CreateMentorProfile(payload);
+        await CreateMentorProfile(payload);
       }
 
-    
-      if (response.success) {
-        showToast(
-          `Mentor profile ${
-            hasProfile || mode === "edit" ? "updated" : "created"
-          } successfully!`,
-          "success",
-        );
+      showToast(
+        `Mentor profile ${
+          hasProfile || mode === "edit" ? "updated" : "created"
+        } successfully!`,
+        "success",
+      );
 
-        // Call the callback if provided instead of reloading
-        if (onProfileUpdated) {
-          onProfileUpdated();
-        }
-
-        onClose();
+      // Call the callback if provided instead of reloading
+      if (onProfileUpdated) {
+        onProfileUpdated();
       }
+
+      onClose();
     } catch (error: any) {
       console.error("Error saving mentor profile:", error);
       showToast(

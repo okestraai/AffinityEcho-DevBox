@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Send } from 'lucide-react';
+import { MentionTextarea } from '../../shared/MentionTextarea';
 
 interface NookMessageInputProps {
   nookId: string;
@@ -33,13 +34,6 @@ export function NookMessageInput({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
       <div className="flex items-start gap-4">
@@ -47,11 +41,16 @@ export function NookMessageInput({
           {userAvatar || '?'}
         </div>
         <div className="flex-1">
-          <textarea
+          <MentionTextarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={parentMessageId ? "Write a reply..." : "Share your thoughts anonymously..."}
+            onChange={setMessage}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            placeholder={parentMessageId ? "Write a reply... Use @ to mention" : "Share your thoughts anonymously... Use @ to mention"}
             rows={3}
             disabled={sending}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none bg-gray-50 focus:bg-white transition-all disabled:opacity-50"

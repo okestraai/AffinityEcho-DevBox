@@ -20,6 +20,7 @@ import {
   ThumbsUp,
   Heart as HeartIcon,
   Sparkles,
+  Bookmark,
 } from "lucide-react";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
@@ -34,6 +35,8 @@ import {
 import { OkestraPanel } from "../OkestraPanel";
 import { Topic } from "../../../types/forum";
 import { useState, useRef } from "react";
+import { ToggleTopicBookmark } from "../../../../api/forumApis";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 
 export function OverviewMode(props: any) {
   const {
@@ -96,6 +99,15 @@ export function OverviewMode(props: any) {
     }
   };
 
+  const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await ToggleTopicBookmark(topicId);
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    }
+  };
+
   const handleOkestraClick = (topic: Topic, e: React.MouseEvent) => {
     e.stopPropagation();
     setOkestraSelectedTopic(topic);
@@ -136,7 +148,7 @@ export function OverviewMode(props: any) {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* === LEFT: RECENT TOPICS === */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 order-2 lg:order-1">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
               <TrendingUp className="w-6 h-6 text-purple-600" />
@@ -237,7 +249,7 @@ export function OverviewMode(props: any) {
             <div className="space-y-4">
               {paginatedTopics.topics.map((topic: any) => {
                 const avatarEmoji = topic.user_profile?.avatar || "👤";
-                const username = topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous";
+                const username = resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username);
 
                 return (
                   <div
@@ -332,62 +344,26 @@ export function OverviewMode(props: any) {
                           {/* Reaction buttons */}
                           <button
                             onClick={(e) => handleReaction(topic.id, "seen", e)}
-                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-green ${
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                               topic.userReactions?.seen
-                                ? "text-green-600 burst-active"
+                                ? "text-green-600 bg-green-50"
                                 : "text-gray-500 hover:text-green-600"
                             }`}
                           >
-                            <Eye className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
+                            <Eye className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.views_count || 0}
                             </span>
                           </button>
                           <button
-                            onClick={(e) =>
-                              handleReaction(topic.id, "validated", e)
-                            }
-                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-blue ${
-                              topic.userReactions?.validated
-                                ? "text-blue-600 burst-active"
-                                : "text-gray-500 hover:text-blue-600"
-                            }`}
-                          >
-                            <ThumbsUp className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
-                            <span className="text-sm">
-                              {topic.reactions?.validated ||
-                                topic.reaction_validated_count ||
-                                0}
-                            </span>
-                          </button>
-                          <button
-                            onClick={(e) =>
-                              handleReaction(topic.id, "inspired", e)
-                            }
-                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-yellow ${
-                              topic.userReactions?.inspired
-                                ? "text-yellow-600 burst-active"
-                                : "text-gray-500 hover:text-yellow-600"
-                            }`}
-                          >
-                            <Star className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.inspired ? "animate-reaction-pop" : ""}`} />
-                            <span className="text-sm">
-                              {topic.reactions?.inspired ||
-                                topic.reaction_inspired_count ||
-                                0}
-                            </span>
-                          </button>
-                          <button
-                            onClick={(e) =>
-                              handleReaction(topic.id, "heard", e)
-                            }
-                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-purple-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-purple ${
+                            onClick={(e) => handleReaction(topic.id, "heard", e)}
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                               topic.userReactions?.heard
-                                ? "text-purple-600 burst-active"
-                                : "text-gray-500 hover:text-purple-600"
+                                ? "text-red-500 bg-red-50"
+                                : "text-gray-500 hover:text-red-500"
                             }`}
                           >
-                            <HeartIcon className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.heard ? "animate-reaction-pop" : ""}`} />
+                            <HeartIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.heard ||
                                 topic.reaction_heard_count ||
@@ -395,8 +371,38 @@ export function OverviewMode(props: any) {
                             </span>
                           </button>
                           <button
+                            onClick={(e) => handleReaction(topic.id, "validated", e)}
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                              topic.userReactions?.validated
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-500 hover:text-blue-600"
+                            }`}
+                          >
+                            <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                            <span className="text-sm">
+                              {topic.reactions?.validated ||
+                                topic.reaction_validated_count ||
+                                0}
+                            </span>
+                          </button>
+                          <button
+                            onClick={(e) => handleReaction(topic.id, "inspired", e)}
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                              topic.userReactions?.inspired
+                                ? "text-yellow-500 bg-yellow-50"
+                                : "text-gray-500 hover:text-yellow-500"
+                            }`}
+                          >
+                            <Star className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                            <span className="text-sm">
+                              {topic.reactions?.inspired ||
+                                topic.reaction_inspired_count ||
+                                0}
+                            </span>
+                          </button>
+                          <button
                             onClick={(e) => handleCommentClick(topic.id, e)}
-                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-105 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                            className={`flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                               activeCommentId === topic.id
                                 ? "text-purple-600 bg-purple-50"
                                 : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
@@ -409,15 +415,26 @@ export function OverviewMode(props: any) {
                           </button>
                           <button
                             onClick={(e) => handleOkestraClick(topic as Topic, e)}
-                            className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-105 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
                             title="AI Insights"
                           >
                             <Sparkles className="w-4 h-4" />
                             <span className="text-sm hidden md:inline">AI Insights</span>
                           </button>
+                          <button
+                            onClick={(e) => handleBookmarkTopic(topic.id, e)}
+                            className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                              topic.user_has_bookmarked
+                                ? "text-amber-500 bg-amber-50"
+                                : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
+                            }`}
+                            title="Bookmark"
+                          >
+                            <Bookmark className={`w-4 h-4 transition-transform duration-200 ${topic.user_has_bookmarked ? "fill-amber-500 animate-reaction-pop" : ""}`} />
+                          </button>
                         </div>
                         <div className="text-xs md:text-sm text-gray-500 w-full md:w-auto mt-2 md:mt-0">
-                          Last activity {getTimeAgo(topic.last_activity_at)}
+                          Last activity {getTimeAgo(topic.last_activity_at || topic.updated_at || topic.created_at)}
                         </div>
                       </div>
                     </div>
@@ -500,7 +517,7 @@ export function OverviewMode(props: any) {
         </div>
 
         {/* === RIGHT: SIDEBAR === */}
-        <div className="space-y-6">
+        <div className="space-y-6 order-1 lg:order-2">
           {initialLoading ? (
             <ForumViewSkeleton />
           ) : (

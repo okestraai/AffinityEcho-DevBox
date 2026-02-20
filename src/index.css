@@ -83,61 +83,10 @@ html, body {
   transform: translateX(-50%) scale(1);
 }
 
-/* Twitter-like reaction button burst effect */
-.reaction-burst {
-  position: relative;
+/* Loading dot animation delays */
+.bounce-delay-150 {
+  animation-delay: 150ms;
 }
-
-.reaction-burst::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  pointer-events: none;
-  opacity: 0;
-}
-
-.reaction-burst.burst-active::before {
-  animation: reaction-ring 0.5s ease-out forwards;
-}
-
-/* Color variants for burst ring */
-.reaction-burst.burst-blue::before {
-  border: 2px solid rgba(37, 99, 235, 0.5);
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.3);
-}
-
-.reaction-burst.burst-red::before {
-  border: 2px solid rgba(220, 38, 38, 0.5);
-  box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
-}
-
-.reaction-burst.burst-green::before {
-  border: 2px solid rgba(22, 163, 74, 0.5);
-  box-shadow: 0 0 12px rgba(22, 163, 74, 0.3);
-}
-
-.reaction-burst.burst-purple::before {
-  border: 2px solid rgba(147, 51, 234, 0.5);
-  box-shadow: 0 0 12px rgba(147, 51, 234, 0.3);
-}
-
-.reaction-burst.burst-yellow::before {
-  border: 2px solid rgba(202, 138, 4, 0.5);
-  box-shadow: 0 0 12px rgba(202, 138, 4, 0.3);
-}
-
-.reaction-burst.burst-amber::before {
-  border: 2px solid rgba(217, 119, 6, 0.5);
-  box-shadow: 0 0 12px rgba(217, 119, 6, 0.3);
-}
-
-@keyframes reaction-ring {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-  50% { transform: translate(-50%, -50%) scale(2.5); opacity: 0.4; }
-  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+.bounce-delay-300 {
+  animation-delay: 300ms;
 }

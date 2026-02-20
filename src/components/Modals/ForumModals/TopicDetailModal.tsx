@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveDisplayName } from '../../../utils/nameUtils';
 import { Topic } from '../../../types/forum';
 
 interface TopicDetailModalProps {
@@ -37,7 +38,7 @@ export function TopicDetailModal({ topic, isOpen, onClose, onUserClick }: TopicD
               onClick={() => onUserClick(topic.author.id)}
               className="text-purple-600 hover:underline"
             >
-              {topic.author.display_name || topic.author.username}
+              {resolveDisplayName(topic.author.display_name, topic.author.username)}
             </button>
           </div>
           <button

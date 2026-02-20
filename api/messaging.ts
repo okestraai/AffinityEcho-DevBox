@@ -1,5 +1,5 @@
 // api/messaging.ts
-import { getAuthInstance, API_URL } from "./base";
+import { getAuthInstance, API_URL, unwrap } from "./base";
 
 export const SendAMessage = async (payload: {
   conversation_id: string;
@@ -14,7 +14,7 @@ export const SendAMessage = async (payload: {
 }) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/messaging/send`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 export const MarkMessagesAsRead = async (
@@ -26,7 +26,7 @@ export const MarkMessagesAsRead = async (
     conversation_id,
     message_id,
   });
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetMessageUnreadCount = async (
@@ -40,7 +40,7 @@ export const GetMessageUnreadCount = async (
   const queryString = queryParams.toString();
   const url = `${API_URL}/messaging/unread-count${queryString ? `?${queryString}` : ""}`;
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetTypingStatus = async (conversationId: string) => {
@@ -48,7 +48,7 @@ export const GetTypingStatus = async (conversationId: string) => {
   const res = await authFetch.get(
     `${API_URL}/messaging/typing/${conversationId}`,
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const CreateConversation = async (payload: {
@@ -59,7 +59,7 @@ export const CreateConversation = async (payload: {
 }) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/conversations`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetConversations = async (filter: {
@@ -76,7 +76,7 @@ export const GetConversations = async (filter: {
   if (filter.search) queryParams.append("search", filter.search);
   const url = `${API_URL}/conversations?${queryParams.toString()}`;
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetSingleConversationMessages = async (
@@ -89,7 +89,7 @@ export const GetSingleConversationMessages = async (
   if (filter.before) queryParams.append("before", filter.before);
   const url = `${API_URL}/conversations/${conversationId}/messages?${queryParams.toString()}`;
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };
 
 export const DeleteConversation = async (conversationId: string) => {
@@ -97,7 +97,7 @@ export const DeleteConversation = async (conversationId: string) => {
   const res = await authFetch.delete(
     `${API_URL}/conversations/${conversationId}/clear`,
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const RequestIdentityReveal = async (
@@ -111,7 +111,7 @@ export const RequestIdentityReveal = async (
     message,
     connection_id,
   });
-  return res.data;
+  return unwrap(res);
 };
 
 export const RespondToIdentityReveal = async (
@@ -125,7 +125,7 @@ export const RespondToIdentityReveal = async (
     action,
     reason,
   });
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetIdentityRevealRequests = async (filter: {
@@ -137,7 +137,7 @@ export const GetIdentityRevealRequests = async (filter: {
   const res = await authFetch.get(
     `${API_URL}/identity-reveal?${queryParams.toString()}`,
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const GetIdentityRevealStatusForConversation = async (
@@ -147,7 +147,7 @@ export const GetIdentityRevealStatusForConversation = async (
   const res = await authFetch.get(
     `${API_URL}/identity-reveal/status/${conversationId}`,
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const StartMentorshipChatFromDirectRequest = async (
@@ -157,7 +157,7 @@ export const StartMentorshipChatFromDirectRequest = async (
   const res = await authFetch.post(
     `${API_URL}/mentorship-chat/start-from-request/${mentorshipRequestId}`,
   );
-  return res.data;
+  return unwrap(res);
 };
 
 export const SetTypingStatus = async (payload: {
@@ -166,7 +166,7 @@ export const SetTypingStatus = async (payload: {
 }) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(`${API_URL}/messaging/typing`, payload);
-  return res.data;
+  return unwrap(res);
 };
 
 // NEW: User discovery functions
@@ -195,7 +195,22 @@ export const GetConnectableUsers = async (filters: {
 
   const url = `${API_URL}/user-discovery/connectable-users?${queryParams.toString()}`;
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
+};
+
+// Search users for @ mentions — returns ALL users matching query (no conversation filter)
+export const SearchUsersForMention = async (filters: {
+  search: string;
+  limit?: number;
+}) => {
+  const authFetch = getAuthInstance();
+  const queryParams = new URLSearchParams();
+  queryParams.append("search", filters.search);
+  if (filters.limit) queryParams.append("limit", filters.limit.toString());
+
+  const url = `${API_URL}/user-discovery/search?${queryParams.toString()}`;
+  const res = await authFetch.get(url);
+  return unwrap(res);
 };
 
 export const GetUserSuggestions = async (limit?: number) => {
@@ -205,5 +220,5 @@ export const GetUserSuggestions = async (limit?: number) => {
 
   const url = `${API_URL}/user-discovery/suggestions?${queryParams.toString()}`;
   const res = await authFetch.get(url);
-  return res.data;
+  return unwrap(res);
 };

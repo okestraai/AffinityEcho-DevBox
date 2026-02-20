@@ -18,11 +18,14 @@ import {
   ThumbsUp,
   Heart as HeartIcon,
   Globe,
+  Bookmark,
 } from "lucide-react";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
+import { ToggleTopicBookmark } from "../../../../api/forumApis";
+import { resolveDisplayName } from "../../../utils/nameUtils";
 
 export function ForumTopicsMode(props: any) {
   const {
@@ -62,6 +65,15 @@ export function ForumTopicsMode(props: any) {
   } = props;
 
   const isGlobalView = viewMode === "global";
+
+  const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await ToggleTopicBookmark(topicId);
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    }
+  };
 
   console.log(
     "ForumTopicsMode - viewMode:",
@@ -366,7 +378,8 @@ export function ForumTopicsMode(props: any) {
 
       {/* Topics List */}
       <div className="space-y-6">
-        {paginatedTopics.topics.map((topic: any) => {
+        {paginatedTopics.topics
+          .map((topic: any) => {
           return (
             <div
               key={topic.id}
@@ -387,7 +400,7 @@ export function ForumTopicsMode(props: any) {
                         onClick={() => handleUserClick(topic.user_id)}
                         className="text-sm text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-3 py-1.5 rounded-full border border-purple-200 hover:text-purple-800 transition-colors"
                       >
-                        {topic.user_profile?.display_name || topic.user_profile?.username || "Anonymous"}
+                        {resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username)}
                       </button>
                       {topic.is_pinned && (
                         <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full font-medium flex items-center gap-1">
@@ -432,13 +445,13 @@ export function ForumTopicsMode(props: any) {
                   <div className="flex items-center gap-1 md:gap-4 flex-wrap">
                     <button
                       onClick={(e) => handleReaction(topic.id, "seen", e)}
-                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-green ${
+                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                         topic.userReactions?.seen
-                          ? "text-green-600 burst-active"
+                          ? "text-green-600 bg-green-50"
                           : "text-gray-500 hover:text-green-600"
                       }`}
                     >
-                      <Eye className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
+                      <Eye className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                       <span className="text-sm">
                         {topic.reactions?.seen ||
                           topic.reaction_seen_count ||
@@ -446,14 +459,29 @@ export function ForumTopicsMode(props: any) {
                       </span>
                     </button>
                     <button
+                      onClick={(e) => handleReaction(topic.id, "heard", e)}
+                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                        topic.userReactions?.heard
+                          ? "text-red-500 bg-red-50"
+                          : "text-gray-500 hover:text-red-500"
+                      }`}
+                    >
+                      <HeartIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
+                      <span className="text-sm">
+                        {topic.reactions?.heard ||
+                          topic.reaction_heard_count ||
+                          0}
+                      </span>
+                    </button>
+                    <button
                       onClick={(e) => handleReaction(topic.id, "validated", e)}
-                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-blue ${
+                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                         topic.userReactions?.validated
-                          ? "text-blue-600 burst-active"
+                          ? "text-blue-600 bg-blue-50"
                           : "text-gray-500 hover:text-blue-600"
                       }`}
                     >
-                      <ThumbsUp className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
+                      <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
                       <span className="text-sm">
                         {topic.reactions?.validated ||
                           topic.reaction_validated_count ||
@@ -462,31 +490,16 @@ export function ForumTopicsMode(props: any) {
                     </button>
                     <button
                       onClick={(e) => handleReaction(topic.id, "inspired", e)}
-                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-yellow ${
+                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
                         topic.userReactions?.inspired
-                          ? "text-yellow-600 burst-active"
-                          : "text-gray-500 hover:text-yellow-600"
+                          ? "text-yellow-500 bg-yellow-50"
+                          : "text-gray-500 hover:text-yellow-500"
                       }`}
                     >
-                      <Star className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.inspired ? "animate-reaction-pop" : ""}`} />
+                      <Star className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                       <span className="text-sm">
                         {topic.reactions?.inspired ||
                           topic.reaction_inspired_count ||
-                          0}
-                      </span>
-                    </button>
-                    <button
-                      onClick={(e) => handleReaction(topic.id, "heard", e)}
-                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-purple-50 hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg reaction-burst burst-purple ${
-                        topic.userReactions?.heard
-                          ? "text-purple-600 burst-active"
-                          : "text-gray-500 hover:text-purple-600"
-                      }`}
-                    >
-                      <HeartIcon className={`w-4 h-4 transition-all duration-200 ${topic.userReactions?.heard ? "animate-reaction-pop" : ""}`} />
-                      <span className="text-sm">
-                        {topic.reactions?.heard ||
-                          topic.reaction_heard_count ||
                           0}
                       </span>
                     </button>
@@ -499,9 +512,20 @@ export function ForumTopicsMode(props: any) {
                         {topic.commentCount || topic.comments_count || 0}
                       </span>
                     </button>
+                    <button
+                      onClick={(e) => handleBookmarkTopic(topic.id, e)}
+                      className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
+                        topic.user_has_bookmarked
+                          ? "text-amber-500 bg-amber-50"
+                          : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
+                      }`}
+                      title="Bookmark"
+                    >
+                      <Bookmark className={`w-4 h-4 transition-transform duration-200 ${topic.user_has_bookmarked ? "fill-amber-500 animate-reaction-pop" : ""}`} />
+                    </button>
                   </div>
                   <div className="text-xs md:text-sm text-gray-500 w-full md:w-auto mt-2 md:mt-0">
-                    Last activity {getTimeAgo(topic.last_activity_at)}
+                    Last activity {getTimeAgo(topic.last_activity_at || topic.updated_at || topic.created_at)}
                   </div>
                 </div>
               </div>

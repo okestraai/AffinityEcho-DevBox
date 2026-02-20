@@ -12,9 +12,9 @@ export function CrisisResourcesPage() {
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        const response = await GetCrisisResources();
-        if (response.success && response.data) {
-          setApiResources(response.data);
+        const data = await GetCrisisResources();
+        if (data) {
+          setApiResources(data);
         }
       } catch {
         // Fall back to static data on error
@@ -240,7 +240,7 @@ export function CrisisResourcesPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-6xl mx-auto">
         <button
-          onClick={() => navigate('/dashboard/profile')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
