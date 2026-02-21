@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Shield,
@@ -97,6 +97,7 @@ const statusConfig: Record<ReportStatus, { label: string; color: string; bg: str
 
 export function MyCasesPage() {
   const navigate = useNavigate();
+  const { caseId } = useParams<{ caseId?: string }>();
   const [cases, setCases] = useState<HarassmentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
@@ -107,6 +108,16 @@ export function MyCasesPage() {
   useEffect(() => {
     fetchCases();
   }, []);
+
+  // Auto-open case detail when caseId param is present
+  useEffect(() => {
+    if (caseId && cases.length > 0 && !selectedCase) {
+      const target = cases.find((c) => c.id === caseId);
+      if (target) {
+        handleViewDetail(target);
+      }
+    }
+  }, [caseId, cases]);
 
   const fetchCases = async () => {
     setLoading(true);

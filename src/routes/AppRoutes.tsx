@@ -48,6 +48,7 @@ const ProfileView = React.lazy(() => import('../components/dashboard/Profile/Pro
 const MentorshipView = React.lazy(() => import('../components/dashboard/Mentorship/MentorshipView').then(m => ({ default: m.MentorshipView })));
 const FindMentorshipView = React.lazy(() => import('../components/dashboard/Mentorship/FindMentorshipView').then(m => ({ default: m.FindMentorshipView })));
 const NotificationsView = React.lazy(() => import('../components/dashboard/Notification/NotificationsView').then(m => ({ default: m.NotificationsView })));
+const SinglePostPage = React.lazy(() => import('../components/dashboard/Feeds/SinglePostPage').then(m => ({ default: m.SinglePostPage })));
 
 // Profile subpages (rarely visited)
 const CommunityGuidelinesPage = React.lazy(() => import('../components/dashboard/Profile/CommunityGuidelinesPage').then(m => ({ default: m.CommunityGuidelinesPage })));
@@ -92,6 +93,7 @@ const AppRoutes: React.FC = () => {
         >
           <Route path="" element={<Navigate to="feeds" replace />} />
           <Route path="feeds" element={<FeedsView />} />
+          <Route path="feeds/post/:postId" element={<SinglePostPage />} />
           <Route path="forums" element={<ForumsView />} />
           <Route path="forums/topic/:topicId" element={<TopicDetailPage />} />
           <Route path="nooks" element={<NooksView />} />
@@ -103,6 +105,7 @@ const AppRoutes: React.FC = () => {
           <Route path="profile" element={<ProfileView />} />
           <Route path="notifications" element={<NotificationsView />} />
           <Route path="my-cases" element={<MyCasesPage />} />
+          <Route path="my-cases/:caseId" element={<MyCasesPage />} />
         </Route>
 
         {/* PROFILE SUBPAGES — standalone protected pages */}

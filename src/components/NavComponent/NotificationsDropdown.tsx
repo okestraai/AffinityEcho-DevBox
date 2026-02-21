@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Bell,
-  Users,
   MessageCircle,
   Heart,
   Target,
@@ -26,6 +25,7 @@ import {
   UpdateNotification,
 } from '../../../api/notificationApis';
 import { RespondToIdentityReveal } from '../../../api/messaging';
+import { RespondToDirectMentorshipRequest } from '../../../api/mentorshipApis';
 import { webSocketService } from '../../services/websocket.service';
 import { showToast } from '../../Helper/ShowToast';
 
@@ -158,11 +158,132 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     }
   };
 
+  // Normalize backend action_url to frontend route paths
+  const normalizeActionUrl = (actionUrl: string): string => {
+    let url = actionUrl;
+    url = url.replace(/^\/dashboard/, "");
+
+    url = url.replace(/^\/feed\/posts\/([a-f0-9-]+).*/, "/feeds/post/$1");
+    url = url.replace(/^\/feed\/([a-f0-9-]+)$/, "/feeds/post/$1");
+    url = url.replace(/^\/forum\/topics\/([a-f0-9-]+).*/, "/forums/topic/$1");
+    url = url.replace(/^\/forum\/topic\/([a-f0-9-]+).*/, "/forums/topic/$1");
+    url = url.replace(/^\/nook\/([a-f0-9-]+)/, "/nooks/$1");
+    url = url.replace(/^\/reports\/([a-f0-9-]+)/, "/my-cases/$1");
+    url = url.replace(/^\/profile$/, "/profile?tab=profile");
+
+    if (!url.startsWith("/dashboard")) {
+      url = `/dashboard${url.startsWith("/") ? "" : "/"}${url}`;
+    }
+    return url;
+  };
+
+  // Resolve the best route for a notification based on its type, reference, and action_url
+  const resolveNotificationRoute = (notification: Notification): string | null => {
+    const { type, reference_id, reference_type, action_url, actor_id, metadata } = notification;
+
+    switch (type) {
+      case "follow":
+      case "user_followed":
+        return "/dashboard/profile?tab=profile";
+
+      case "feed_like":
+      case "post_reaction":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        break;
+
+      case "forum_post":
+      case "forum_comment":
+      case "forum_like":
+      case "topic_comment":
+        if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
+        break;
+
+      case "nook_post":
+      case "nook_comment":
+      case "nook_message":
+      case "nook_reply":
+        if (reference_id) return `/dashboard/nooks/${reference_id}`;
+        break;
+
+      case "referral_post":
+      case "referral_comment":
+      case "referral_like":
+      case "referral_connection":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        return "/dashboard/feeds";
+
+      case "mentorship_request":
+        return "/dashboard/messages?tab=mentorship-requests";
+
+      case "mentorship_accepted":
+      case "mentorship_message":
+        if (actor_id) return `/dashboard/messages?user=${actor_id}&chat_type=mentorship`;
+        return "/dashboard/messages";
+
+      case "mentorship_declined":
+        return "/dashboard/mentorship";
+
+      case "message_received":
+        if (metadata?.conversation_id) return `/dashboard/messages?conversation=${metadata.conversation_id}`;
+        if (actor_id) return `/dashboard/messages?user=${actor_id}`;
+        return "/dashboard/messages";
+
+      case "identity_reveal":
+      case "identity_reveal_request":
+      case "identity_reveal_rejected":
+        if (metadata?.conversation_id) return `/dashboard/messages?conversation=${metadata.conversation_id}`;
+        return "/dashboard/messages";
+
+      case "report_status_update":
+        if (reference_id) return `/dashboard/my-cases/${reference_id}`;
+        return "/dashboard/my-cases";
+
+      case "mention":
+        break;
+    }
+
+    // Reference type-based routing
+    if (reference_id && reference_type) {
+      switch (reference_type) {
+        case "topic":
+        case "forum":
+        case "forum_post":
+        case "forum_comment":
+          return `/dashboard/forums/topic/${reference_id}`;
+        case "nook":
+        case "nook_message":
+        case "nook_reply":
+          return `/dashboard/nooks/${reference_id}`;
+        case "post":
+        case "feed":
+          return `/dashboard/feeds/post/${reference_id}`;
+        case "report":
+        case "case":
+          return `/dashboard/my-cases/${reference_id}`;
+        case "conversation":
+          return `/dashboard/messages?conversation=${reference_id}`;
+      }
+    }
+
+    if (action_url) {
+      return normalizeActionUrl(action_url);
+    }
+
+    return null;
+  };
+
+  const markActionTaken = (notificationId: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === notificationId ? { ...n, action_taken: true, is_read: true } : n))
+    );
+  };
+
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
 
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    const route = resolveNotificationRoute(notification);
+    if (route) {
+      navigate(route);
       onClose();
     }
   };
@@ -171,15 +292,40 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     await markAsRead(notification.id);
 
     try {
+      // --- API actions (accept/decline) ---
+      if (action === 'decline_mentorship') {
+        const requestId = notification.reference_id || notification.metadata?.request_id;
+        if (requestId) {
+          await RespondToDirectMentorshipRequest(requestId, { action: 'decline' });
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        markActionTaken(notification.id);
+        showToast('Mentorship request declined.', 'info');
+        return;
+      }
+
+      if (action === 'accept_mentorship') {
+        const requestId = notification.reference_id || notification.metadata?.request_id;
+        if (requestId) {
+          await RespondToDirectMentorshipRequest(requestId, { action: 'accept' });
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        markActionTaken(notification.id);
+        showToast('Mentorship request accepted!', 'success');
+        navigate('/dashboard/messages', {
+          state: { startChatWith: notification.actor_id, contextType: 'mentorship' },
+        });
+        onClose();
+        return;
+      }
+
       if (action === 'decline_identity_reveal') {
         const revealId = notification.reference_id || notification.metadata?.reveal_id;
         if (revealId) {
           await RespondToIdentityReveal(revealId, 'rejected');
         }
         await UpdateNotification(notification.id, { action_taken: true });
-        setNotifications(prev =>
-          prev.map(n => (n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n))
-        );
+        markActionTaken(notification.id);
         showToast('Identity reveal declined.', 'info');
         return;
       }
@@ -190,27 +336,27 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
           await RespondToIdentityReveal(revealId, 'accepted');
         }
         await UpdateNotification(notification.id, { action_taken: true });
-        setNotifications(prev =>
-          prev.map(n => (n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n))
-        );
+        markActionTaken(notification.id);
         showToast('Identity reveal accepted! You can now see each other\'s identities.', 'success');
-        navigate('/dashboard/messages');
+        if (notification.metadata?.conversation_id) {
+          navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
+        } else {
+          navigate('/dashboard/messages');
+        }
         onClose();
         return;
       }
 
+      // --- Navigation-only actions ---
       await UpdateNotification(notification.id, { action_taken: true });
 
-      if (action === 'accept_mentorship' || action === 'view_profile' || action === 'view_post') {
-        if (notification.action_url) {
-          navigate(notification.action_url);
-          onClose();
-        }
+      const route = resolveNotificationRoute(notification);
+      if (route) {
+        navigate(route);
+        onClose();
       }
 
-      setNotifications(prev =>
-        prev.map(n => (n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n))
-      );
+      markActionTaken(notification.id);
     } catch (error) {
       console.error('Error handling action:', error);
       showToast('An error occurred. Please try again.', 'error');
@@ -283,7 +429,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                deleteNotification(notification.id);
+                handleAction(notification, 'decline_mentorship');
               }}
               className="flex-1 px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
             >
@@ -317,16 +463,99 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         );
 
       case 'follow':
+      case 'user_followed':
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAction(notification, 'view_profile');
-            }}
-            className="mt-2 w-full px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
-          >
-            View Profile
-          </button>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_profile');
+              }}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+            >
+              View Profile
+            </button>
+          </div>
+        );
+
+      case 'identity_reveal':
+      case 'mentorship_accepted':
+      case 'mentorship_message':
+      case 'message_received':
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_message');
+              }}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium"
+            >
+              View Message
+            </button>
+          </div>
+        );
+
+      case 'mentorship_declined':
+      case 'identity_reveal_rejected':
+        return null;
+
+      case 'report_status_update':
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_case');
+              }}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+            >
+              View Case
+            </button>
+          </div>
+        );
+
+      case 'mention':
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_mention');
+              }}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+            >
+              View Mention
+            </button>
+          </div>
+        );
+
+      case 'forum_post':
+      case 'forum_comment':
+      case 'forum_like':
+      case 'topic_comment':
+      case 'nook_post':
+      case 'nook_comment':
+      case 'nook_message':
+      case 'nook_reply':
+      case 'referral_post':
+      case 'referral_comment':
+      case 'referral_like':
+      case 'referral_connection':
+      case 'feed_like':
+      case 'post_reaction':
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_post');
+              }}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+            >
+              View Post
+            </button>
+          </div>
         );
 
       default:

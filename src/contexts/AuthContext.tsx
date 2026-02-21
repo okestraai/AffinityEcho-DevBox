@@ -116,8 +116,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const loginData = await loginUser({ email, password });
-      saveTokens(loginData.access_token, loginData.refresh_token);
+      const raw = await loginUser({ email, password });
+      // Handle both unwrapped { access_token, ... } and wrapped { data: { access_token, ... } }
+      const loginData = raw?.access_token ? raw : raw?.data ?? raw;
+
+      const accessToken = loginData?.access_token;
+      const refreshToken = loginData?.refresh_token;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error("Invalid login response — missing tokens");
+      }
+
+      saveTokens(accessToken, refreshToken);
 
       // Check if the account is deactivated (returned from backend login response)
       if (loginData.is_deactivated) {
@@ -144,11 +154,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
       }
 
-      await loadUser();
+      // Set user directly from login response instead of calling /auth/me
+      // (the token may not be accepted by /auth/me immediately after issuance)
+      const loginUserData = loginData.user || {};
+      setUser({
+        id: loginUserData.id || "",
+        email: loginUserData.email || email,
+        username: loginUserData.username || email.split("@")[0],
+        avatar: loginUserData.avatar || null,
+        has_completed_onboarding: loginData.has_completed_onboarding ?? false,
+        demographics: {},
+      });
+      setIsLoading(false);
+
       showToast("Welcome back!", "success");
       navigate(loginData.has_completed_onboarding ? "/dashboard" : "/onboarding");
+
+      // Full user profile will be loaded on next app init (page refresh)
+      // We skip /auth/me here because the interceptor hard-redirects on 401
     } catch (err: any) {
-      showToast(err.response?.data?.message || "Login failed", "error");
+      console.error("Login error:", err);
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.data?.message ||
+        err.message ||
+        "Login failed";
+      showToast(message, "error");
     } finally {
       setIsLoading(false);
     }

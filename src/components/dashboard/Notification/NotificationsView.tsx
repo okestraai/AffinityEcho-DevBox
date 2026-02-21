@@ -118,7 +118,11 @@ export function NotificationsView() {
 
       // Client-side filtering for types not covered by API filter
       let filteredNotifications = allNotifications;
-      if (filter === "mentions") {
+      if (filter === "follows") {
+        filteredNotifications = allNotifications.filter((n: Notification) =>
+          ["follow", "user_followed"].includes(n.type)
+        );
+      } else if (filter === "mentions") {
         filteredNotifications = allNotifications.filter((n: Notification) =>
           ["mention"].includes(n.type)
         );
@@ -195,17 +199,26 @@ export function NotificationsView() {
     let url = actionUrl;
     // Strip leading /dashboard if present — we'll re-add it
     url = url.replace(/^\/dashboard/, "");
-    // Fix backend path mismatches:
-    // /forum/topics/:id → /forums/topic/:id
-    url = url.replace(/^\/forum\/topics\//, "/forums/topic/");
-    // /forum/topic/:id (singular forum) → /forums/topic/:id
-    url = url.replace(/^\/forum\/topic\//, "/forums/topic/");
-    // /feed/posts/:id → /feeds (no individual post route)
-    url = url.replace(/^\/feed\/posts\/.*/, "/feeds");
-    // /feed/:id → /feeds
-    url = url.replace(/^\/feed\/.*/, "/feeds");
-    // /nook/:id → /nooks/:id
-    url = url.replace(/^\/nook\/([^/])/, "/nooks/$1");
+
+    // Feed posts → single post page: /feed/posts/:id → /feeds/post/:id
+    url = url.replace(/^\/feed\/posts\/([a-f0-9-]+).*/, "/feeds/post/$1");
+    // /feed/:id (legacy) → /feeds/post/:id
+    url = url.replace(/^\/feed\/([a-f0-9-]+)$/, "/feeds/post/$1");
+
+    // Forum topics: /forum/topics/:id → /forums/topic/:id (strip hash fragments)
+    url = url.replace(/^\/forum\/topics\/([a-f0-9-]+).*/, "/forums/topic/$1");
+    url = url.replace(/^\/forum\/topic\/([a-f0-9-]+).*/, "/forums/topic/$1");
+
+    // Nooks: /nook/:id → /nooks/:id
+    url = url.replace(/^\/nook\/([a-f0-9-]+)/, "/nooks/$1");
+    // /nooks/:id already correct
+
+    // Report/cases: /reports/:id or /my-cases/:id
+    url = url.replace(/^\/reports\/([a-f0-9-]+)/, "/my-cases/$1");
+
+    // Profile
+    url = url.replace(/^\/profile$/, "/profile?tab=profile");
+
     // Ensure it starts with /dashboard
     if (!url.startsWith("/dashboard")) {
       url = `/dashboard${url.startsWith("/") ? "" : "/"}${url}`;
@@ -213,46 +226,160 @@ export function NotificationsView() {
     return url;
   };
 
+  // Resolve the best route for a notification based on its type, reference, and action_url
+  const resolveNotificationRoute = (notification: Notification): string | null => {
+    const { type, reference_id, reference_type, action_url, actor_id, metadata } = notification;
+
+    // 1. Specific type-based routing (highest priority)
+    switch (type) {
+      // Follow → profile page with "follow" tab
+      case "follow":
+      case "user_followed":
+        return "/dashboard/profile?tab=profile";
+
+      // Feed posts: reaction, comment, mention on a post → single post page
+      case "feed_like":
+      case "post_reaction":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        break;
+
+      // Forum content → topic detail
+      case "forum_post":
+      case "forum_comment":
+      case "forum_like":
+      case "topic_comment":
+        if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
+        break;
+
+      // Nook content → nook detail
+      case "nook_post":
+      case "nook_comment":
+      case "nook_message":
+      case "nook_reply":
+        if (reference_id) return `/dashboard/nooks/${reference_id}`;
+        break;
+
+      // Referral content → feed (referral posts live in feed)
+      case "referral_post":
+      case "referral_comment":
+      case "referral_like":
+      case "referral_connection":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        return "/dashboard/feeds";
+
+      // Mentorship request → mentorship requests tab in messages
+      case "mentorship_request":
+        return "/dashboard/messages?tab=mentorship-requests";
+
+      // Mentorship accepted → open chat with the mentor/mentee
+      case "mentorship_accepted":
+      case "mentorship_message":
+        if (actor_id) return `/dashboard/messages?user=${actor_id}&chat_type=mentorship`;
+        return "/dashboard/messages";
+
+      // Mentorship declined → mentorship view
+      case "mentorship_declined":
+        return "/dashboard/mentorship";
+
+      // Direct messages → open conversation
+      case "message_received":
+        if (metadata?.conversation_id) return `/dashboard/messages?conversation=${metadata.conversation_id}`;
+        if (actor_id) return `/dashboard/messages?user=${actor_id}`;
+        return "/dashboard/messages";
+
+      // Identity reveal → messages
+      case "identity_reveal":
+      case "identity_reveal_request":
+      case "identity_reveal_rejected":
+        if (metadata?.conversation_id) return `/dashboard/messages?conversation=${metadata.conversation_id}`;
+        return "/dashboard/messages";
+
+      // Report status → case detail
+      case "report_status_update":
+        if (reference_id) return `/dashboard/my-cases/${reference_id}`;
+        return "/dashboard/my-cases";
+
+      // Mention → route based on what was mentioned in
+      case "mention":
+        // Fall through to reference_type resolution below
+        break;
+    }
+
+    // 2. Reference type-based routing
+    if (reference_id && reference_type) {
+      switch (reference_type) {
+        case "topic":
+        case "forum":
+        case "forum_post":
+        case "forum_comment":
+          return `/dashboard/forums/topic/${reference_id}`;
+        case "nook":
+        case "nook_message":
+        case "nook_reply":
+          return `/dashboard/nooks/${reference_id}`;
+        case "post":
+        case "feed":
+          return `/dashboard/feeds/post/${reference_id}`;
+        case "report":
+        case "case":
+          return `/dashboard/my-cases/${reference_id}`;
+        case "conversation":
+          return `/dashboard/messages?conversation=${reference_id}`;
+      }
+    }
+
+    // 3. Fallback: use action_url if available
+    if (action_url) {
+      return normalizeActionUrl(action_url);
+    }
+
+    return null;
+  };
+
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
 
-    // Use action_url first for precise routing
-    if (notification.action_url) {
-      navigate(normalizeActionUrl(notification.action_url));
-      return;
+    const route = resolveNotificationRoute(notification);
+    if (route) {
+      navigate(route);
     }
+  };
 
-    // Build specific route from reference_id and type
-    if (notification.reference_id) {
-      const refType = notification.reference_type;
-      const nType = notification.type;
-      if (refType === "topic" || refType === "forum" || nType.includes("topic") || nType.includes("forum_comment")) {
-        navigate(`/dashboard/forums/topic/${notification.reference_id}`);
-        return;
-      }
-      if (refType === "nook" || refType === "nook_message" || nType.startsWith("nook")) {
-        navigate(`/dashboard/nooks/${notification.reference_id}`);
-        return;
-      }
-    }
+  const markActionTaken = (notificationId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notificationId ? { ...n, action_taken: true, is_read: true } : n
+      )
+    );
   };
 
   const handleAction = async (notification: Notification, action: string) => {
     await markAsRead(notification.id);
 
     try {
+      // --- API actions (accept/decline) — these perform an API call, then navigate ---
       if (action === "decline_mentorship") {
         const requestId = notification.reference_id || notification.metadata?.request_id;
         if (requestId) {
           await RespondToDirectMentorshipRequest(requestId, { action: "decline" });
         }
         await UpdateNotification(notification.id, { action_taken: true });
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
-          )
-        );
+        markActionTaken(notification.id);
         showToast("Mentorship request declined.", "info");
+        return;
+      }
+
+      if (action === "accept_mentorship") {
+        const requestId = notification.reference_id || notification.metadata?.request_id;
+        if (requestId) {
+          await RespondToDirectMentorshipRequest(requestId, { action: "accept" });
+        }
+        await UpdateNotification(notification.id, { action_taken: true });
+        markActionTaken(notification.id);
+        showToast("Mentorship request accepted!", "success");
+        navigate("/dashboard/messages", {
+          state: { startChatWith: notification.actor_id, contextType: "mentorship" },
+        });
         return;
       }
 
@@ -262,11 +389,7 @@ export function NotificationsView() {
           await RespondToIdentityReveal(revealId, "rejected");
         }
         await UpdateNotification(notification.id, { action_taken: true });
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
-          )
-        );
+        markActionTaken(notification.id);
         showToast("Identity reveal declined.", "info");
         return;
       }
@@ -277,94 +400,25 @@ export function NotificationsView() {
           await RespondToIdentityReveal(revealId, "accepted");
         }
         await UpdateNotification(notification.id, { action_taken: true });
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
-          )
-        );
+        markActionTaken(notification.id);
         showToast("Identity reveal accepted! You can now see each other's identities.", "success");
-        navigate("/dashboard/messages");
-        return;
-      }
-
-      if (action === "accept_mentorship") {
-        const requestId = notification.reference_id || notification.metadata?.request_id;
-        if (requestId) {
-          await RespondToDirectMentorshipRequest(requestId, { action: "accept" });
+        if (notification.metadata?.conversation_id) {
+          navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
+        } else {
+          navigate("/dashboard/messages");
         }
-        await UpdateNotification(notification.id, { action_taken: true });
-        showToast("Mentorship request accepted!", "success");
-        navigate("/dashboard/messages", {
-          state: { startChatWith: notification.actor_id, contextType: "mentorship" },
-        });
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, action_taken: true, is_read: true } : n
-          )
-        );
         return;
       }
 
+      // --- Navigation-only actions — mark as taken and route ---
       await UpdateNotification(notification.id, { action_taken: true });
 
-      if (action === "view_profile") {
-        navigate("/dashboard/profile");
-      } else if (action === "view_post") {
-        // Use action_url first, then build specific routes from reference_id
-        if (notification.action_url) {
-          navigate(normalizeActionUrl(notification.action_url));
-        } else if (notification.reference_id) {
-          // Route to specific content using reference_id
-          const refType = notification.reference_type;
-          if (refType === "topic" || refType === "forum" || refType === "forum_post" || refType === "forum_comment") {
-            navigate(`/dashboard/forums/topic/${notification.reference_id}`);
-          } else if (refType === "nook" || refType === "nook_message" || refType === "nook_reply") {
-            navigate(`/dashboard/nooks/${notification.reference_id}`);
-          } else if (refType === "post" || refType === "feed") {
-            navigate("/dashboard/feeds");
-          } else {
-            navigate("/dashboard/feeds");
-          }
-        } else {
-          // Fallback based on notification type
-          const nType = notification.type;
-          if (nType.startsWith("forum") || nType.startsWith("topic")) {
-            navigate("/dashboard/forums");
-          } else if (nType.startsWith("nook")) {
-            navigate("/dashboard/nooks");
-          } else {
-            navigate("/dashboard/feeds");
-          }
-        }
-      } else if (action === "view_mention") {
-        // Route mentions to specific content if reference_id is available
-        if (notification.action_url) {
-          navigate(normalizeActionUrl(notification.action_url));
-        } else if (notification.reference_id) {
-          const refType = notification.reference_type;
-          if (refType === "topic" || refType === "forum") {
-            navigate(`/dashboard/forums/topic/${notification.reference_id}`);
-          } else if (refType === "nook" || refType === "nook_message") {
-            navigate(`/dashboard/nooks/${notification.reference_id}`);
-          } else {
-            navigate("/dashboard/feeds");
-          }
-        } else {
-          navigate("/dashboard/feeds");
-        }
-      } else if (action === "view_case") {
-        navigate(notification.action_url ? normalizeActionUrl(notification.action_url) : "/dashboard/my-cases");
-      } else if (action === "view_message") {
-        navigate("/dashboard/messages");
+      const route = resolveNotificationRoute(notification);
+      if (route) {
+        navigate(route);
       }
 
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notification.id
-            ? { ...n, action_taken: true, is_read: true }
-            : n
-        )
-      );
+      markActionTaken(notification.id);
     } catch (error) {
       console.error("Error handling action:", error);
       showToast("An error occurred. Please try again.", "error");
@@ -509,7 +563,7 @@ export function NotificationsView() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigate("/dashboard/messages");
+                handleAction(notification, "view_message");
               }}
               className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xs font-medium"
             >
@@ -705,6 +759,7 @@ export function NotificationsView() {
             [
               "all",
               "unread",
+              "mentions",
               "follows",
               "posts",
               "mentorship",

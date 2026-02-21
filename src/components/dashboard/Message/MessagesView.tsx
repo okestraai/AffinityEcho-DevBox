@@ -1257,6 +1257,17 @@ export function MessagesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle ?tab=mentorship-requests to auto-open mentorship requests view
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "mentorship-requests") {
+      setShowMentorshipRequests(true);
+      // Clear param so it doesn't re-trigger
+      navigate(location.pathname, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Handle startChatWith from navigation state (e.g., from UserProfileModal Chat button)
   useEffect(() => {
     const state = location.state as { startChatWith?: string; contextType?: string } | null;
