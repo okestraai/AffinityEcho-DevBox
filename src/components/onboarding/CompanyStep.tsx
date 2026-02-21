@@ -127,7 +127,7 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
                   });
                   setSearchTerm(newSearchTerm);
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-3 sm:py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base min-h-[44px]"
               />
             </div>
 
@@ -136,7 +136,7 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
                 <button
                   key={company}
                   onClick={() => handleCompanySelect(company)}
-                  className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                  className={`w-full text-left px-3 py-3 sm:py-2 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px] ${
                     data.company === company
                       ? "bg-blue-50 text-blue-700 border border-blue-200"
                       : "text-gray-700"
@@ -151,7 +151,7 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
 
               <button
                 onClick={handleOther}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors border border-dashed border-gray-300"
+                className="w-full text-left px-3 py-3 sm:py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors border border-dashed border-gray-300 min-h-[44px]"
               >
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-gray-400" />
@@ -173,7 +173,7 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
                     handleCustomCompanySubmit();
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base min-h-[44px]"
               />
               <p className="text-xs text-gray-500 mt-2">
                 We'll create dedicated forums for "Others({data.company})"
@@ -185,7 +185,7 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
                 log("handleBackToList", "Returning to company list");
                 setShowOther(false);
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-sm text-blue-600 hover:text-blue-700 transition-colors min-h-[44px] inline-flex items-center"
             >
               ← Back to company list
             </button>

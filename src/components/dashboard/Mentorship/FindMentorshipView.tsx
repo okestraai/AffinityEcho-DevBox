@@ -437,7 +437,7 @@ export function FindMentorshipView() {
   };
 
   const ProfileSkeleton = () => (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 animate-pulse">
+    <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 animate-pulse">
       <div className="flex items-start gap-4 mb-4">
         <div className="w-16 h-16 bg-gray-200 rounded-2xl"></div>
         <div className="flex-1 space-y-2">
@@ -464,7 +464,7 @@ export function FindMentorshipView() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">
               Find Mentorship
             </h2>
             <p className="text-gray-600">
@@ -525,7 +525,7 @@ export function FindMentorshipView() {
           </button>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -567,7 +567,7 @@ export function FindMentorshipView() {
         </div>
 
         {showFilters && (
-          <div className="mt-4 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="mt-4 bg-white rounded-xl border border-gray-200 p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">Filter Profiles</h3>
               <div className="flex gap-2">
@@ -588,7 +588,7 @@ export function FindMentorshipView() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Career Level
@@ -779,13 +779,13 @@ export function FindMentorshipView() {
       </div>
 
       {loading ? (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           {[1, 2, 3, 4].map((i) => (
             <ProfileSkeleton key={i} />
           ))}
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+        <div className="text-center py-8 md:py-12 bg-white rounded-xl border border-gray-200">
           <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="font-medium text-gray-900 mb-2">No profiles found</h3>
           <p className="text-sm text-gray-500 mb-4">
@@ -799,11 +799,11 @@ export function FindMentorshipView() {
           </button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
           {filteredProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all"
+              className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all"
             >
               <div className="flex items-start gap-4 mb-4">
                 <button
@@ -926,7 +926,7 @@ export function FindMentorshipView() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleUserClick(profile.id)}
-                  className="flex-1 py-2 px-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  className="flex-1 py-2 px-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm font-medium"
                 >
                   View Profile
                 </button>
@@ -941,7 +941,7 @@ export function FindMentorshipView() {
                       );
                     }
                   }}
-                  className={`flex-1 py-2 px-3 rounded-lg transition-colors text-sm font-medium ${
+                  className={`flex-1 py-2 px-3 rounded-lg transition-colors text-xs sm:text-sm font-medium ${
                     profile.mentoringAs === "mentor" ||
                     profile.mentoringAs === "both"
                       ? "bg-purple-600 text-white hover:bg-purple-700"

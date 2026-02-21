@@ -237,7 +237,7 @@ function ConversationList({
             key={f.key}
             type="button"
             onClick={() => onFilterChange(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
               chatFilter === f.key
                 ? f.key === "mentorship"
                   ? "bg-orange-600 text-white"
@@ -256,7 +256,7 @@ function ConversationList({
       </div>
 
       {/* Flat conversation list */}
-      <div ref={listRef} className="grid gap-2 max-h-[calc(100vh-320px)] overflow-y-auto">
+      <div ref={listRef} className="grid gap-2 max-h-[calc(100vh-200px)] md:max-h-[calc(100vh-320px)] overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="text-center py-12 px-4">
             {chatFilter === "mentorship" ? (
@@ -1561,7 +1561,7 @@ export function MessagesView() {
                   key={message.id}
                   className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-xs md:max-w-[40vw] ${isOwn ? "text-right" : ""}`}>
+                  <div className={`max-w-[85vw] sm:max-w-xs md:max-w-[40vw] ${isOwn ? "text-right" : ""}`}>
                     <div
                       className={`inline-block px-3 py-2 rounded-2xl ${
                         isOwn
@@ -1622,10 +1622,10 @@ export function MessagesView() {
   return (
     <>
       <div className="max-w-4xl mx-auto">
-        <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+        <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 Messages
               </h1>
               <p className="text-gray-500">

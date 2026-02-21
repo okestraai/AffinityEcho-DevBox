@@ -32,6 +32,7 @@ import {
   TopicsCommentsReactions,
   DeleteTopicsComments,
 } from "../../../../api/forumApis";
+import { shareContent } from "../../../utils/shareUtils";
 import { formatLastActivity, getTimeAgo } from "../../../utils/forumUtils";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
@@ -146,7 +147,7 @@ export function TopicDetailPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="h-8 w-32 bg-gray-200 rounded mb-6 animate-pulse"></div>
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 animate-pulse">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 md:p-8 animate-pulse">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
               <div className="flex-1">
@@ -202,6 +203,11 @@ export function TopicDetailPage() {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
+  };
+
+  const handleShare = async () => {
+    if (!topicId) return;
+    await shareContent({ contentType: "topic", contentId: topicId, title: topic?.title });
   };
 
   // ISOLATED TOPIC REACTION - Only updates topic reactions
@@ -449,7 +455,7 @@ export function TopicDetailPage() {
     return (
       <div
         key={comment.id}
-        className={`${depth > 0 ? "ml-8 md:ml-12 mt-4" : "mt-6"}`}
+        className={`${depth > 0 ? "ml-4 sm:ml-8 md:ml-12 mt-3 sm:mt-4" : "mt-4 sm:mt-6"}`}
       >
         <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-all">
           <div className="flex items-start gap-3">
@@ -573,7 +579,7 @@ export function TopicDetailPage() {
         </button>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="p-6 md:p-8">
+          <div className="p-4 md:p-6 lg:p-8">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3 flex-1">
                 <button
@@ -628,7 +634,7 @@ export function TopicDetailPage() {
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
               {topic.title}
             </h1>
 
@@ -652,8 +658,8 @@ export function TopicDetailPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 md:pt-6 border-t border-gray-200 gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-wrap">
                 <button
                   onClick={() => handleReaction("heard")}
                   className={`flex items-center gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-3 py-2 rounded-lg ${
@@ -714,7 +720,11 @@ export function TopicDetailPage() {
                   <Bookmark className="w-5 h-5" />
                 </button>
 
-                <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+                <button
+                  onClick={handleShare}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                  title="Share"
+                >
                   <Share2 className="w-5 h-5" />
                 </button>
               </div>
@@ -723,14 +733,14 @@ export function TopicDetailPage() {
         </div>
 
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
             Comments ({rootComments.length})
           </h2>
 
           <form
             id="comment-form"
             onSubmit={handleSubmitComment}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6"
+            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 md:p-6 mb-6"
           >
             {replyToComment && (
               <div className="mb-4 flex items-center justify-between bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">

@@ -66,19 +66,19 @@ export function BottomNavigation({ activeTab, setActiveTab }: Props) {
               type="button"
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex flex-col items-center gap-0.5 py-2 px-2 rounded-xl transition-all duration-300 active:scale-95 min-w-0 flex-1 max-w-[72px] ${
+              className={`flex flex-col items-center gap-0.5 py-2.5 px-3 rounded-xl transition-all duration-300 active:scale-95 min-w-0 flex-1 ${
                 isActive
                   ? "text-purple-600 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 shadow-md border border-purple-200/50 scale-105"
                   : "text-gray-500 active:text-gray-700 active:bg-gray-50 border border-transparent"
               }`}
             >
               <Icon
-                className={`w-5 h-5 ${
+                className={`w-6 h-6 ${
                   isActive ? "scale-110 drop-shadow-sm" : ""
                 } transition-transform duration-300`}
               />
               <span
-                className={`text-[10px] font-semibold leading-tight ${
+                className={`text-[11px] font-semibold leading-tight ${
                   isActive ? "text-purple-600" : ""
                 } transition-colors`}
               >

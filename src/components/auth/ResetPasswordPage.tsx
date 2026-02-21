@@ -109,22 +109,22 @@ export function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
+        <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50 p-5 sm:p-8">
           {/* Back Button */}
           <button
             onClick={() => navigate('/login')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 font-medium transition-colors min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Login
           </button>
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Reset Your Password</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Reset Your Password</h2>
             <p className="text-gray-600">We've sent a 6-digit code to</p>
             <p className="text-purple-600 font-bold text-lg mt-1">{email}</p>
           </div>
@@ -156,7 +156,7 @@ export function ResetPasswordPage() {
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-4 py-3 text-center text-2xl font-bold tracking-widest border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                className="w-full px-4 py-3.5 sm:py-3 text-center text-xl sm:text-2xl font-bold tracking-widest border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-base"
                 placeholder="000000"
                 required
               />
@@ -173,7 +173,7 @@ export function ResetPasswordPage() {
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-all"
+                  className="w-full pl-10 sm:pl-12 pr-12 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-all text-base"
                   placeholder="Enter new password"
                   required
                 />
@@ -218,7 +218,7 @@ export function ResetPasswordPage() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-all"
+                  className="w-full pl-10 sm:pl-12 pr-12 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-all text-base"
                   placeholder="Confirm your password"
                   required
                 />
@@ -239,7 +239,7 @@ export function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || !otp || otp.length !== 6 || !newPassword || !confirmPassword}
-              className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 flex items-center justify-center gap-3"
+              className="w-full py-3.5 sm:py-4 px-4 sm:px-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 flex items-center justify-center gap-3 min-h-[48px]"
             >
               {loading ? (
                 <>

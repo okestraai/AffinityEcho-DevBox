@@ -72,20 +72,20 @@ export function AffinityStep({ data, updateData }: Props) {
           Select communities you'd like to join
         </label>
         
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {affinityGroups.map((group) => (
             <button
               key={group.id}
               onClick={() => toggleAffinityTag(group.id)}
-              className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
+              className={`w-full text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-200 min-h-[48px] ${
                 data.affinityTags?.includes(group.id)
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">{group.icon}</span>
-                <span className="font-medium">{group.name}</span>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-lg flex-shrink-0">{group.icon}</span>
+                <span className="font-medium text-sm sm:text-base">{group.name}</span>
               </div>
             </button>
           ))}

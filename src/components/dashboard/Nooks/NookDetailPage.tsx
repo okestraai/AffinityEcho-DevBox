@@ -57,10 +57,10 @@ export function NookDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading nook...</p>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-0">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-12 text-center">
+          <Loader2 className="w-10 h-10 md:w-12 md:h-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-sm md:text-base text-gray-600">Loading nook...</p>
         </div>
       </div>
     );
@@ -68,13 +68,13 @@ export function NookDetailPage() {
 
   if (error || !nookData) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Nook not found</h2>
-          <p className="text-gray-500 mb-4">This nook may have expired or been removed.</p>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-0">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-12 text-center">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Nook not found</h2>
+          <p className="text-sm md:text-base text-gray-500 mb-4">This nook may have expired or been removed.</p>
           <button
             onClick={() => navigate("/dashboard/nooks")}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2.5 min-h-[44px] bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base"
           >
             Back to Nooks
           </button>

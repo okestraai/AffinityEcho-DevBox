@@ -311,9 +311,9 @@ export function ExportDataPage() {
 
   if (exportComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-3 sm:p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
@@ -363,28 +363,28 @@ export function ExportDataPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-6">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Profile
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Download className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Export My Data</h1>
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 lg:p-8 text-white">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <Download className="w-6 h-6 sm:w-8 sm:h-8" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Export My Data</h1>
             </div>
-            <p className="text-blue-100">
+            <p className="text-blue-100 text-sm sm:text-base">
               Download a copy of your personal information and activity
             </p>
           </div>
 
-          <div className="p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
               <div className="flex gap-3">
                 <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -398,8 +398,8 @@ export function ExportDataPage() {
               </div>
             </div>
 
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Select Data to Export</h2>
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Select Data to Export</h2>
               <div className="space-y-3">
                 {dataCategories.map((category) => {
                   const Icon = category.icon;
@@ -409,7 +409,7 @@ export function ExportDataPage() {
                   return (
                     <label
                       key={category.id}
-                      className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all ${
                         isSelected
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -419,27 +419,27 @@ export function ExportDataPage() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleCategoryToggle(category.id)}
-                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0"
                       />
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         isSelected ? 'bg-blue-100' : 'bg-gray-100'
                       }`}>
-                        <Icon className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                        <p className="text-sm text-gray-600">{category.description}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{category.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{category.description}</p>
                       </div>
-                      <div className="text-sm text-gray-500 font-medium">{category.size}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 font-medium hidden sm:block flex-shrink-0">{category.size}</div>
                     </label>
                   );
                 })}
               </div>
             </div>
 
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Export Format</h2>
-              <div className="grid grid-cols-3 gap-4">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Export Format</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <label
                   className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
                     exportFormat === 'json'

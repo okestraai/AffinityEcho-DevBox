@@ -517,7 +517,7 @@ export function MentorshipRequestsView({
           <div className="flex gap-2 flex-1">
             <button
               onClick={() => setActiveTab("received")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                 activeTab === "received"
                   ? "bg-orange-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -526,14 +526,14 @@ export function MentorshipRequestsView({
               <Inbox className="w-4 h-4" />
               Received
               {receivedRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
+                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs sm:text-sm">
                   {receivedRequests.length}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab("sent")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                 activeTab === "sent"
                   ? "bg-orange-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -542,14 +542,14 @@ export function MentorshipRequestsView({
               <UserPlus className="w-4 h-4" />
               Sent
               {sentRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
+                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs sm:text-sm">
                   {sentRequests.length}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab("all")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                 activeTab === "all"
                   ? "bg-orange-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -558,7 +558,7 @@ export function MentorshipRequestsView({
               <ListTodo className="w-4 h-4" />
               All
               {allRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">
+                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs sm:text-sm">
                   {allRequests.length}
                 </span>
               )}
@@ -579,7 +579,7 @@ export function MentorshipRequestsView({
                 ) : (
                   <>
                     <Eye className="w-4 h-4" />
-                    Mark all as read
+                    <span className="hidden sm:inline">Mark all as read</span>
                   </>
                 )}
               </button>
@@ -593,7 +593,7 @@ export function MentorshipRequestsView({
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 animate-pulse"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 animate-pulse"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
@@ -619,7 +619,7 @@ export function MentorshipRequestsView({
         ) : requestsToShow.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
             <Inbox className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
               {activeTab === "all" ? "No requests found" : "No pending requests"}
             </h3>
             <p className="text-gray-500">
@@ -655,17 +655,17 @@ export function MentorshipRequestsView({
             return (
               <div
                 key={request.id}
-                className={`bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow ${
+                className={`bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition-shadow ${
                   isUnread ? "border-l-4 border-l-orange-500" : ""
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className="text-4xl">{profile.avatar}</div>
+                  <div className="text-3xl md:text-4xl">{profile.avatar}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2 sm:gap-4 mb-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900 text-lg">
+                          <h3 className="font-semibold text-gray-900 text-base md:text-lg">
                             {resolveDisplayName(profile.display_name, profile.username)}
                           </h3>
                           {isUnread && (
@@ -756,7 +756,7 @@ export function MentorshipRequestsView({
                           <button
                             onClick={() => handleAccept(request.id)}
                             disabled={processingId === request.id}
-                            className="flex-1 py-2.5 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-2.5 px-3 md:px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {processingId === request.id ? (
                               <Loader className="w-5 h-5 animate-spin" />
@@ -770,7 +770,7 @@ export function MentorshipRequestsView({
                           <button
                             onClick={() => handleDecline(request.id)}
                             disabled={processingId === request.id}
-                            className="flex-1 py-2.5 px-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-2.5 px-3 md:px-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {processingId === request.id ? (
                               <Loader className="w-5 h-5 animate-spin" />

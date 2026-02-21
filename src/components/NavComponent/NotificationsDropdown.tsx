@@ -171,6 +171,14 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     url = url.replace(/^\/reports\/([a-f0-9-]+)/, "/my-cases/$1");
     url = url.replace(/^\/profile$/, "/profile?tab=profile");
 
+    // Mentorship requests/sessions → messages with mentorship-requests tab
+    url = url.replace(/^\/mentorship\/requests\/.*/, "/messages?tab=mentorship-requests");
+    url = url.replace(/^\/mentorship\/sessions\/.*/, "/messages?tab=mentorship-requests");
+    url = url.replace(/^\/mentorship\/profile\/([a-f0-9-]+)/, "/profile?tab=profile");
+
+    // Messages: /messages/:conversationId → /messages?conversation=:id
+    url = url.replace(/^\/messages\/([a-f0-9-]+)$/, "/messages?conversation=$1");
+
     if (!url.startsWith("/dashboard")) {
       url = `/dashboard${url.startsWith("/") ? "" : "/"}${url}`;
     }
@@ -182,46 +190,67 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     const { type, reference_id, reference_type, action_url, actor_id, metadata } = notification;
 
     switch (type) {
+      // Follow/unfollow → profile page with "follow" tab
       case "follow":
       case "user_followed":
+      case "user_unfollowed":
         return "/dashboard/profile?tab=profile";
+
+      // A followed user created a post → single post page
+      case "followed_user_post":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        return "/dashboard/feeds";
 
       case "feed_like":
       case "post_reaction":
         if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         break;
 
+      // Forum content → topic detail (use metadata.topic_id for comments)
       case "forum_post":
-      case "forum_comment":
       case "forum_like":
       case "topic_comment":
+        if (metadata?.topic_id) return `/dashboard/forums/topic/${metadata.topic_id}`;
         if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
         break;
 
+      case "forum_comment":
+        if (metadata?.topic_id) return `/dashboard/forums/topic/${metadata.topic_id}`;
+        if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
+        break;
+
+      // Nook content → nook detail
       case "nook_post":
       case "nook_comment":
       case "nook_message":
+        if (reference_id) return `/dashboard/nooks/${reference_id}`;
+        break;
+
+      // Nook reply: reference_id is parent_message_id, use metadata.nook_id
       case "nook_reply":
+        if (metadata?.nook_id) return `/dashboard/nooks/${metadata.nook_id}`;
         if (reference_id) return `/dashboard/nooks/${reference_id}`;
         break;
 
       case "referral_post":
       case "referral_comment":
       case "referral_like":
-      case "referral_connection":
         if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         return "/dashboard/feeds";
 
+      case "referral_connection":
+        return "/dashboard/feeds";
+
+      // All mentorship notifications → messages with mentorship-requests tab
       case "mentorship_request":
+      case "mentorship_declined":
+      case "session_scheduled":
         return "/dashboard/messages?tab=mentorship-requests";
 
       case "mentorship_accepted":
       case "mentorship_message":
         if (actor_id) return `/dashboard/messages?user=${actor_id}&chat_type=mentorship`;
-        return "/dashboard/messages";
-
-      case "mentorship_declined":
-        return "/dashboard/mentorship";
+        return "/dashboard/messages?tab=mentorship-requests";
 
       case "message_received":
         if (metadata?.conversation_id) return `/dashboard/messages?conversation=${metadata.conversation_id}`;
@@ -238,7 +267,13 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         if (reference_id) return `/dashboard/my-cases/${reference_id}`;
         return "/dashboard/my-cases";
 
+      // Mention → route based on content_type in metadata
       case "mention":
+        if (metadata?.content_type === "nook_message" && metadata?.context_id)
+          return `/dashboard/nooks/${metadata.context_id}`;
+        if (metadata?.content_type === "comment" && metadata?.context_id)
+          return `/dashboard/forums/topic/${metadata.context_id}`;
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         break;
     }
 
@@ -464,6 +499,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
 
       case 'follow':
       case 'user_followed':
+      case 'user_unfollowed':
         return (
           <div className="flex justify-end mt-2">
             <button
@@ -530,6 +566,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
           </div>
         );
 
+      case 'followed_user_post':
       case 'forum_post':
       case 'forum_comment':
       case 'forum_like':
@@ -554,6 +591,21 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
               className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
             >
               View Post
+            </button>
+          </div>
+        );
+
+      case 'session_scheduled':
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, 'view_post');
+              }}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium"
+            >
+              View Session
             </button>
           </div>
         );

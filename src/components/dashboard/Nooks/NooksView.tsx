@@ -354,10 +354,10 @@ export function NooksView() {
   if (selectedNook && selectedNookData) {
     if (nookDetailLoading) {
       return (
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-0">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-12 text-center">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading nook...</p>
+            <p className="text-gray-600 text-sm md:text-base">Loading nook...</p>
           </div>
         </div>
       );
@@ -386,7 +386,7 @@ export function NooksView() {
 
   // Render Main Nooks View
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-0">
       <NooksHero />
 
       <NooksStats

@@ -347,28 +347,28 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
           }
         `}</style>
 
-        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 p-6 shadow-lg z-10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 shadow-lg z-10">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Okestra AI</h2>
-                <p className="text-indigo-100 text-sm">{contentLabel} Insights & Actions</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-white">Okestra AI</h2>
+                <p className="text-indigo-100 text-xs sm:text-sm">{contentLabel} Insights & Actions</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close Okestra panel"
             >
-              <X className="w-6 h-6 text-white" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {error && !loading && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
               <div className="flex items-start gap-3">
@@ -394,12 +394,12 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
             </div>
           ) : insight ? (
             <>
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
-                  <h3 className="font-bold text-gray-900">{contentLabel} Overview</h3>
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-3 sm:p-4 border border-indigo-200">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">{contentLabel} Overview</h3>
                 </div>
-                <p className="text-gray-700 leading-relaxed">{insight.summary}</p>
+                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{insight.summary}</p>
 
                 <div className="mt-4 flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-600">Sentiment:</span>
@@ -410,10 +410,10 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
               </div>
 
               {insight.keyThemes.length > 0 && (
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="w-5 h-5 text-yellow-600" />
-                    <h3 className="font-bold text-gray-900">Key Themes</h3>
+                <div className="bg-white rounded-xl p-3 sm:p-4 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
+                    <h3 className="font-bold text-gray-900 text-sm sm:text-base">Key Themes</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {insight.keyThemes.map((theme, index) => (
@@ -428,10 +428,10 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
                 </div>
               )}
 
-              <div className="bg-white rounded-xl p-4 border border-gray-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <h3 className="font-bold text-gray-900">Suggested Actions</h3>
+              <div className="bg-white rounded-xl p-3 sm:p-4 border border-gray-200">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">Suggested Actions</h3>
                 </div>
                 <div className="space-y-3">
                   {insight.actionItems.map((action, index) => (
@@ -439,11 +439,11 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
                       key={index}
                       onClick={() => action.action && action.action()}
                       disabled={!action.action}
-                      className={`w-full text-left bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all group ${
+                      className={`w-full text-left bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all group ${
                         action.action ? 'cursor-pointer hover:border-indigo-300' : 'cursor-default'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         <div className="flex-shrink-0 mt-1">
                           <div className={`w-6 h-6 rounded-full border-2 ${getPriorityColor(action.priority)} flex items-center justify-center text-xs font-bold`}>
                             {index + 1}
@@ -464,7 +464,7 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
                               <ExternalLink className="w-4 h-4 text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">
+                          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                             {action.description}
                           </p>
                         </div>
@@ -474,11 +474,11 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-gray-700">
-                    <p className="font-medium text-gray-900 mb-1">About Okestra AI</p>
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-3 sm:p-4 border border-indigo-200">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs sm:text-sm text-gray-700">
+                    <p className="font-medium text-gray-900 mb-1 text-sm sm:text-base">About Okestra AI</p>
                     <p className="text-xs leading-relaxed">
                       Okestra analyzes discussion content, engagement patterns, and community sentiment to provide personalized insights and actionable recommendations. These suggestions are designed to help you engage more meaningfully with the Affinity Echo community.
                     </p>

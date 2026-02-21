@@ -89,7 +89,7 @@ export function LoginScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col-reverse lg:flex-row lg:grid lg:grid-cols-2 gap-12 items-center min-h-screen">
+        <div className="flex flex-col-reverse lg:flex-row lg:grid lg:grid-cols-2 gap-6 lg:gap-12 items-center min-h-screen">
           {/* Left Side - Branding & Features */}
           <div className="space-y-8">
             <div className="text-center lg:text-left">
@@ -97,27 +97,27 @@ export function LoginScreen() {
                <img
                   src="/affinity-echo-logo-hd.png"
                   alt="Affinity Echo Logo"
-                  className="w-16 h-16 object-contain"
+                  className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain"
                 />
-                <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
                   Affinity Echo
                 </span>
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
                 Your Safe Space in
                 <span className="block bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
                   Corporate America
                 </span>
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-2xl">
                 Connect anonymously with professionals who share your
                 experiences. Find mentorship, support, and community — without
                 ever revealing your identity.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Shield className="w-6 h-6 text-purple-600" />
                 </div>
@@ -130,7 +130,7 @@ export function LoginScreen() {
                 </p>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <MessageCircle className="w-6 h-6 text-blue-600" />
                 </div>
@@ -143,7 +143,7 @@ export function LoginScreen() {
                 </p>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Heart className="w-6 h-6 text-green-600" />
                 </div>
@@ -155,7 +155,7 @@ export function LoginScreen() {
                 </p>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Zap className="w-6 h-6 text-yellow-600" />
                 </div>
@@ -168,7 +168,7 @@ export function LoginScreen() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-4 sm:p-6 border border-purple-200">
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex -space-x-2">
                   <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full border-2 border-white flex items-center justify-center text-white font-bold">
@@ -210,7 +210,7 @@ export function LoginScreen() {
           {/* Right Side - Auth Form */}
           <div className="flex items-center justify-center">
             <div className="w-full max-w-md">
-              <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50 p-5 sm:p-8">
                 {/* Forgot Password Form */}
                 {showForgotPassword ? (
                   <>
@@ -227,7 +227,7 @@ export function LoginScreen() {
                         <ArrowLeft className="w-4 h-4" />
                         Back to Login
                       </button>
-                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                         Reset Password
                       </h2>
                       <p className="text-gray-600">
@@ -260,7 +260,7 @@ export function LoginScreen() {
                             type="email"
                             value={resetEmail}
                             onChange={(e) => setResetEmail(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                            className="w-full pl-10 sm:pl-12 pr-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                             placeholder="your.email@company.com"
                             required
                           />
@@ -270,7 +270,7 @@ export function LoginScreen() {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                        className="w-full py-3.5 sm:py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 min-h-[48px]"
                       >
                         {isLoading ? (
                           <>
@@ -286,7 +286,7 @@ export function LoginScreen() {
                 ) : (
                   <>
                     <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                         {isLogin ? "Welcome Back" : "Join the Community"}
                       </h2>
                       <p className="text-gray-600">
@@ -314,7 +314,7 @@ export function LoginScreen() {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                            className="w-full pl-10 sm:pl-12 pr-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                             placeholder="your.email@company.com"
                             required
                           />
@@ -331,7 +331,7 @@ export function LoginScreen() {
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                            className="w-full pl-10 sm:pl-12 pr-12 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                             placeholder="Enter your password"
                             required
                           />
@@ -362,7 +362,7 @@ export function LoginScreen() {
                               onChange={(e) =>
                                 setConfirmPassword(e.target.value)
                               }
-                              className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                              className="w-full pl-10 sm:pl-12 pr-12 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                               placeholder="Confirm your password"
                               required
                             />
@@ -398,7 +398,7 @@ export function LoginScreen() {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                        className="w-full py-3.5 sm:py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[48px]"
                       >
                         {isLoading ? (
                           <>
@@ -430,7 +430,7 @@ export function LoginScreen() {
                           type="button"
                           onClick={() => handleSocialLogin("google")}
                           disabled={isLoading}
-                          className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-3 px-4 py-3.5 sm:py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 min-h-[48px]"
                         >
                           <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path

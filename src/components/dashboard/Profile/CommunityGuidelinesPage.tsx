@@ -239,7 +239,7 @@ export function CommunityGuidelinesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-6">
       <div className="max-w-5xl mx-auto">
         <button
           onClick={() => navigate(-1)}
@@ -250,17 +250,17 @@ export function CommunityGuidelinesPage() {
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Shield className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Community Guidelines</h1>
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 lg:p-8 text-white">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8" />
+              <h1 className="text-2xl sm:text-3xl font-bold">Community Guidelines</h1>
             </div>
-            <p className="text-blue-100">
+            <p className="text-blue-100 text-sm sm:text-base">
               Building a safe, supportive space for everyone
             </p>
           </div>
 
-          <div className="p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             {loading && (
               <div className="flex items-center justify-center py-8 mb-6">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -272,8 +272,8 @@ export function CommunityGuidelinesPage() {
                 Last updated: {new Date(apiGuidelines.updatedAt as string).toLocaleDateString()}
               </p>
             )}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-3">Our Commitment</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Our Commitment</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 This platform exists to provide a safe, anonymous space for underrepresented professionals to connect,
                 support each other, and navigate workplace challenges. These guidelines help us maintain a community where
@@ -294,15 +294,15 @@ export function CommunityGuidelinesPage() {
                   <div key={section.id} className="border border-gray-200 rounded-xl overflow-hidden">
                     <button
                       onClick={() => setExpandedSection(isExpanded ? null : section.id)}
-                      className={`w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                      className={`w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors ${
                         isExpanded ? 'bg-gray-50' : 'bg-white'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 bg-${section.color}-100 rounded-xl flex items-center justify-center`}>
-                          <Icon className={`w-6 h-6 text-${section.color}-600`} />
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-${section.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${section.color}-600`} />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">{section.title}</h3>
+                        <h3 className="text-base sm:text-xl font-bold text-gray-900 text-left">{section.title}</h3>
                       </div>
                       <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                         <AlertTriangle className="w-5 h-5 text-gray-400" />
@@ -310,7 +310,7 @@ export function CommunityGuidelinesPage() {
                     </button>
 
                     {isExpanded && (
-                      <div className="p-6 bg-white border-t border-gray-200">
+                      <div className="p-4 sm:p-6 bg-white border-t border-gray-200">
                         <div className="space-y-6">
                           {section.content.map((item, idx) => (
                             <div key={idx}>
@@ -333,21 +333,21 @@ export function CommunityGuidelinesPage() {
               })}
             </div>
 
-            <div className="mt-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-              <h3 className="text-xl font-bold mb-3">Questions or Concerns?</h3>
-              <p className="text-blue-100 mb-4">
+            <div className="mt-6 sm:mt-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 sm:p-6 text-white">
+              <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Questions or Concerns?</h3>
+              <p className="text-blue-100 mb-4 text-sm sm:text-base">
                 If you have questions about these guidelines or need to report a violation, we're here to help.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => navigate('/report-harassment')}
-                  className="bg-white text-blue-600 px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors"
+                  className="bg-white text-blue-600 px-4 sm:px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors text-sm sm:text-base min-h-[44px]"
                 >
                   Report a Violation
                 </button>
                 <button
                   onClick={() => navigate('/crisis-resources')}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-400 transition-colors"
+                  className="bg-blue-500 text-white px-4 sm:px-6 py-3 rounded-xl font-medium hover:bg-blue-400 transition-colors text-sm sm:text-base min-h-[44px]"
                 >
                   Get Support
                 </button>

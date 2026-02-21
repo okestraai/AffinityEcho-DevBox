@@ -422,14 +422,14 @@ export function MentorshipUserProfileModal({
   const statusData = profile.mentorshipStatus;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
-        className={`bg-white rounded-2xl shadow-2xl ${
-          showRequestForm ? "max-w-2xl" : "max-w-3xl"
-        } w-full max-h-[90vh] overflow-y-auto`}
+        className={`bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl ${
+          showRequestForm ? "sm:max-w-md md:max-w-2xl" : "sm:max-w-2xl md:max-w-3xl"
+        } w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto`}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-gray-900">
             {showRequestForm ? "Send Mentorship Request" : "Mentorship Profile"}
           </h2>
@@ -443,7 +443,7 @@ export function MentorshipUserProfileModal({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {showRequestForm ? (
             <div className="space-y-6">
               {/* Profile Summary */}
@@ -598,8 +598,8 @@ export function MentorshipUserProfileModal({
           ) : (
             <>
               {/* Profile Header */}
-              <div className="flex items-start gap-6 mb-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-2xl flex items-center justify-center text-5xl shadow-lg flex-shrink-0 border-4 border-white">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-2xl flex items-center justify-center text-4xl sm:text-5xl shadow-lg flex-shrink-0 border-4 border-white">
                   {profile.avatar || "👤"}
                 </div>
 
@@ -746,7 +746,7 @@ export function MentorshipUserProfileModal({
 
               {/* Stats Row */}
               {statsData && (
-                <div className="mb-6 grid grid-cols-3 gap-3">
+                <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
                   <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
                     <p className="text-2xl font-bold text-purple-700">{statsData.mentorshipSessionsCompleted}</p>
                     <p className="text-xs text-purple-600 font-medium">Sessions</p>
@@ -813,7 +813,7 @@ export function MentorshipUserProfileModal({
                   )}
 
                   {/* Mentor Details Grid */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {mentorData.availability && (
                       <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
                         <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
@@ -943,7 +943,7 @@ export function MentorshipUserProfileModal({
                   )}
 
                   {/* Mentee Details Grid */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {menteeData.availability && (
                       <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
                         <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />

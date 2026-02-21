@@ -237,7 +237,7 @@ export function CrisisResourcesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-6">
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate(-1)}
@@ -248,17 +248,17 @@ export function CrisisResourcesPage() {
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Heart className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Crisis Resources & Support</h1>
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 lg:p-8 text-white">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Crisis Resources & Support</h1>
             </div>
-            <p className="text-blue-100">
+            <p className="text-blue-100 text-sm sm:text-base">
               You're not alone. Help is available 24/7 for mental health, workplace, and personal crises.
             </p>
           </div>
 
-          <div className="p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             {loading && (
               <div className="flex items-center justify-center py-8 mb-6">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -270,9 +270,9 @@ export function CrisisResourcesPage() {
                 Last updated: {new Date(apiResources.updatedAt as string).toLocaleDateString()}
               </p>
             )}
-            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8">
-              <h2 className="text-xl font-bold text-red-900 mb-4 flex items-center gap-2">
-                <Phone className="w-6 h-6" />
+            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-red-900 mb-3 sm:mb-4 flex items-center gap-2">
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
                 Emergency: Call 911
               </h2>
               <p className="text-red-700 mb-3">
@@ -283,24 +283,24 @@ export function CrisisResourcesPage() {
               </p>
             </div>
 
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">24/7 Crisis Hotlines</h2>
-              <div className="grid md:grid-cols-2 gap-4">
+            <section className="mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">24/7 Crisis Hotlines</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {emergencyContacts.map((contact) => {
                   const Icon = contact.icon;
                   return (
                     <div
                       key={contact.id}
-                      className={`bg-${contact.color}-50 border border-${contact.color}-200 rounded-xl p-6 hover:shadow-lg transition-shadow`}
+                      className={`bg-${contact.color}-50 border border-${contact.color}-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow`}
                     >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-12 h-12 bg-${contact.color}-100 rounded-full flex items-center justify-center flex-shrink-0`}>
-                          <Icon className={`w-6 h-6 text-${contact.color}-600`} />
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-${contact.color}-100 rounded-full flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${contact.color}-600`} />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 mb-1">{contact.name}</h3>
-                          <p className={`text-2xl font-bold text-${contact.color}-600 mb-2`}>{contact.phone}</p>
-                          <p className="text-sm text-gray-600">{contact.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">{contact.name}</h3>
+                          <p className={`text-lg sm:text-2xl font-bold text-${contact.color}-600 mb-2`}>{contact.phone}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">{contact.description}</p>
                         </div>
                       </div>
                     </div>
@@ -309,20 +309,20 @@ export function CrisisResourcesPage() {
               </div>
             </section>
 
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Heart className="w-6 h-6 text-purple-600" />
+            <section className="mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 Mental Health Resources
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {mentalHealthResources.map((resource, index) => (
                   <div
                     key={index}
-                    className="bg-purple-50 border border-purple-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                    className="bg-purple-50 border border-purple-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-gray-900 text-lg">{resource.title}</h3>
-                      <span className="text-sm text-purple-600 font-medium">{resource.hours}</span>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-1">
+                      <h3 className="font-bold text-gray-900 text-base sm:text-lg">{resource.title}</h3>
+                      <span className="text-xs sm:text-sm text-purple-600 font-medium flex-shrink-0">{resource.hours}</span>
                     </div>
                     <p className="text-gray-600 mb-3">{resource.description}</p>
                     <div className="flex flex-wrap gap-4">
@@ -345,18 +345,18 @@ export function CrisisResourcesPage() {
               </div>
             </section>
 
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Briefcase className="w-6 h-6 text-blue-600" />
+            <section className="mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
+                <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 Workplace Rights & Legal Resources
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {workplaceResources.map((resource, index) => (
                   <div
                     key={index}
-                    className="bg-blue-50 border border-blue-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow"
                   >
-                    <h3 className="font-bold text-gray-900 text-lg mb-2">{resource.title}</h3>
+                    <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-2">{resource.title}</h3>
                     <p className="text-gray-600 mb-3">{resource.description}</p>
                     <div className="flex flex-wrap gap-4 mb-3">
                       <div className="flex items-center gap-2 text-blue-700">
@@ -388,9 +388,9 @@ export function CrisisResourcesPage() {
               </div>
             </section>
 
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Users className="w-6 h-6 text-green-600" />
+            <section className="mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 Identity-Specific Resources
               </h2>
               <div className="space-y-4">
@@ -423,13 +423,13 @@ export function CrisisResourcesPage() {
               </div>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Self-Care & Coping Strategies</h2>
-              <div className="grid md:grid-cols-2 gap-6">
+            <section className="mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Self-Care & Coping Strategies</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {selfCareStrategies.map((strategy, index) => (
                   <div
                     key={index}
-                    className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-6"
+                    className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-4 sm:p-6"
                   >
                     <h3 className="font-bold text-gray-900 mb-4">{strategy.title}</h3>
                     <ul className="space-y-2">
@@ -445,14 +445,14 @@ export function CrisisResourcesPage() {
               </div>
             </section>
 
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white text-center">
-              <h3 className="text-xl font-bold mb-2">Remember: You Are Not Alone</h3>
-              <p className="text-blue-100 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 sm:p-6 text-white text-center">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Remember: You Are Not Alone</h3>
+              <p className="text-blue-100 mb-4 text-sm sm:text-base">
                 Seeking help is a sign of strength, not weakness. These resources are here for you.
               </p>
               <button
                 onClick={() => navigate('/report-harassment')}
-                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors"
+                className="bg-white text-blue-600 px-4 sm:px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors text-sm sm:text-base min-h-[44px]"
               >
                 Report Workplace Harassment
               </button>

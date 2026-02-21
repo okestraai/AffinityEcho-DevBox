@@ -245,22 +245,22 @@ export function ForumDetailView({
       </button>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-4xl">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl flex items-center justify-center text-2xl sm:text-4xl flex-shrink-0">
                 {forum.icon}
               </div>
-              <div className="text-white">
-                <h1 className="text-3xl font-bold mb-2">{forum.name}</h1>
-                <p className="text-blue-100 max-w-2xl">{forum.description}</p>
+              <div className="text-white min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">{forum.name}</h1>
+                <p className="text-blue-100 text-sm sm:text-base max-w-2xl">{forum.description}</p>
                 {!isGlobalForum && forum.company_name && (
-                  <p className="text-blue-200 text-sm mt-1">
+                  <p className="text-blue-200 text-xs sm:text-sm mt-1">
                     Company Forum • {forum.company_name}
                   </p>
                 )}
                 {isGlobalForum && (
-                  <p className="text-blue-200 text-sm mt-1">Global Forum</p>
+                  <p className="text-blue-200 text-xs sm:text-sm mt-1">Global Forum</p>
                 )}
               </div>
             </div>
@@ -272,7 +272,7 @@ export function ForumDetailView({
                 joining ||
                 checkingJoinStatus
               }
-              className={`px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              className={`w-full sm:w-auto px-4 sm:px-6 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 isJoined
                   ? "bg-white text-blue-600 hover:bg-blue-50"
                   : "bg-blue-500 text-white hover:bg-blue-400"
@@ -308,40 +308,40 @@ export function ForumDetailView({
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 mt-6">
-            <div className="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6 mt-4 sm:mt-6">
+            <div className="bg-white bg-opacity-20 rounded-xl p-3 sm:p-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-white mb-1">
-                <Users className="w-5 h-5" />
-                <span className="font-semibold">Members</span>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="font-semibold text-sm sm:text-base">Members</span>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-xl sm:text-3xl font-bold text-white">
                 {memberCount.toLocaleString()}
               </div>
             </div>
 
-            <div className="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div className="bg-white bg-opacity-20 rounded-xl p-3 sm:p-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-white mb-1">
-                <MessageCircle className="w-5 h-5" />
-                <span className="font-semibold">Topics</span>
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="font-semibold text-sm sm:text-base">Topics</span>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-xl sm:text-3xl font-bold text-white">
                 {forum.topicCount || forum.topic_count || 0}
               </div>
             </div>
 
-            <div className="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div className="bg-white bg-opacity-20 rounded-xl p-3 sm:p-4 backdrop-blur-sm col-span-2 sm:col-span-1">
               <div className="flex items-center gap-2 text-white mb-1">
-                <TrendingUp className="w-5 h-5" />
-                <span className="font-semibold">Last Activity</span>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="font-semibold text-sm sm:text-base">Last Activity</span>
               </div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-lg sm:text-2xl font-bold text-white">
                 {formatLastActivity(forum.lastActivity || forum.last_activity)}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-200 bg-blue-50">
+        <div className="p-4 sm:p-6 border-t border-gray-200 bg-blue-50">
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -361,16 +361,17 @@ export function ForumDetailView({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Recent Discussions</h2>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Discussions</h2>
 
         {isJoined && !joining && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm sm:text-base min-h-[44px]"
           >
             <Plus className="w-5 h-5" />
-            New Topic
+            <span className="hidden sm:inline">New Topic</span>
+            <span className="sm:hidden">New</span>
           </button>
         )}
       </div>
@@ -454,7 +455,7 @@ export function ForumDetailView({
               <div
                 key={topic.id}
                 onClick={() => navigate(`/dashboard/forums/topic/${topic.id}`)}
-                className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -487,8 +488,8 @@ export function ForumDetailView({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-100 gap-2">
+                  <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 text-sm">
                       <Eye className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600">{topic.views}</span>

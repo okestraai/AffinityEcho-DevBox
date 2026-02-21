@@ -356,8 +356,8 @@ export function MentorshipRequestModal({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-full sm:max-w-2xl md:max-w-4xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           <div className="flex items-center justify-center p-12">
             <Loader className="w-8 h-8 text-blue-600 animate-spin" />
             <span className="ml-3 text-gray-600">Loading profile data...</span>
@@ -377,9 +377,9 @@ export function MentorshipRequestModal({
     : "Tell us what you're looking for in a mentorship";
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-full sm:max-w-2xl md:max-w-4xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h3 className="text-xl font-semibold text-gray-900">
               {modalTitle}
@@ -395,7 +395,7 @@ export function MentorshipRequestModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
           <div className="space-y-6">
             {/* Job Title */}
             <div>
@@ -745,11 +745,11 @@ export function MentorshipRequestModal({
             </div>
 
             {/* Read-only fields from context */}
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-3">
                 From Your Profile (Automatically Populated)
               </h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Company</p>
                   <p className="text-sm font-medium text-gray-900">
@@ -790,14 +790,14 @@ export function MentorshipRequestModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
             >
               {saving ? (
                 <>

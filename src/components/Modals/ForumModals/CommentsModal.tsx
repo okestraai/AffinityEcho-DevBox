@@ -177,7 +177,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
     return (
       <div
         key={comment.id}
-        className={`${depth > 0 ? "ml-8 border-l-2 border-gray-100 pl-4" : ""}`}
+        className={`${depth > 0 ? "ml-4 sm:ml-8 border-l-2 border-gray-100 pl-3 sm:pl-4" : ""}`}
       >
         <div className="bg-white rounded-xl p-4 border border-gray-200 mb-3">
           <div className="flex items-start gap-3">
@@ -212,7 +212,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                 className="text-sm text-gray-700 mb-3 leading-relaxed block"
               />
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                 <button
                   onClick={() => handleCommentReaction(comment.id)}
                   className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-colors"
@@ -316,10 +316,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
   const rootComments = comments.filter((c) => !c.parent_comment_id);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
-      <div className="bg-white w-full rounded-t-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-md md:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -340,7 +340,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
         </div>
 
         {/* Comments List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>

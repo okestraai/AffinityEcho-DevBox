@@ -29,12 +29,12 @@ import {
   ToggleFeedReaction,
   AddComment,
   GetComments,
-  ShareItem,
   ToggleBookmark,
 } from "../../../../api/feedApis";
 import { GetAllCommentsForATopic, CreateForumTopicsComments } from "../../../../api/forumApis";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { showToast } from "../../../Helper/ShowToast";
+import { shareContent } from "../../../utils/shareUtils";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
 import { MentionTextarea } from "../../shared/MentionTextarea";
@@ -350,40 +350,14 @@ export function FeedsView() {
     const item = feedItems.find((i) => i.id === itemId);
     if (!item) return;
 
-    const shareUrl = `${window.location.origin}/dashboard/feeds`;
-    const shareText =
-      item.content_type === "topic"
-        ? `Check out this topic: ${item.content.title}`
-        : `Check out this post`;
+    const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
+    const shared = await shareContent({
+      contentType: contentType as "post" | "topic" | "nook_message",
+      contentId: item.content_id,
+      title: item.content.title,
+    });
 
-    // Call share API
-    try {
-      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
-      await ShareItem(contentType as "post" | "topic" | "nook_message", item.content_id);
-    } catch {
-      // Non-blocking - share API failure shouldn't block native share
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: shareText, url: shareUrl });
-        setFeedItems(
-          feedItems.map((i) => {
-            if (i.id === itemId && i.engagement.shares !== undefined) {
-              return {
-                ...i,
-                engagement: { ...i.engagement, shares: i.engagement.shares + 1 },
-              };
-            }
-            return i;
-          })
-        );
-      } catch {
-        // Share cancelled or failed
-      }
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      showToast("Link copied to clipboard!", "success");
+    if (shared) {
       setFeedItems(
         feedItems.map((i) => {
           if (i.id === itemId && i.engagement.shares !== undefined) {
@@ -620,9 +594,9 @@ export function FeedsView() {
 
       {showCreatePost && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">
                 Share Your Thoughts
               </h2>
               <button
@@ -633,10 +607,10 @@ export function FeedsView() {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               <div className="flex items-start gap-3 mb-4">
                 {user?.avatar ? (
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-gradient-to-br from-purple-100 to-blue-100 flex-shrink-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xl md:text-2xl bg-gradient-to-br from-purple-100 to-blue-100 flex-shrink-0">
                     {user.avatar}
                   </div>
                 ) : (
@@ -664,11 +638,11 @@ export function FeedsView() {
                 autoFocus
               />
 
-              <div className="flex items-center justify-between mt-6">
-                <p className="text-sm text-gray-500">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 md:mt-6 gap-3">
+                <p className="text-sm text-gray-500 hidden sm:block">
                   Post will appear on your feed timeline
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => setShowCreatePost(false)}
                     className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -692,7 +666,7 @@ export function FeedsView() {
 
       <div className="space-y-4">
         {feedItems.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+          <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageSquare className="w-8 h-8 text-gray-400" />
             </div>
@@ -756,9 +730,9 @@ export function FeedsView() {
                   </div>
 
                   <div className="p-4">
-                    <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4">
                       <div className="text-center">
-                        <div className="text-lg font-bold text-purple-600">
+                        <div className="text-base md:text-lg font-bold text-purple-600">
                           {item.content.nook_members}
                         </div>
                         <div className="text-xs text-gray-500 font-medium">
@@ -766,7 +740,7 @@ export function FeedsView() {
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">
+                        <div className="text-base md:text-lg font-bold text-blue-600">
                           {item.engagement.comments}
                         </div>
                         <div className="text-xs text-gray-500 font-medium">
@@ -774,7 +748,7 @@ export function FeedsView() {
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">
+                        <div className="text-base md:text-lg font-bold text-green-600">
                           {item.content.nook_time_left}
                         </div>
                         <div className="text-xs text-gray-500 font-medium">
@@ -825,7 +799,7 @@ export function FeedsView() {
               return (
                 <div
                   key={item.id}
-                  className="bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                  className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
                   onClick={() => handleItemClick(item)}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -869,7 +843,7 @@ export function FeedsView() {
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                       {item.engagement.seen !== undefined && (
                         <button
                           onClick={(e) =>
@@ -955,7 +929,7 @@ export function FeedsView() {
                           <span className="text-sm">Loading comments...</span>
                         </div>
                       ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
-                        <div className="px-4 pt-3 pb-1 space-y-3 max-h-64 overflow-y-auto">
+                        <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
                           {expandedComments[item.id].map((c) => (
                             <div key={c.id} className="flex items-start gap-2">
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username))} text-white`}>
@@ -1155,7 +1129,7 @@ export function FeedsView() {
                         <span className="text-sm">Loading comments...</span>
                       </div>
                     ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
-                      <div className="px-4 pt-3 pb-1 space-y-3 max-h-64 overflow-y-auto">
+                      <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
                         {expandedComments[item.id].map((c) => (
                           <div key={c.id} className="flex items-start gap-2">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U")} text-white`}>

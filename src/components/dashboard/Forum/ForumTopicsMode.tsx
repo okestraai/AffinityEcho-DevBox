@@ -89,7 +89,7 @@ export function ForumTopicsMode(props: any) {
     return (
       <div className="max-w-6xl mx-auto">
         {/* Global Forums Header */}
-        <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-8 mb-8">
+        <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-4 md:p-6 lg:p-8 mb-8">
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={handleBackToOverview}
@@ -99,7 +99,7 @@ export function ForumTopicsMode(props: any) {
             </button>
             <Globe className="w-8 h-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                 Global Forums
               </h1>
               <p className="text-gray-600">
@@ -121,7 +121,7 @@ export function ForumTopicsMode(props: any) {
         </header>
 
         {/* Global Forums Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {globalForums
             .filter((forum: any) =>
               searchTerm
@@ -135,7 +135,7 @@ export function ForumTopicsMode(props: any) {
               <button
                 key={forum.id}
                 onClick={() => handleForumSelect(forum.id)}
-                className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all group"
+                className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all group"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-3xl">{forum.icon}</span>
@@ -191,7 +191,7 @@ export function ForumTopicsMode(props: any) {
                 .includes(searchTerm.toLowerCase())
             : true
         ).length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-8 md:py-12">
             <Globe className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-500 text-lg">No forums found</p>
             <p className="text-sm text-gray-400 mt-1">
@@ -214,7 +214,7 @@ export function ForumTopicsMode(props: any) {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Forum Header */}
-      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-8 mb-8">
+      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-4 md:p-6 lg:p-8 mb-8">
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={isGlobalForum ? handleBackToOverview : handleBackToCompany}
@@ -224,7 +224,7 @@ export function ForumTopicsMode(props: any) {
           </button>
           <span className="text-4xl">{forum.icon}</span>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{forum.name}</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{forum.name}</h1>
             <p className="text-gray-600">{forum.description}</p>
             {!isGlobalForum && props.selectedCompany && (
               <p className="text-sm text-purple-600 font-medium">
@@ -302,35 +302,35 @@ export function ForumTopicsMode(props: any) {
       </header>
 
       {/* Forum Stats */}
-      <div className="grid md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
           <div className="flex items-center gap-3 mb-2">
             <MessageCircle className="w-5 h-5 text-purple-600" />
             <span className="text-sm font-medium text-gray-700">Topics</span>
           </div>
-          <div className="text-3xl font-bold text-purple-600 group-hover:text-purple-700 transition-colors">
+          <div className="text-xl md:text-3xl font-bold text-purple-600 group-hover:text-purple-700 transition-colors">
             {forum.topicCount || forum.topic_count || 0}
           </div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">Members</span>
           </div>
-          <div className="text-3xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
+          <div className="text-xl md:text-3xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
             {forum.memberCount || forum.member_count || 0}
           </div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium text-gray-700">Active</span>
           </div>
-          <div className="text-3xl font-bold text-green-600 group-hover:text-green-700 transition-colors">
+          <div className="text-xl md:text-3xl font-bold text-green-600 group-hover:text-green-700 transition-colors">
             {paginatedTopics.topics.length}
           </div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:shadow-md transition-all cursor-pointer group">
           <div className="flex items-center gap-3 mb-2">
             <Clock className="w-5 h-5 text-orange-600" />
             <span className="text-sm font-medium text-gray-700">
@@ -345,8 +345,8 @@ export function ForumTopicsMode(props: any) {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6 shadow-sm">
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 mb-6 shadow-sm">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Time Range
@@ -377,7 +377,7 @@ export function ForumTopicsMode(props: any) {
       )}
 
       {/* Topics List */}
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {paginatedTopics.topics
           .map((topic: any) => {
           return (

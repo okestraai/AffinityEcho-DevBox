@@ -116,13 +116,13 @@ export function OverviewMode(props: any) {
   return (
     <div className="max-w-7xl mx-auto">
       {/* === HEADER === */}
-      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-8 mb-8">
+      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-4 md:p-6 lg:p-8 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent tracking-tight mb-2">
               Community Forums
             </h1>
-            <p className="text-xl text-gray-600 font-medium">
+            <p className="text-base md:text-xl text-gray-600 font-medium">
               Connect across companies and communities
             </p>
           </div>
@@ -146,11 +146,11 @@ export function OverviewMode(props: any) {
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-8">
         {/* === LEFT: RECENT TOPICS === */}
         <div className="lg:col-span-2 order-2 lg:order-1">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
               <TrendingUp className="w-6 h-6 text-purple-600" />
               Recent Discussions
             </h2>
@@ -170,8 +170,8 @@ export function OverviewMode(props: any) {
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6 shadow-sm">
-              <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 mb-6 shadow-sm">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Sort By
@@ -517,7 +517,7 @@ export function OverviewMode(props: any) {
         </div>
 
         {/* === RIGHT: SIDEBAR === */}
-        <div className="space-y-6 order-1 lg:order-2">
+        <div className="space-y-4 md:space-y-6 order-1 lg:order-2">
           {initialLoading ? (
             <ForumViewSkeleton />
           ) : (

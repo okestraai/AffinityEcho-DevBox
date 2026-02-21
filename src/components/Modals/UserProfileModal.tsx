@@ -150,8 +150,8 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-8 flex flex-col items-center gap-3">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 sm:p-8 flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-sm text-gray-500">Loading profile...</p>
         </div>
@@ -161,8 +161,8 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
 
   if (!profileUser) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 sm:p-8 text-center">
           <p className="text-gray-500 mb-4">Could not load this profile.</p>
           <button
             type="button"
@@ -177,16 +177,16 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Profile</h3>
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               aria-label="Close profile"
             >
               <X className="w-5 h-5" />
@@ -195,7 +195,7 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
         </div>
 
         {/* Profile Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Profile Header */}
           <div className="text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
@@ -223,7 +223,7 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
           {/* Stats */}
           <div>
             <h4 className="font-semibold text-gray-900 mb-3">Activity</h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <div className="text-lg font-bold text-blue-600">{stats.postsCreated}</div>
                 <div className="text-xs text-gray-500">Posts</div>
@@ -255,7 +255,7 @@ export function UserProfileModal({ isOpen, onClose, userId, onChat }: Props) {
           {badges.length > 0 && (
             <div>
               <h4 className="font-semibold text-gray-900 mb-3">Badges</h4>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {badges.map((badge) => (
                   <div
                     key={badge.id}

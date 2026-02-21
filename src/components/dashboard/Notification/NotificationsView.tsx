@@ -219,6 +219,14 @@ export function NotificationsView() {
     // Profile
     url = url.replace(/^\/profile$/, "/profile?tab=profile");
 
+    // Mentorship requests/sessions → messages with mentorship-requests tab
+    url = url.replace(/^\/mentorship\/requests\/.*/, "/messages?tab=mentorship-requests");
+    url = url.replace(/^\/mentorship\/sessions\/.*/, "/messages?tab=mentorship-requests");
+    url = url.replace(/^\/mentorship\/profile\/([a-f0-9-]+)/, "/profile?tab=profile");
+
+    // Messages: /messages/:conversationId → /messages?conversation=:id
+    url = url.replace(/^\/messages\/([a-f0-9-]+)$/, "/messages?conversation=$1");
+
     // Ensure it starts with /dashboard
     if (!url.startsWith("/dashboard")) {
       url = `/dashboard${url.startsWith("/") ? "" : "/"}${url}`;
@@ -232,10 +240,16 @@ export function NotificationsView() {
 
     // 1. Specific type-based routing (highest priority)
     switch (type) {
-      // Follow → profile page with "follow" tab
+      // Follow/unfollow → profile page with "follow" tab
       case "follow":
       case "user_followed":
+      case "user_unfollowed":
         return "/dashboard/profile?tab=profile";
+
+      // A followed user created a post → single post page
+      case "followed_user_post":
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
+        return "/dashboard/feeds";
 
       // Feed posts: reaction, comment, mention on a post → single post page
       case "feed_like":
@@ -243,11 +257,17 @@ export function NotificationsView() {
         if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         break;
 
-      // Forum content → topic detail
+      // Forum content → topic detail (use metadata.topic_id for comments, reference_id for topics)
       case "forum_post":
-      case "forum_comment":
       case "forum_like":
       case "topic_comment":
+        if (metadata?.topic_id) return `/dashboard/forums/topic/${metadata.topic_id}`;
+        if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
+        break;
+
+      case "forum_comment":
+        // reference_id is comment_id; route to the topic via metadata.topic_id
+        if (metadata?.topic_id) return `/dashboard/forums/topic/${metadata.topic_id}`;
         if (reference_id) return `/dashboard/forums/topic/${reference_id}`;
         break;
 
@@ -255,7 +275,12 @@ export function NotificationsView() {
       case "nook_post":
       case "nook_comment":
       case "nook_message":
+        if (reference_id) return `/dashboard/nooks/${reference_id}`;
+        break;
+
+      // Nook reply: reference_id is parent_message_id, use metadata.nook_id for routing
       case "nook_reply":
+        if (metadata?.nook_id) return `/dashboard/nooks/${metadata.nook_id}`;
         if (reference_id) return `/dashboard/nooks/${reference_id}`;
         break;
 
@@ -263,23 +288,24 @@ export function NotificationsView() {
       case "referral_post":
       case "referral_comment":
       case "referral_like":
-      case "referral_connection":
         if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         return "/dashboard/feeds";
 
-      // Mentorship request → mentorship requests tab in messages
+      // Referral connection → feeds (no dedicated page yet)
+      case "referral_connection":
+        return "/dashboard/feeds";
+
+      // All mentorship notifications → messages with mentorship-requests tab
       case "mentorship_request":
+      case "mentorship_declined":
+      case "session_scheduled":
         return "/dashboard/messages?tab=mentorship-requests";
 
       // Mentorship accepted → open chat with the mentor/mentee
       case "mentorship_accepted":
       case "mentorship_message":
         if (actor_id) return `/dashboard/messages?user=${actor_id}&chat_type=mentorship`;
-        return "/dashboard/messages";
-
-      // Mentorship declined → mentorship view
-      case "mentorship_declined":
-        return "/dashboard/mentorship";
+        return "/dashboard/messages?tab=mentorship-requests";
 
       // Direct messages → open conversation
       case "message_received":
@@ -299,9 +325,13 @@ export function NotificationsView() {
         if (reference_id) return `/dashboard/my-cases/${reference_id}`;
         return "/dashboard/my-cases";
 
-      // Mention → route based on what was mentioned in
+      // Mention → route based on what was mentioned in (content_type in metadata)
       case "mention":
-        // Fall through to reference_type resolution below
+        if (metadata?.content_type === "nook_message" && metadata?.context_id)
+          return `/dashboard/nooks/${metadata.context_id}`;
+        if (metadata?.content_type === "comment" && metadata?.context_id)
+          return `/dashboard/forums/topic/${metadata.context_id}`;
+        if (reference_id) return `/dashboard/feeds/post/${reference_id}`;
         break;
     }
 
@@ -495,13 +525,13 @@ export function NotificationsView() {
     switch (notification.type) {
       case "mentorship_request":
         return (
-          <div className="flex gap-2 mt-2 justify-end">
+          <div className="flex flex-wrap gap-2 mt-2 justify-end">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleAction(notification, "accept_mentorship");
               }}
-              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
             >
               Accept
             </button>
@@ -510,7 +540,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "decline_mentorship");
               }}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs sm:text-sm font-medium"
             >
               Decline
             </button>
@@ -519,13 +549,13 @@ export function NotificationsView() {
 
       case "identity_reveal_request":
         return (
-          <div className="flex gap-2 mt-2 justify-end">
+          <div className="flex flex-wrap gap-2 mt-2 justify-end">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleAction(notification, "accept_identity_reveal");
               }}
-              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
             >
               Accept
             </button>
@@ -534,7 +564,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "decline_identity_reveal");
               }}
-              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium"
             >
               Decline
             </button>
@@ -543,6 +573,7 @@ export function NotificationsView() {
 
       case "follow":
       case "user_followed":
+      case "user_unfollowed":
         return (
           <div className="flex justify-end mt-2">
             <button
@@ -550,7 +581,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_profile");
               }}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Profile
             </button>
@@ -565,7 +596,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_message");
               }}
-              className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Messages
             </button>
@@ -580,7 +611,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_message");
               }}
-              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Messages
             </button>
@@ -598,7 +629,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_message");
               }}
-              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Message
             </button>
@@ -616,7 +647,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_mention");
               }}
-              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Mention
             </button>
@@ -631,7 +662,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_post");
               }}
-              className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Reply
             </button>
@@ -646,7 +677,7 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_case");
               }}
-              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Case
             </button>
@@ -661,13 +692,14 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_message");
               }}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Message
             </button>
           </div>
         );
 
+      case "followed_user_post":
       case "forum_post":
       case "nook_post":
       case "nook_message":
@@ -680,6 +712,7 @@ export function NotificationsView() {
       case "topic_comment":
       case "forum_like":
       case "referral_like":
+      case "referral_connection":
         return (
           <div className="flex justify-end mt-2">
             <button
@@ -687,9 +720,24 @@ export function NotificationsView() {
                 e.stopPropagation();
                 handleAction(notification, "view_post");
               }}
-              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs sm:text-sm font-medium"
             >
               View Post
+            </button>
+          </div>
+        );
+
+      case "session_scheduled":
+        return (
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(notification, "view_post");
+              }}
+              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium"
+            >
+              View Session
             </button>
           </div>
         );
@@ -704,15 +752,15 @@ export function NotificationsView() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-0">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 mb-3 sm:mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 sm:mb-4 md:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
               <Bell className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                 Notifications
               </h1>
               <p className="text-xs md:text-sm text-gray-500">
@@ -725,7 +773,7 @@ export function NotificationsView() {
             <button
               type="button"
               onClick={fetchNotifications}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Refresh"
             >
               <RefreshCw className="w-5 h-5" />
@@ -734,7 +782,7 @@ export function NotificationsView() {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Mark all</span> read
@@ -744,7 +792,7 @@ export function NotificationsView() {
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium"
+                className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-xs font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Clear all</span>
@@ -754,7 +802,7 @@ export function NotificationsView() {
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="-mx-3 sm:mx-0 px-3 sm:px-0 flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {(
             [
               "all",
@@ -768,7 +816,7 @@ export function NotificationsView() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] sm:min-h-0 ${
                 filter === f
                   ? "bg-purple-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -776,7 +824,7 @@ export function NotificationsView() {
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
               {f === "unread" && unreadCount > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-white text-purple-600 rounded-full text-xs font-bold">
+                <span className="ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-white text-purple-600 rounded-full text-[10px] sm:text-xs font-bold">
                   {unreadCount}
                 </span>
               )}
@@ -786,14 +834,14 @@ export function NotificationsView() {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-5">
-            <Bell className="w-10 h-10 text-purple-300" />
+        <div className="text-center py-10 sm:py-16 px-4 bg-white rounded-xl border border-gray-200">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5">
+            <Bell className="w-8 h-8 sm:w-10 sm:h-10 text-purple-300" />
           </div>
-          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+          <h3 className="font-semibold text-gray-900 mb-2 text-base sm:text-lg">
             {filter === "unread" ? "All caught up!" : "No notifications yet"}
           </h3>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
             {filter === "unread"
               ? "You've read all your notifications. Check back later for new updates."
               : filter === "all"
@@ -803,7 +851,7 @@ export function NotificationsView() {
           {filter !== "all" && (
             <button
               onClick={() => setFilter("all")}
-              className="mt-4 px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              className="mt-4 px-4 py-2 min-h-[44px] sm:min-h-0 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
             >
               View all notifications
             </button>
@@ -815,16 +863,16 @@ export function NotificationsView() {
             <div
               key={notification.id}
               onClick={() => handleNotificationClick(notification)}
-              className={`bg-white rounded-xl border transition-all cursor-pointer ${
+              className={`relative bg-white rounded-xl border transition-all cursor-pointer ${
                 notification.is_read
                   ? "border-gray-200 hover:shadow-md"
                   : "border-purple-200 bg-purple-50/30 hover:shadow-lg"
               }`}
             >
-              <div className="p-4">
-                <div className="flex items-start gap-3">
+              <div className="p-3 sm:p-4 md:p-5">
+                <div className="flex items-start gap-2.5 sm:gap-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                       notification.is_read ? "bg-gray-100" : "bg-purple-100"
                     }`}
                   >
@@ -834,7 +882,7 @@ export function NotificationsView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3
-                        className={`font-semibold ${
+                        className={`text-sm sm:text-base font-semibold leading-snug ${
                           notification.is_read
                             ? "text-gray-900"
                             : "text-gray-900"
@@ -842,8 +890,8 @@ export function NotificationsView() {
                       >
                         {notification.title}
                       </h3>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <span className="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap">
                           {getTimeAgo(notification.created_at)}
                         </span>
                         <div className="relative">
@@ -856,13 +904,13 @@ export function NotificationsView() {
                                   : notification.id
                               );
                             }}
-                            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1.5 sm:p-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
 
                           {showMenu === notification.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                            <div className="absolute right-0 mt-1 w-44 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                               {!notification.is_read && (
                                 <button
                                   onClick={(e) => {
@@ -870,7 +918,7 @@ export function NotificationsView() {
                                     markAsRead(notification.id);
                                     setShowMenu(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  className="w-full px-3 sm:px-4 py-2.5 sm:py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                   <Check className="w-4 h-4" />
                                   Mark as read
@@ -882,7 +930,7 @@ export function NotificationsView() {
                                   deleteNotification(notification.id);
                                   setShowMenu(null);
                                 }}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Delete
@@ -893,7 +941,7 @@ export function NotificationsView() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed">
                       {notification.message}
                     </p>
 
@@ -903,7 +951,7 @@ export function NotificationsView() {
               </div>
 
               {!notification.is_read && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-purple-600 rounded-r" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 sm:h-8 bg-purple-600 rounded-r" />
               )}
             </div>
           ))}
@@ -911,11 +959,11 @@ export function NotificationsView() {
       )}
 
       {hasMore && notifications.length > 0 && (
-        <div className="mt-6 text-center">
+        <div className="mt-4 sm:mt-6 text-center">
           <button
             onClick={loadMore}
             disabled={loading}
-            className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-6 py-3 min-h-[48px] bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors text-sm sm:text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Loading..." : "Load More Notifications"}
           </button>

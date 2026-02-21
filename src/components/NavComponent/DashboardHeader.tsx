@@ -58,7 +58,7 @@ export function DashboardHeader({
 
   return (
     <header
-      className="bg-white/95 backdrop-blur-xl border-b border-gray-200/50 px-4 py-4 md:px-6 md:py-6 shadow-sm sticky top-0 z-40"
+      className="bg-white/95 backdrop-blur-xl border-b border-gray-200/50 px-3 py-3 sm:px-4 md:px-6 md:py-4 shadow-sm sticky top-0 z-40"
       style={{ position: "sticky" }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -104,7 +104,7 @@ export function DashboardHeader({
                 onClick={() =>
                   setShowNotificationsDropdown(!showNotificationsDropdown)
                 }
-                className="nav-icon-btn relative p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="nav-icon-btn relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                 title="Notifications"
               >
                 <Bell className="w-7 h-7" />
@@ -166,7 +166,7 @@ export function DashboardHeader({
             className="fixed inset-0 bg-black/20 z-40 md:hidden"
             onClick={() => setShowMobileMenu(false)}
           />
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <nav className="px-4 py-2">
               {mobileNavItems.map((tab) => {
                 const Icon = tab.icon;

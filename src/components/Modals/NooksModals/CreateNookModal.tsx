@@ -89,10 +89,10 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-3xl w-full sm:max-w-md md:max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto shadow-2xl">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white sticky top-0 z-10">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 sm:p-6 text-white sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-bold mb-1">Create Anonymous Nook</h3>
@@ -108,7 +108,7 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -194,7 +194,7 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-800 mb-3">Urgency Level</label>
               <select 

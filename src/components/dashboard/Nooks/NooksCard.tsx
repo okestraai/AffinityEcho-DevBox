@@ -55,26 +55,26 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
     >
       {/* Nook Header */}
       <div className={`bg-gradient-to-r ${getUrgencyColor(nook.urgency)} p-1`}>
-        <div className="bg-white/95 backdrop-blur-sm p-4 rounded-t-xl">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-purple-600 transition-colors">
+        <div className="bg-white/95 backdrop-blur-sm p-3 md:p-4 rounded-t-xl">
+          <div className="flex items-start justify-between mb-2 md:mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 group-hover:text-purple-600 transition-colors truncate">
                 {nook.title}
               </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
+              <p className="text-gray-600 text-xs md:text-sm leading-relaxed line-clamp-2">
                 {nook.description}
               </p>
             </div>
-            <div className="flex items-center gap-1 ml-4">
+            <div className="flex items-center gap-1 ml-3 md:ml-4">
               {getTemperatureIcon(nook.temperature)}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
             {nook.hashtags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium"
+                className="text-xs bg-purple-100 text-purple-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full font-medium"
               >
                 #{tag}
               </span>
@@ -84,32 +84,32 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
       </div>
 
       {/* Nook Stats */}
-      <div className="p-4">
-        <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="p-3 md:p-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3 md:mb-4">
           <div className="text-center">
-            <div className="text-lg font-bold text-purple-600">
+            <div className="text-base md:text-lg font-bold text-purple-600">
               {nook.members_count}
             </div>
-            <div className="text-xs text-gray-500 font-medium">Anonymous</div>
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium">Anonymous</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">
+            <div className="text-base md:text-lg font-bold text-blue-600">
               {nook.messages_count}
             </div>
-            <div className="text-xs text-gray-500 font-medium">Messages</div>
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium">Messages</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-green-600">
+            <div className="text-base md:text-lg font-bold text-green-600">
               {nook.timeLeft}
             </div>
-            <div className="text-xs text-gray-500 font-medium">Remaining</div>
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium">Remaining</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
+              className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold ${
                 nook.urgency === "high"
                   ? "bg-red-100 text-red-700"
                   : nook.urgency === "medium"
@@ -120,7 +120,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
               {nook.urgency.toUpperCase()}
             </span>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
+              className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold ${
                 nook.scope === "global"
                   ? "bg-indigo-100 text-indigo-700"
                   : "bg-green-100 text-green-700"
@@ -129,8 +129,8 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
               {nook.scope === "global" ? "GLOBAL" : "COMPANY"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 font-medium">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            <span className="text-[10px] md:text-xs text-gray-400 font-medium hidden sm:inline">
               Active {nook.lastActivity}
             </span>
             {onBookmark && (
@@ -139,7 +139,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
                   e.stopPropagation();
                   onBookmark(nook.id, e);
                 }}
-                className={`p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
+                className={`p-2.5 md:p-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
                   nook.user_has_bookmarked
                     ? "text-amber-500 bg-amber-50"
                     : "text-gray-400 hover:text-amber-500 hover:bg-amber-50"

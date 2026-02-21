@@ -77,7 +77,7 @@ export function DemographicsStep({ data, updateData }: Props) {
     <div className="space-y-8">
       {/* Name fields */}
       <div>
-        <div className="grid grid-cols-2 gap-4 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-2">
               First Name
@@ -87,7 +87,7 @@ export function DemographicsStep({ data, updateData }: Props) {
               value={data.firstName ?? ""}
               onChange={(e) => handleFirstNameChange(e.target.value)}
               placeholder="First name"
-              className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 bg-gray-50/50 focus:bg-white font-medium"
+              className="w-full px-3 sm:px-4 py-3.5 sm:py-4 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 bg-gray-50/50 focus:bg-white font-medium text-base"
             />
           </div>
 
@@ -100,7 +100,7 @@ export function DemographicsStep({ data, updateData }: Props) {
               value={data.lastName ?? ""}
               onChange={(e) => handleLastNameChange(e.target.value)}
               placeholder="Last name"
-              className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 bg-gray-50/50 focus:bg-white font-medium"
+              className="w-full px-3 sm:px-4 py-3.5 sm:py-4 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-blue-500 bg-gray-50/50 focus:bg-white font-medium text-base"
             />
           </div>
         </div>
@@ -128,7 +128,7 @@ export function DemographicsStep({ data, updateData }: Props) {
           {races.map((race) => (
             <label
               key={race}
-              className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
+              className="flex items-center p-3 sm:p-3 rounded-xl hover:bg-gray-50 cursor-pointer min-h-[44px]"
             >
               <input
                 type="radio"
@@ -136,7 +136,7 @@ export function DemographicsStep({ data, updateData }: Props) {
                 value={race}
                 checked={data.race === race}
                 onChange={(e) => updateData({ race: e.target.value })}
-                className="mr-4 w-4 h-4 text-purple-600"
+                className="mr-3 sm:mr-4 w-5 h-5 sm:w-4 sm:h-4 text-purple-600"
               />
               <span className="text-gray-700 font-medium">{race}</span>
             </label>
@@ -149,11 +149,11 @@ export function DemographicsStep({ data, updateData }: Props) {
         <label className="block text-base font-semibold text-gray-800 mb-4">
           Gender Identity
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {genders.map((gender) => (
             <label
               key={gender}
-              className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
+              className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer min-h-[44px]"
             >
               <input
                 type="radio"
@@ -161,9 +161,9 @@ export function DemographicsStep({ data, updateData }: Props) {
                 value={gender}
                 checked={data.gender === gender}
                 onChange={(e) => updateData({ gender: e.target.value })}
-                className="mr-3 w-4 h-4 text-purple-600"
+                className="mr-3 w-5 h-5 sm:w-4 sm:h-4 text-purple-600"
               />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm sm:text-sm font-medium text-gray-700">
                 {gender}
               </span>
             </label>
@@ -179,7 +179,7 @@ export function DemographicsStep({ data, updateData }: Props) {
         <select
           value={data.careerLevel ?? ""}
           onChange={(e) => updateData({ careerLevel: e.target.value })}
-          className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 bg-gray-50/50 focus:bg-white font-medium"
+          className="w-full px-3 sm:px-4 py-3.5 sm:py-4 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 bg-gray-50/50 focus:bg-white font-medium text-base min-h-[48px]"
         >
           <option value="">Select your level</option>
           {careerLevels.map((level) => (

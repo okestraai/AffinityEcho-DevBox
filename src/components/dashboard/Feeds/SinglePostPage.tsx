@@ -20,9 +20,9 @@ import {
   AddComment,
   GetComments,
   ToggleBookmark,
-  ShareItem,
 } from "../../../../api/feedApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { shareContent } from "../../../utils/shareUtils";
 import { MentionText } from "../../shared/MentionText";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
 
@@ -134,24 +134,7 @@ export function SinglePostPage() {
   const handleShare = async () => {
     if (!post) return;
     const contentId = post.content_id || post.id;
-    const shareUrl = `${window.location.origin}/dashboard/feeds/post/${postId}`;
-
-    try {
-      await ShareItem("post", contentId);
-    } catch {
-      // Non-blocking
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Check out this post", url: shareUrl });
-      } catch {
-        // Cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      showToast("Link copied to clipboard!", "success");
-    }
+    await shareContent({ contentType: "post", contentId, title: post.content?.title });
   };
 
   const handleCommentSubmit = async (comment: string) => {
@@ -251,7 +234,7 @@ export function SinglePostPage() {
           <ArrowLeft className="w-5 h-5" />
           Back
         </button>
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-gray-400" />
           </div>
@@ -304,7 +287,7 @@ export function SinglePostPage() {
 
       {/* Post card */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-5">
+        <div className="p-4 md:p-5">
           {/* Author */}
           <div className="flex items-start gap-3 mb-4">
             <div className="flex-shrink-0">
@@ -349,7 +332,7 @@ export function SinglePostPage() {
         </div>
 
         {/* Engagement stats */}
-        <div className="px-5 py-2 border-t border-gray-100">
+        <div className="px-4 md:px-5 py-2 border-t border-gray-100">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
@@ -442,7 +425,7 @@ export function SinglePostPage() {
                 <span className="text-sm">Loading comments...</span>
               </div>
             ) : comments.length > 0 ? (
-              <div className="px-5 pt-4 pb-2 space-y-3 max-h-96 overflow-y-auto">
+              <div className="px-4 md:px-5 pt-4 pb-2 space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
                 {comments.map((c) => {
                   const commentName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
                   return (
@@ -462,7 +445,7 @@ export function SinglePostPage() {
                 })}
               </div>
             ) : (
-              <div className="px-5 pt-4 pb-2">
+              <div className="px-4 md:px-5 pt-4 pb-2">
                 <p className="text-xs text-gray-400 text-center">No comments yet — be the first!</p>
               </div>
             )}

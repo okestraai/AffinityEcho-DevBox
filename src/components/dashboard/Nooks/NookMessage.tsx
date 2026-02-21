@@ -96,21 +96,21 @@ export function NookMessage({
 
   return (
     <div
-      className={`bg-white rounded-xl p-4 shadow-sm border transition-all duration-200 ${
+      className={`bg-white rounded-xl p-3 sm:p-4 shadow-sm border transition-all duration-200 ${
         isReplying
           ? "border-purple-500 ring-2 ring-purple-100 bg-gradient-to-r from-purple-50 to-white"
           : "border-gray-200 hover:border-gray-300"
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 sm:gap-3">
         {/* Avatar */}
         <button
           onClick={() => !isAnonymous && onUserClick(message.user_id)}
-          className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
+          className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${getAvatarColor(
             avatar
-          )} rounded-full flex items-center justify-center text-white font-bold hover:scale-105 transition-transform ${
+          )} rounded-full flex items-center justify-center text-white text-sm sm:text-base font-bold hover:scale-105 transition-transform ${
             !isAnonymous ? "cursor-pointer" : "cursor-default"
-          } shadow-md`}
+          } shadow-md flex-shrink-0`}
           disabled={isAnonymous}
         >
           {avatar[0].toUpperCase()}
@@ -141,14 +141,14 @@ export function NookMessage({
 
           <MentionText
             text={message.content}
-            className="text-gray-700 mb-3 leading-relaxed break-words block"
+            className="text-sm sm:text-base text-gray-700 mb-3 leading-relaxed break-words block"
           />
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
               <button
                 onClick={() => onReact(message.id, "heard")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
+                className={`flex items-center gap-1.5 text-xs sm:text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 sm:py-1 rounded-md min-h-[36px] sm:min-h-0 ${
                   hasReacted("heard")
                     ? "text-red-500 bg-red-50"
                     : "text-gray-500 hover:text-red-500 hover:bg-red-50"
@@ -163,7 +163,7 @@ export function NookMessage({
 
               <button
                 onClick={() => onReact(message.id, "validated")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
+                className={`flex items-center gap-1.5 text-xs sm:text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 sm:py-1 rounded-md min-h-[36px] sm:min-h-0 ${
                   hasReacted("validated")
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
@@ -178,7 +178,7 @@ export function NookMessage({
 
               <button
                 onClick={() => onReact(message.id, "helpful")}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1 rounded-md ${
+                className={`flex items-center gap-1.5 text-xs sm:text-sm transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 sm:py-1 rounded-md min-h-[36px] sm:min-h-0 ${
                   hasReacted("helpful")
                     ? "text-green-600 bg-green-50"
                     : "text-gray-500 hover:text-green-600 hover:bg-green-50"
@@ -193,10 +193,10 @@ export function NookMessage({
 
               <button
                 onClick={() => onReply(message.id, message.content)}
-                className={`flex items-center gap-1.5 text-sm transition-all ${
+                className={`flex items-center gap-1.5 text-xs sm:text-sm transition-all min-h-[36px] sm:min-h-0 ${
                   isReplying
-                    ? "text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 -mx-2 -my-1 rounded-md font-medium"
-                    : "text-gray-500 hover:text-purple-600 hover:bg-purple-50 px-2 py-1 -mx-2 -my-1 rounded-md"
+                    ? "text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1.5 sm:py-1 -mx-2 -my-1 rounded-md font-medium"
+                    : "text-gray-500 hover:text-purple-600 hover:bg-purple-50 px-2 py-1.5 sm:py-1 -mx-2 -my-1 rounded-md"
                 }`}
               >
                 <svg

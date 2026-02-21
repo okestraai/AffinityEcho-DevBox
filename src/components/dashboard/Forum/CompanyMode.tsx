@@ -34,7 +34,7 @@ export function CompanyMode(props: any) {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Company Header */}
-      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-8 mb-8">
+      <header className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-gray-200/50 p-4 md:p-6 lg:p-8 mb-8">
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={handleBackToOverview}
@@ -48,7 +48,7 @@ export function CompanyMode(props: any) {
               : selectedCompany?.substring(0, 2).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{displayTitle}</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{displayTitle}</h1>
             <p className="text-gray-600">
               {localMetrics?.totalMembers || 0} anonymous members
             </p>
@@ -67,12 +67,12 @@ export function CompanyMode(props: any) {
       </header>
 
       {/* Company Forums Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {foundationForums.map((forum: any) => (
           <button
             key={forum.id}
             onClick={() => props.handleForumSelect(forum.id)}
-            className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all group"
+            className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all group"
           >
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl">{forum.icon}</span>
@@ -119,7 +119,7 @@ export function CompanyMode(props: any) {
       </div>
 
       {foundationForums.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-8 md:py-12">
           <p className="text-gray-500 text-lg">
             No forums available for this company
           </p>

@@ -119,16 +119,16 @@ export function OTPVerificationPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
-          <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium">
+        <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/50 p-5 sm:p-8">
+          <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 font-medium min-h-[44px]">
             <ArrowLeft className="w-4 h-4" /> Back to Login
           </button>
 
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-8 h-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
             <p className="text-gray-600">We sent a 6-digit code to</p>
             <p className="text-purple-600 font-semibold mt-1 break-all">{email}</p>
           </div>
@@ -148,7 +148,7 @@ export function OTPVerificationPage() {
           )}
 
           <form onSubmit={handleVerify} className="space-y-6">
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-2 sm:gap-3 justify-center">
               {otp.map((digit, i) => (
                 <input
                   key={i}
@@ -161,7 +161,7 @@ export function OTPVerificationPage() {
                   onChange={(e) => handleOTPChange(i, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(i, e)}
                   onPaste={i === 0 ? handlePaste : undefined}
-                  className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                  className="w-10 h-12 sm:w-14 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 border-gray-300 rounded-lg sm:rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
                   autoFocus={i === 0}
                 />
               ))}
@@ -170,7 +170,7 @@ export function OTPVerificationPage() {
             <button
               type="submit"
               disabled={loading || otp.some(d => !d)}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2 min-h-[48px]"
             >
               {loading ? (
                 <>
@@ -185,7 +185,7 @@ export function OTPVerificationPage() {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600 mb-3">Didn't receive it?</p>
-            <button onClick={handleResend} disabled={loading} className="text-purple-600 hover:text-purple-700 font-semibold disabled:opacity-50">
+            <button onClick={handleResend} disabled={loading} className="text-purple-600 hover:text-purple-700 font-semibold disabled:opacity-50 min-h-[44px] px-4">
               {loading ? 'Sending...' : 'Resend Code'}
             </button>
           </div>

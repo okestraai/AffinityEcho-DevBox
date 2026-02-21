@@ -234,25 +234,25 @@ export function NookDetail({
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-lg border mb-6 overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
-          <div className="flex justify-between items-start mb-4">
+      <div className="bg-white rounded-2xl shadow-lg border mb-4 sm:mb-6 overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 sm:p-6 text-white">
+          <div className="flex justify-between items-start mb-3 sm:mb-4">
             <button
               onClick={onBack}
-              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-xl"
+              className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-xl text-sm sm:text-base min-h-[44px] sm:min-h-0"
             >
               ← Back to Nooks
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm sm:text-base">
               {getTemperatureIcon(nook.temperature)}
               <span className="capitalize font-medium">{nook.temperature}</span>
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold mb-2">{nook.title}</h1>
-          <p className="text-purple-100 mb-4">{nook.description}</p>
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">{nook.title}</h1>
+          <p className="text-purple-100 mb-3 sm:mb-4 text-sm sm:text-base">{nook.description}</p>
 
-          <div className="flex flex-wrap gap-3 text-sm">
+          <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
             <div className="bg-white/20 px-3 py-1 rounded-full flex items-center gap-1">
               <Timer className="w-3.5 h-3.5" />
               <span>Expires in {nook.timeLeft}</span>
@@ -281,9 +281,10 @@ export function NookDetail({
           </div>
         </div>
 
-        <div className="p-4 bg-yellow-50 border-t border-yellow-200 text-sm text-yellow-800 font-medium flex items-center gap-2">
-          <Lock className="w-4 h-4" />
-          This nook auto-deletes in {nook.timeLeft} • Messages are anonymous
+        <div className="p-3 sm:p-4 bg-yellow-50 border-t border-yellow-200 text-xs sm:text-sm text-yellow-800 font-medium flex items-center gap-2">
+          <Lock className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">This nook auto-deletes in {nook.timeLeft} • Messages are anonymous</span>
+          <span className="sm:hidden">Auto-deletes in {nook.timeLeft} • Anonymous</span>
         </div>
       </div>
 
@@ -320,25 +321,25 @@ export function NookDetail({
       )}
 
       {!loading && messages.length === 0 && (
-        <div className="bg-white rounded-xl p-12 text-center border mb-8">
-          <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="font-medium text-gray-600 mb-2">No messages yet</h3>
-          <p className="text-gray-400">Be the first to speak</p>
+        <div className="bg-white rounded-xl p-6 sm:p-12 text-center border mb-6 sm:mb-8">
+          <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+          <h3 className="font-medium text-gray-600 mb-2 text-sm sm:text-base">No messages yet</h3>
+          <p className="text-gray-400 text-sm">Be the first to speak</p>
         </div>
       )}
 
       {replyingTo && (
-        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4 rounded-r-xl shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
+        <div className="bg-purple-50 border-l-4 border-purple-500 p-3 sm:p-4 mb-3 sm:mb-4 rounded-r-xl shadow-sm">
+          <div className="flex justify-between items-start gap-2">
+            <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold text-purple-700 uppercase mb-1">
                 Replying to
               </div>
-              <p className="text-gray-700 line-clamp-2">{replyingToContent}</p>
+              <p className="text-gray-700 line-clamp-2 text-sm sm:text-base">{replyingToContent}</p>
             </div>
             <button
               onClick={cancelReply}
-              className="text-purple-600 hover:text-purple-800 p-1"
+              className="text-purple-600 hover:text-purple-800 p-2 min-h-[36px] min-w-[36px] flex items-center justify-center flex-shrink-0"
             >
               ✕
             </button>
@@ -346,7 +347,7 @@ export function NookDetail({
         </div>
       )}
 
-      <div className="message-input sticky bottom-0 bg-white pt-4 pb-6 border-t">
+      <div className="message-input sticky bottom-0 bg-white pt-3 sm:pt-4 pb-4 sm:pb-6 border-t">
         <NookMessageInput
           nookId={nook.id}
           userAvatar={userAvatar}

@@ -66,9 +66,9 @@ export function ReportHarassmentPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-3 sm:p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
@@ -135,52 +135,52 @@ export function ReportHarassmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-3 sm:p-6">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Profile
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-red-600 to-orange-600 p-8 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Shield className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Report Harassment</h1>
+          <div className="bg-gradient-to-r from-red-600 to-orange-600 p-4 sm:p-6 lg:p-8 text-white">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Report Harassment</h1>
             </div>
-            <p className="text-red-100">
+            <p className="text-red-100 text-sm sm:text-base">
               Safe, confidential reporting for workplace harassment and discrimination
             </p>
           </div>
 
-          <div className="p-8">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <div className="p-4 sm:p-6 lg:p-8">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
               <div className="flex gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-red-900 mb-1">Immediate Danger</h3>
-                  <p className="text-sm text-red-700 mb-2">
+                  <h3 className="font-semibold text-red-900 mb-1 text-sm sm:text-base">Immediate Danger</h3>
+                  <p className="text-xs sm:text-sm text-red-700 mb-2">
                     If you are in immediate danger, please call 911 or your local emergency services.
                   </p>
-                  <p className="text-sm text-red-700">
+                  <p className="text-xs sm:text-sm text-red-700">
                     For urgent mental health support: <strong>988 Suicide & Crisis Lifeline</strong>
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className={`flex-1 h-2 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                <div className="w-4" />
+                <div className="w-2 sm:w-4" />
                 <div className={`flex-1 h-2 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                <div className="w-4" />
+                <div className="w-2 sm:w-4" />
                 <div className={`flex-1 h-2 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span className={step >= 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}>Incident Details</span>
                 <span className={step >= 2 ? 'text-blue-600 font-medium' : 'text-gray-400'}>Description</span>
                 <span className={step >= 3 ? 'text-blue-600 font-medium' : 'text-gray-400'}>Contact Info</span>
@@ -378,12 +378,12 @@ export function ReportHarassmentPage() {
                 </>
               )}
 
-              <div className="flex gap-3 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 sm:pt-6 border-t">
                 {step > 1 && (
                   <button
                     type="button"
                     onClick={() => setStep(step - 1)}
-                    className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="px-4 sm:px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] text-sm sm:text-base"
                   >
                     Previous
                   </button>
@@ -393,7 +393,7 @@ export function ReportHarassmentPage() {
                   <button
                     type="button"
                     onClick={() => setStep(step + 1)}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                    className="flex-1 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors min-h-[44px] text-sm sm:text-base"
                   >
                     Continue
                   </button>
@@ -402,7 +402,7 @@ export function ReportHarassmentPage() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={isSubmitting || !formData.incidentType || !formData.description}
-                    className="flex-1 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 bg-red-600 text-white px-4 sm:px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] text-sm sm:text-base"
                   >
                     {isSubmitting ? (
                       <>
