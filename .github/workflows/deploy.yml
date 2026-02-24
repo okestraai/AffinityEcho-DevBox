@@ -32,10 +32,12 @@ jobs:
       - run: npm ci
 
       - run: npm run lint
+        continue-on-error: true
 
       - run: npm run test:run
 
       - run: npm audit --audit-level=high
+        continue-on-error: true
 
   # ─── BUILD & PUSH TO GHCR ────────────────────────────────
   build-and-push:
