@@ -124,7 +124,7 @@ jobs:
         run: docker pull ${{ env.IMAGE_NAME }}:staging
 
       - name: Deploy staging frontend
-        working-directory: /opt/affinityecho/staging
+        working-directory: /home/okestraailabs/affinityecho/staging
         run: |
           docker compose -f docker-compose.staging.yml -p affinityecho-staging up -d --no-build frontend
           echo "Waiting for frontend healthcheck..."
@@ -156,13 +156,13 @@ jobs:
         run: docker pull ${{ env.IMAGE_NAME }}:production
 
       - name: Record rollback tag
-        working-directory: /opt/affinityecho/production
+        working-directory: /home/okestraailabs/affinityecho/production
         run: |
           CURRENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:production 2>/dev/null || echo "none")
           echo "$CURRENT_DIGEST" > .last-good-frontend-digest
 
       - name: Deploy production frontend
-        working-directory: /opt/affinityecho/production
+        working-directory: /home/okestraailabs/affinityecho/production
         run: |
           docker compose -f docker-compose.yml -p affinityecho-production up -d --no-build frontend
           echo "Waiting for frontend healthcheck..."
