@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+.env
+.env.*
+.git
+.gitignore
+.vscode
+.idea
+.bolt
+.claude
+*.md
+*.log
+coverage
+supabase
