@@ -1,0 +1,178 @@
+name: Deploy
+
+on:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: deploy-frontend-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/okestraai/affinityecho-devbox
+
+jobs:
+  # ─── CI GATE ──────────────────────────────────────────────
+  ci:
+    name: CI Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run test:run
+
+      - run: npm audit --audit-level=high
+
+  # ─── BUILD & PUSH TO GHCR ────────────────────────────────
+  build-and-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine environment
+        id: env-tag
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "tag=production" >> "$GITHUB_OUTPUT"
+            echo "api_base=https://api.affinityecho.com" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://api.affinityecho.com/api/v1" >> "$GITHUB_OUTPUT"
+            echo "ws_url=https://api.affinityecho.com" >> "$GITHUB_OUTPUT"
+            echo "supabase_url=${{ secrets.PROD_VITE_SUPABASE_URL }}" >> "$GITHUB_OUTPUT"
+            echo "supabase_key=${{ secrets.PROD_VITE_SUPABASE_ANON_KEY }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=staging" >> "$GITHUB_OUTPUT"
+            echo "api_base=https://staging-api.affinityecho.com" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://staging-api.affinityecho.com/api/v1" >> "$GITHUB_OUTPUT"
+            echo "ws_url=https://staging-api.affinityecho.com" >> "$GITHUB_OUTPUT"
+            echo "supabase_url=${{ secrets.STAGING_VITE_SUPABASE_URL }}" >> "$GITHUB_OUTPUT"
+            echo "supabase_key=${{ secrets.STAGING_VITE_SUPABASE_ANON_KEY }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.env-tag.outputs.tag }}
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_BASE_URL=${{ steps.env-tag.outputs.api_base }}
+            VITE_API_URL=${{ steps.env-tag.outputs.api_url }}
+            VITE_WS_URL=${{ steps.env-tag.outputs.ws_url }}
+            VITE_SUPABASE_URL=${{ steps.env-tag.outputs.supabase_url }}
+            VITE_SUPABASE_ANON_KEY=${{ steps.env-tag.outputs.supabase_key }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy on pushed image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.env-tag.outputs.tag }}
+          format: table
+          exit-code: 0
+          severity: CRITICAL
+
+  # ─── DEPLOY STAGING ───────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.ref_name == 'develop'
+    runs-on: [self-hosted, affinityecho-deploy]
+    needs: build-and-push
+    environment:
+      name: staging
+      url: https://staging-app.affinityecho.com
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull latest staging image
+        run: docker pull ${{ env.IMAGE_NAME }}:staging
+
+      - name: Deploy staging frontend
+        working-directory: /opt/affinityecho/staging
+        run: |
+          docker compose -f docker-compose.staging.yml -p affinityecho-staging up -d --no-build frontend
+          echo "Waiting for frontend healthcheck..."
+          for i in $(seq 1 20); do
+            if docker inspect --format='{{.State.Health.Status}}' affinityecho-staging-frontend 2>/dev/null | grep -q healthy; then
+              echo "Frontend is healthy!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Frontend did not become healthy within 100s"
+          docker logs affinityecho-staging-frontend --tail 50
+          exit 1
+
+  # ─── DEPLOY PRODUCTION ────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    if: github.ref_name == 'main'
+    runs-on: [self-hosted, affinityecho-deploy]
+    needs: build-and-push
+    environment:
+      name: production
+      url: https://app.affinityecho.com
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull latest production image
+        run: docker pull ${{ env.IMAGE_NAME }}:production
+
+      - name: Record rollback tag
+        working-directory: /opt/affinityecho/production
+        run: |
+          CURRENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:production 2>/dev/null || echo "none")
+          echo "$CURRENT_DIGEST" > .last-good-frontend-digest
+
+      - name: Deploy production frontend
+        working-directory: /opt/affinityecho/production
+        run: |
+          docker compose -f docker-compose.yml -p affinityecho-production up -d --no-build frontend
+          echo "Waiting for frontend healthcheck..."
+          for i in $(seq 1 20); do
+            if docker inspect --format='{{.State.Health.Status}}' affinityecho-production-frontend 2>/dev/null | grep -q healthy; then
+              echo "Frontend is healthy!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "ERROR: Frontend did not become healthy within 100s"
+          docker logs affinityecho-production-frontend --tail 50
+          exit 1
