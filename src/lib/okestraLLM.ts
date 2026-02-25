@@ -58,15 +58,6 @@ Good: "Keeping a detailed record of incidents—including dates, times, and witn
 
 **Confidence**: High = broadly supported, low risk. Med = has tradeoffs or context-dependent. Low = speculative or high-risk.
 
-## CONSENSUS & DISAGREEMENTS
-
-- Consensus: Repeated advice patterns, aligned high-engagement perspectives
-- Disagreements: Contradicting viewpoints, risk/reward tradeoffs, minority challenges to majority
-
-## OPEN QUESTIONS
-
-Unresolved: missing info from poster, unsettled debates, unanswered follow-ups, implicit questions not yet raised.
-
 ## SAFETY
 
 Flag if detected: PII, SELF_HARM, HARASSMENT, THREAT, CRISIS
@@ -93,9 +84,6 @@ Return ONLY valid JSON. No markdown, no commentary.
   "tldr": "1-2 sentence summary",
   "overallSentiment": "Positive | Neutral | Negative",
   "keyThemes": ["TopicWord", "DiscussionTopic"],
-  "openQuestions": ["Question 1", "Question 2"],
-  "consensus": ["Agreement 1", "Agreement 2"],
-  "disagreements": ["Conflict 1", "Conflict 2"],
   "themes": [
     { "name": "TopicWord", "sentiment": "Positive | Neutral | Negative", "supportingCommentIds": ["c_001"] }
   ],
@@ -115,13 +103,11 @@ Return ONLY the JSON object.`;
 
 interface OkestraLLMResponse {
   tldr: string;
+  overallSentiment: string;
   keyThemes: string[];
-  openQuestions: string[];
-  consensus: string[];
-  disagreements: string[];
   themes: {
     name: string;
-    sentiment: 'positive' | 'neutral' | 'negative'; // Fixed categories
+    sentiment: 'positive' | 'neutral' | 'negative';
     supportingCommentIds: string[];
   }[];
   actionItems: {
@@ -253,10 +239,8 @@ function buildThreadPayload(topic: Topic, comments: Comment[], currentUserId: st
 function getFallbackResponse(): OkestraLLMResponse {
   return {
     tldr: "Analysis unavailable - the AI response could not be processed. Please try again.",
+    overallSentiment: "Neutral",
     keyThemes: [],
-    openQuestions: [],
-    consensus: [],
-    disagreements: [],
     themes: [],
     actionItems: [],
     safetyFlags: []
@@ -291,32 +275,14 @@ function parseJsonResponse(content: string): OkestraLLMResponse {
   const parsed = JSON.parse(extractedJson);
   
   // Validate and set defaults for required fields
-  if (!parsed.tldr) {
-    parsed.tldr = "Thread analysis completed.";
-  }
-  if (!Array.isArray(parsed.keyThemes)) {
-    parsed.keyThemes = [];
-  }
-  if (!Array.isArray(parsed.openQuestions)) {
-    parsed.openQuestions = [];
-  }
-  if (!Array.isArray(parsed.consensus)) {
-    parsed.consensus = [];
-  }
-  if (!Array.isArray(parsed.disagreements)) {
-    parsed.disagreements = [];
-  }
-  if (!Array.isArray(parsed.themes)) {
-    parsed.themes = [];
-  }
-  if (!Array.isArray(parsed.actionItems)) {
-    parsed.actionItems = [];
-  }
-  if (!Array.isArray(parsed.safetyFlags)) {
-    parsed.safetyFlags = [];
-  }
-  
-  return parsed as OkestraLLMResponse;
+  return {
+    tldr: parsed.tldr || "Thread analysis completed.",
+    overallSentiment: parsed.overallSentiment || "Neutral",
+    keyThemes: Array.isArray(parsed.keyThemes) ? parsed.keyThemes : [],
+    themes: Array.isArray(parsed.themes) ? parsed.themes : [],
+    actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
+    safetyFlags: Array.isArray(parsed.safetyFlags) ? parsed.safetyFlags : [],
+  };
 }
 
 export async function analyzeThreadWithLLM(
