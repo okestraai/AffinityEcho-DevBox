@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Topic, Comment } from '../../types/forum';
 import { analyzeThreadWithLLM } from '../../lib/okestraLLM';
 import { useAuth } from '../../hooks/useAuth';
+import { GetAIInsights, GenerateAIInsights } from '../../../api/okestraApis';
 
 interface OkestraPanelProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
   const [loading, setLoading] = useState(true);
   const [insight, setInsight] = useState<OkestraInsight | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isNook = topic.forumId === 'nook';
   const contentRoute = isNook
@@ -44,56 +46,80 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
     }
   }, [isOpen, topic, comments]);
 
+  const transformLlmResponse = (llmResponse: any): OkestraInsight => ({
+    summary: llmResponse.tldr,
+    keyThemes: llmResponse.keyThemes,
+    actionItems: (llmResponse.actionItems || []).map((item: any) => ({
+      title: item.action,
+      description: item.rationale,
+      priority: item.confidence === 'High' ? 'high' : item.confidence === 'Med' ? 'medium' : 'low',
+      action: item.category === 'documentation' || item.category === 'process' || item.category === 'communication'
+        ? () => {
+            onClose();
+            navigate(contentRoute);
+          }
+        : undefined,
+      actionType: 'navigate' as const
+    })),
+    sentiment: determineSentimentFromThemes(llmResponse.themes)
+  });
+
   const generateInsight = async () => {
     setLoading(true);
     setError(null);
+    setIsRefreshing(false);
 
-    console.log('[OkestraPanel] Starting insight generation...');
-    console.log('[OkestraPanel] Topic:', topic.title);
-    console.log('[OkestraPanel] Comments count:', comments.length);
+    const contentType = isNook ? 'nook' : 'topic';
 
     try {
-      console.log('[OkestraPanel] Calling analyzeThreadWithLLM...');
-      const currentUserId = user?.id || 'anonymous';
-      const llmResponse = await analyzeThreadWithLLM(topic, comments, currentUserId);
-      console.log('[OkestraPanel] Received LLM response:', llmResponse);
+      // Try cached backend API first
+      const result = await GetAIInsights(contentType, topic.id);
 
-      const transformedInsight: OkestraInsight = {
-        summary: llmResponse.tldr,
-        keyThemes: llmResponse.keyThemes,
-        actionItems: llmResponse.actionItems.map(item => ({
-          title: item.action,
-          description: item.rationale,
-          priority: item.confidence === 'High' ? 'high' : item.confidence === 'Med' ? 'medium' : 'low',
-          action: item.category === 'documentation' || item.category === 'process' || item.category === 'communication'
-            ? () => {
-                onClose();
-                navigate(contentRoute);
-              }
-            : undefined,
-          actionType: 'navigate' as const
-        })),
-        sentiment: determineSentimentFromThemes(llmResponse.themes)
-      };
+      if (result.status === 'cached' || result.status === 'stale_cached') {
+        // Instant display
+        const transformedInsight = transformLlmResponse(result.insights);
+        setInsight(transformedInsight);
+        setLoading(false);
 
-      console.log('[OkestraPanel] Transformed insight:', transformedInsight);
-      setInsight(transformedInsight);
+        if (result.status === 'stale_cached') {
+          setIsRefreshing(true);
+          // Fire background sync, update when ready
+          GenerateAIInsights(contentType, topic.id)
+            .then(syncResult => {
+              setInsight(transformLlmResponse(syncResult.insights));
+              setIsRefreshing(false);
+            })
+            .catch(() => setIsRefreshing(false));
+        }
+        return;
+      }
+
+      // status === 'generating' - no cache, call sync endpoint
+      const syncResult = await GenerateAIInsights(contentType, topic.id);
+      setInsight(transformLlmResponse(syncResult.insights));
     } catch (err) {
-      console.error('[OkestraPanel] Failed to generate insights:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate insights');
+      console.error('[OkestraPanel] Backend API failed, trying direct LLM...', err);
 
-      const allComments = getAllComments(comments);
-      const totalEngagement = topic.reactions.seen + topic.reactions.validated +
-                             topic.reactions.inspired + topic.reactions.heard;
-
-      const fallbackInsight: OkestraInsight = {
-        summary: generateSummary(topic, allComments),
-        keyThemes: extractKeyThemes(topic, allComments),
-        actionItems: generateActionItems(topic, allComments, totalEngagement),
-        sentiment: determineSentiment(topic, allComments)
-      };
-
-      setInsight(fallbackInsight);
+      try {
+        // Fallback: try direct LLM call
+        const currentUserId = user?.id || 'anonymous';
+        const llmResponse = await analyzeThreadWithLLM(topic, comments, currentUserId);
+        const transformedInsight = transformLlmResponse(llmResponse);
+        setInsight(transformedInsight);
+      } catch (llmErr) {
+        // Final fallback: local heuristics
+        console.error('[OkestraPanel] LLM also failed, using local fallback', llmErr);
+        setError(llmErr instanceof Error ? llmErr.message : 'Failed to generate insights');
+        const allComments = getAllComments(comments);
+        const totalEngagement = topic.reactions.seen + topic.reactions.validated +
+                               topic.reactions.inspired + topic.reactions.heard;
+        setInsight({
+          summary: generateSummary(topic, allComments),
+          keyThemes: extractKeyThemes(topic, allComments),
+          actionItems: generateActionItems(topic, allComments, totalEngagement),
+          sentiment: determineSentiment(topic, allComments)
+        });
+      }
     } finally {
       setLoading(false);
     }
