@@ -72,31 +72,22 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
     const contentType = isNook ? 'nook' : 'topic';
 
     try {
-      // Try cached backend API first
+      // Single call — returns cached, stale+background regen, or fresh inline
       const result = await GetAIInsights(contentType, topic.id);
 
-      if (result.status === 'cached' || result.status === 'stale_cached') {
-        // Instant display
-        const transformedInsight = transformLlmResponse(result.insights);
-        setInsight(transformedInsight);
-        setLoading(false);
+      const transformedInsight = transformLlmResponse(result.insights);
+      setInsight(transformedInsight);
 
-        if (result.status === 'stale_cached') {
-          setIsRefreshing(true);
-          // Fire background sync, update when ready
-          GenerateAIInsights(contentType, topic.id)
-            .then(syncResult => {
-              setInsight(transformLlmResponse(syncResult.insights));
-              setIsRefreshing(false);
-            })
-            .catch(() => setIsRefreshing(false));
-        }
-        return;
+      if (result.status === 'stale_cached') {
+        setIsRefreshing(true);
+        // BullMQ is regenerating in background; poll for fresh result
+        GenerateAIInsights(contentType, topic.id)
+          .then(syncResult => {
+            setInsight(transformLlmResponse(syncResult.insights));
+            setIsRefreshing(false);
+          })
+          .catch(() => setIsRefreshing(false));
       }
-
-      // status === 'generating' - no cache, call sync endpoint
-      const syncResult = await GenerateAIInsights(contentType, topic.id);
-      setInsight(transformLlmResponse(syncResult.insights));
     } catch (err) {
       console.error('[OkestraPanel] Backend API failed, trying direct LLM...', err);
 
