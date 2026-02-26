@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: deploy-frontend-staging
+  group: deploy-frontend
   cancel-in-progress: false
 
 permissions:
@@ -14,7 +14,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/okestraai/affinityecho-devbox-staging
+  IMAGE_NAME: ghcr.io/okestraai/affinityecho-devbox
 
 jobs:
   # ─── CI GATE ──────────────────────────────────────────────
@@ -63,7 +63,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=staging
+            type=raw,value=production
             type=sha,prefix=sha-
 
       - name: Build and push
@@ -75,11 +75,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_BASE_URL=https://staging-api.affinityecho.com
-            VITE_API_URL=https://staging-api.affinityecho.com/api/v1
-            VITE_WS_URL=https://staging-api.affinityecho.com
-            VITE_SUPABASE_URL=${{ secrets.STAGING_VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.STAGING_VITE_SUPABASE_ANON_KEY }}
+            VITE_API_BASE_URL=https://api.affinityecho.com
+            VITE_API_URL=https://api.affinityecho.com/api/v1
+            VITE_WS_URL=https://api.affinityecho.com
+            VITE_SUPABASE_URL=${{ secrets.PROD_VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.PROD_VITE_SUPABASE_ANON_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -87,38 +87,44 @@ jobs:
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:staging
+          image-ref: ${{ env.IMAGE_NAME }}:production
           format: table
           exit-code: 0
           severity: CRITICAL
 
-  # ─── DEPLOY STAGING ──────────────────────────────────────
+  # ─── DEPLOY PRODUCTION ────────────────────────────────────
   deploy:
-    name: Deploy to Staging
+    name: Deploy to Production
     runs-on: [self-hosted, affinityecho-deploy]
     needs: build-and-push
     environment:
-      name: staging
-      url: https://staging-app.affinityecho.com
+      name: production
+      url: https://app.affinityecho.com
     steps:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Pull latest staging image
-        run: docker pull ${{ env.IMAGE_NAME }}:staging
+      - name: Pull latest production image
+        run: docker pull ${{ env.IMAGE_NAME }}:production
 
-      - name: Deploy staging frontend
-        working-directory: /home/okestraailabs/affinityecho/staging
+      - name: Record rollback tag
+        working-directory: /home/okestraailabs/affinityecho/production
         run: |
-          docker compose --env-file .env.staging -f docker-compose.staging.yml -p affinityecho-staging up -d --no-build frontend cloudflared
+          CURRENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.IMAGE_NAME }}:production 2>/dev/null || echo "none")
+          echo "$CURRENT_DIGEST" > .last-good-frontend-digest
+
+      - name: Deploy production frontend
+        working-directory: /home/okestraailabs/affinityecho/production
+        run: |
+          docker compose --env-file .env.production -f docker-compose.yml -p affinityecho-production up -d --no-build frontend cloudflared
           echo "Waiting for frontend healthcheck..."
           for i in $(seq 1 20); do
-            if docker inspect --format='{{.State.Health.Status}}' affinityecho-staging-frontend 2>/dev/null | grep -q healthy; then
+            if docker inspect --format='{{.State.Health.Status}}' affinityecho-production-frontend 2>/dev/null | grep -q healthy; then
               echo "Frontend is healthy!"
               exit 0
             fi
             sleep 5
           done
           echo "ERROR: Frontend did not become healthy within 100s"
-          docker logs affinityecho-staging-frontend --tail 50
+          docker logs affinityecho-production-frontend --tail 50
           exit 1
