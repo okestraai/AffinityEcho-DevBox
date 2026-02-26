@@ -14,7 +14,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/okestraai/affinityecho-devbox
+  IMAGE_NAME: ghcr.io/okestraai/affinityecho-devbox-staging
 
 jobs:
   # ─── CI GATE ──────────────────────────────────────────────
