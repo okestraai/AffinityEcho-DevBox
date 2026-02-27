@@ -60,6 +60,9 @@ export function ForumsView() {
   const [globalForums, setGlobalForums] = useState<any[]>([]);
   const [userJoinedForums, setUserJoinedForums] = useState<any[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [companyNameResolved, setCompanyNameResolved] = useState(
+    !currentUser?.company_encrypted
+  );
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,14 +115,22 @@ export function ForumsView() {
         }
       } catch (err) {
         console.error("Error decrypting company name:", err);
+      } finally {
+        setCompanyNameResolved(true);
       }
     };
 
-    decryptCompanyName();
+    if (currentUser?.company_encrypted) {
+      decryptCompanyName();
+    } else {
+      setCompanyNameResolved(true);
+    }
   }, [currentUser]);
 
-  // Fetch initial data
+  // Fetch initial data (wait for company name resolution first)
   useEffect(() => {
+    if (!companyNameResolved) return;
+
     const fetchInitialData = async () => {
       try {
         setInitialLoading(true);
@@ -151,7 +162,7 @@ export function ForumsView() {
     };
 
     fetchInitialData();
-  }, [apiCompanyName]);
+  }, [apiCompanyName, companyNameResolved]);
 
   // Fetch recent discussions
   useEffect(() => {
