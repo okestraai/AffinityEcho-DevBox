@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
@@ -211,11 +211,29 @@ export function FeedsView() {
     }
   };
 
-  const handleLoadMore = () => {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
       loadFeed(currentPage + 1);
     }
-  };
+  }, [loading, hasMore, currentPage]);
+
+  // Infinite scroll: trigger load when sentinel enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleLoadMore]);
 
   const handleCreatePost = async () => {
     if (!postContent.trim() || !user) return;
@@ -483,11 +501,12 @@ export function FeedsView() {
     return num.toString();
   };
 
-  const formatTimeAgo = (dateString: string) => {
+  const formatTimeAgo = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
     if (seconds < 60) return "just now";
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -1004,11 +1023,6 @@ export function FeedsView() {
                             <span>Post</span>
                           </div>
                         </div>
-                        {item.author.bio && (
-                          <p className="text-sm text-gray-600">
-                            {item.author.bio}
-                          </p>
-                        )}
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
                           <span>{formatTimeAgo(item.created_at)}</span>
                         </div>
@@ -1167,17 +1181,15 @@ export function FeedsView() {
         )}
       </div>
 
-      {feedItems.length > 0 && hasMore && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleLoadMore}
-            disabled={loading}
-            className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm border border-gray-200 font-medium disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "Load more"}
-          </button>
-        </div>
-      )}
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} className="h-10 mt-4 flex items-center justify-center">
+        {loading && feedItems.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
+            Loading more...
+          </div>
+        )}
+      </div>
 
       {showViewersModal && selectedViewersItem && (
         <ViewersModal

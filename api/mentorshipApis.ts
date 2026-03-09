@@ -385,6 +385,7 @@ export const GetMentorsAndMentees = async (
     affinityTags?: string[];
     availability?: string | string[];
     location?: string;
+    languages?: string[];
     minMatchScore?: number;
     maxMatchScore?: number;
     sortBy?: "match_score" | "recent" | "experience" | "availability";
@@ -435,6 +436,9 @@ export const GetMentorsAndMentees = async (
     }
   }
   if (filters.location) queryParams.append("location", filters.location);
+  if (filters.languages && Array.isArray(filters.languages)) {
+    filters.languages.forEach((lang) => queryParams.append("languages", lang));
+  }
   if (filters.minMatchScore !== undefined) queryParams.append("minMatchScore", String(filters.minMatchScore));
   if (filters.maxMatchScore !== undefined) queryParams.append("maxMatchScore", String(filters.maxMatchScore));
   if (filters.sortBy) queryParams.append("sortBy", filters.sortBy);

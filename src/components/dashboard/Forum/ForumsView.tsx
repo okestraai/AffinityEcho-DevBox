@@ -60,7 +60,11 @@ export function ForumsView() {
   const [globalForums, setGlobalForums] = useState<any[]>([]);
   const [userJoinedForums, setUserJoinedForums] = useState<any[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [companyNameResolved, setCompanyNameResolved] = useState(
+    !currentUser?.company_encrypted
+  );
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [hasMoreTopics, setHasMoreTopics] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getCompanyDisplayName = () => {
@@ -112,14 +116,22 @@ export function ForumsView() {
         }
       } catch (err) {
         console.error("Error decrypting company name:", err);
+      } finally {
+        setCompanyNameResolved(true);
       }
     };
 
-    decryptCompanyName();
+    if (currentUser?.company_encrypted) {
+      decryptCompanyName();
+    } else {
+      setCompanyNameResolved(true);
+    }
   }, [currentUser]);
 
-  // Fetch initial data
+  // Fetch initial data (wait for company name resolution first)
   useEffect(() => {
+    if (!companyNameResolved) return;
+
     const fetchInitialData = async () => {
       try {
         setInitialLoading(true);
@@ -151,7 +163,7 @@ export function ForumsView() {
     };
 
     fetchInitialData();
-  }, [apiCompanyName]);
+  }, [apiCompanyName, companyNameResolved]);
 
   // Fetch recent discussions
   useEffect(() => {
@@ -165,7 +177,7 @@ export function ForumsView() {
           sortBy: sortBy,
           timeFilter: timeFilter,
           page: currentPage,
-          limit: 10,
+          limit: 50,
         };
 
         if (searchTerm) {
@@ -177,7 +189,11 @@ export function ForumsView() {
         }
 
         const data = await GetRecentDiscussions(apiCompanyName || "", filters);
-        setRecentDiscussions(data?.topics || []);
+        const newTopics = data?.topics || [];
+        setRecentDiscussions((prev) =>
+          currentPage === 1 ? newTopics : [...prev, ...newTopics]
+        );
+        setHasMoreTopics(newTopics.length >= 50);
       } catch (err) {
         console.error("Error fetching recent discussions:", err);
       } finally {
@@ -197,6 +213,12 @@ export function ForumsView() {
     viewMode,
     initialLoading,
   ]);
+
+  // Reset to page 1 when any filter changes so topics are replaced, not appended
+  useEffect(() => {
+    setCurrentPage(1);
+    setRecentDiscussions([]);
+  }, [sortBy, timeFilter, searchTerm, viewMode]);
 
   const handleUserClick = (userId: string) => {
     if (currentUser && userId === currentUser.id) return;
@@ -547,6 +569,7 @@ export function ForumsView() {
     foundationForums,
     userJoinedForums,
     topicsLoading,
+    hasMoreTopics,
     initialLoading,
     error,
     handleViewAllGlobalForums,

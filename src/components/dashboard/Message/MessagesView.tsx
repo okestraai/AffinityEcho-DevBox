@@ -14,6 +14,7 @@ import {
   Loader2,
   Send,
   Clock,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "../../../hooks/useAuth";
@@ -25,12 +26,13 @@ import {
   MarkMessagesAsRead,
   GetTypingStatus,
   RequestIdentityReveal,
+  CancelIdentityReveal,
   GetIdentityRevealStatusForConversation,
   SetTypingStatus,
   GetConnectableUsers,
   SendAMessage,
 } from "../../../../api/messaging";
-import { MentionInput } from "../../shared/MentionTextarea";
+import { MentionInput, MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
@@ -488,20 +490,26 @@ function MessageInputComponent({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex gap-2">
-        <MentionInput
+      <div className="flex items-end gap-2">
+        <MentionTextarea
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type a message... Use @ to mention"
-          className={`w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 ${isMentorship ? "focus:ring-orange-500" : "focus:ring-blue-500"} outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
+          rows={1}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 ${isMentorship ? "focus:ring-orange-500" : "focus:ring-blue-500"} outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-hidden`}
           disabled={disabled || isSending}
-          autoFocus
+          style={{ minHeight: '40px', maxHeight: '160px', overflowY: 'hidden' }}
+          onInput={(e) => {
+            const el = e.currentTarget as HTMLTextAreaElement;
+            el.style.height = 'auto';
+            el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+          }}
         />
         <button
           type="submit"
           disabled={!message.trim() || disabled || isSending}
-          className={`px-4 py-2 ${isMentorship ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"} text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2`}
+          className={`px-4 py-2 flex-shrink-0 ${isMentorship ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"} text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2`}
         >
           {isSending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -821,6 +829,24 @@ export function MessagesView() {
           "response" in error &&
           (error as any).response?.data?.message) ||
         "Failed to send request";
+      showToast(errorMessage, "error");
+    }
+  };
+
+  const handleCancelIdentityReveal = async () => {
+    const revealId = identityRevealStatus?.pending_request?.id;
+    if (!revealId || !selectedConversation) return;
+    try {
+      await CancelIdentityReveal(revealId);
+      showToast("Identity reveal request cancelled", "success");
+      fetchIdentityRevealStatus(selectedConversation.id);
+    } catch (error) {
+      const errorMessage =
+        (typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          (error as any).response?.data?.message) ||
+        "Failed to cancel request";
       showToast(errorMessage, "error");
     }
   };
@@ -1423,7 +1449,7 @@ export function MessagesView() {
     );
     return (
       <>
-      <div className="max-w-4xl mx-auto flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-col bg-gray-50 -mx-3 sm:-mx-4 md:-mx-6 -my-4 md:-my-8 -mb-20 md:-mb-8 h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)]">
         {/* Header */}
         <header className="bg-white px-4 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3 mb-3">
@@ -1464,8 +1490,28 @@ export function MessagesView() {
 
               if (isPendingSent) {
                 return (
-                  <div className={`p-2 ${isMentorship ? "text-orange-400" : "text-blue-400"} rounded-lg`} title="Identity reveal request pending">
-                    <Clock className="w-5 h-5" />
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`flex items-center gap-1.5 px-2 py-1.5 ${isMentorship ? "text-orange-500 bg-orange-50" : "text-blue-500 bg-blue-50"} rounded-lg text-xs font-medium`}
+                      title="Identity reveal request pending"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      Pending
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCancelIdentityReveal}
+                      disabled={loading.identityStatus}
+                      className="flex items-center gap-1.5 px-2 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 text-xs font-medium"
+                      title="Cancel identity reveal request"
+                    >
+                      {loading.identityStatus ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <X className="w-3.5 h-3.5" />
+                      )}
+                      Cancel
+                    </button>
                   </div>
                 );
               }
@@ -1532,7 +1578,7 @@ export function MessagesView() {
         </header>
 
         {/* Messages */}
-        <div className="flex-1 bg-gray-50 p-4 space-y-3 overflow-y-auto">
+        <div className="flex-1 min-h-0 bg-gray-50 p-4 space-y-3 overflow-y-auto">
           {loading.messages ? (
             <MessagesSkeleton />
           ) : messages.length === 0 ? (
@@ -1621,7 +1667,7 @@ export function MessagesView() {
   // ==================== RENDER MAIN VIEW ====================
   return (
     <>
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full mx-auto py-4 md:py-8 pb-20 md:pb-8">
         <header className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
           <div className="flex items-center justify-between mb-2">
             <div>

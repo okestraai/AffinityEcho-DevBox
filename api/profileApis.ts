@@ -24,6 +24,16 @@ export const GetUserProfileById = async (userId: string) => {
 };
 
 /**
+ * Get full user profile (profile + stats + recent activity in one call)
+ * GET /user/:userId/full-profile
+ */
+export const GetFullUserProfile = async (userId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(`${API_URL}/user/${userId}/full-profile`);
+  return unwrap(res);
+};
+
+/**
  * Update current user's profile
  */
 export const UpdateProfile = async (payload: {
@@ -375,6 +385,7 @@ export const SubmitHarassmentReport = async (payload: {
   reporterType: "victim" | "witness" | "other";
   contactEmail?: string;
   immediateRisk: boolean;
+  reportedUserId?: string;
 }) => {
   const authFetch = getAuthInstance();
   const res = await authFetch.post(
