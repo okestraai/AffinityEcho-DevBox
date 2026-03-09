@@ -104,7 +104,7 @@ export function NooksView() {
           anonymousUsers: response.anonymousUsers || 0,
           totalMessageParticipants: response.totalMessageParticipants || 0,
         });
-        log("fetchStats", "Stats loaded", data);
+        log("fetchStats", "Stats loaded", response);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);

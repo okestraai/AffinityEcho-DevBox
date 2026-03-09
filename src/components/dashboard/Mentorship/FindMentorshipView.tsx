@@ -84,6 +84,7 @@ export function FindMentorshipView() {
     availabilityOptions: [] as string[],
     affinityTags: [] as string[],
     location: "",
+    languages: [] as string[],
     mentoringAs: "all" as "all" | "mentor" | "mentee" | "both",
     matchScoreRange: null as { min: number; max: number } | null,
   });
@@ -163,6 +164,7 @@ export function FindMentorshipView() {
         affinityTags:
           filters.affinityTags.length > 0 ? filters.affinityTags : undefined,
         location: filters.location || undefined,
+        languages: filters.languages.length > 0 ? filters.languages : undefined,
         availability:
           filters.availabilityOptions.length > 0
             ? filters.availabilityOptions
@@ -377,6 +379,7 @@ export function FindMentorshipView() {
       availabilityOptions: [],
       affinityTags: [],
       location: "",
+      languages: [],
       mentoringAs: "all",
       matchScoreRange: null,
     });
@@ -397,6 +400,7 @@ export function FindMentorshipView() {
     filters.affinityTags.length +
     filters.availabilityOptions.length +
     (filters.location ? 1 : 0) +
+    filters.languages.length +
     (filters.matchScoreRange ? 1 : 0);
 
   const handleUserClick = (userId: string) => {
@@ -700,43 +704,86 @@ export function FindMentorshipView() {
                 </div>
               </div>
 
-              {filterOptions.matchScoreRanges.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Match Score
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Match Score Range
                   </label>
-                  <div className="space-y-2">
-                    {filterOptions.matchScoreRanges.map((range) => (
-                      <label
-                        key={range.label}
-                        className="flex items-center gap-2 cursor-pointer"
+                  <div className="flex items-center gap-1 text-sm font-bold text-purple-600">
+                    <span>{filters.matchScoreRange?.min ?? 0}%</span>
+                    <span className="text-gray-400 font-normal">–</span>
+                    <span>{filters.matchScoreRange?.max ?? 100}%</span>
+                    {filters.matchScoreRange && (
+                      <button
+                        type="button"
+                        onClick={() => setFilters((prev) => ({ ...prev, matchScoreRange: null }))}
+                        className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Clear"
                       >
-                        <input
-                          type="radio"
-                          name="matchScoreRange"
-                          checked={
-                            filters.matchScoreRange?.min === range.min &&
-                            filters.matchScoreRange?.max === range.max
-                          }
-                          onChange={() =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              matchScoreRange:
-                                range.min === 0 && range.max === 100
-                                  ? null
-                                  : { min: range.min, max: range.max },
-                            }))
-                          }
-                          className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-sm text-gray-700">
-                          {range.label}
-                        </span>
-                      </label>
-                    ))}
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
+
+                {/* Dual range slider */}
+                <div className="relative h-6 flex items-center">
+                  {/* Track background */}
+                  <div className="absolute w-full h-2 bg-gray-200 rounded-full" />
+                  {/* Active track fill */}
+                  <div
+                    className="absolute h-2 bg-purple-500 rounded-full pointer-events-none"
+                    style={{
+                      left: `${filters.matchScoreRange?.min ?? 0}%`,
+                      right: `${100 - (filters.matchScoreRange?.max ?? 100)}%`,
+                    }}
+                  />
+                  {/* Min thumb — pointer-events none on track, all on thumb only */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={filters.matchScoreRange?.min ?? 0}
+                    onChange={(e) => {
+                      const val = Math.min(Number(e.target.value), (filters.matchScoreRange?.max ?? 100) - 1);
+                      setFilters((prev) => ({
+                        ...prev,
+                        matchScoreRange: val === 0 && (prev.matchScoreRange?.max ?? 100) === 100
+                          ? null
+                          : { min: val, max: prev.matchScoreRange?.max ?? 100 },
+                      }));
+                    }}
+                    style={{ pointerEvents: 'none' }}
+                    className="absolute w-full h-2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+                  />
+                  {/* Max thumb */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={filters.matchScoreRange?.max ?? 100}
+                    onChange={(e) => {
+                      const val = Math.max(Number(e.target.value), (filters.matchScoreRange?.min ?? 0) + 1);
+                      setFilters((prev) => ({
+                        ...prev,
+                        matchScoreRange: (prev.matchScoreRange?.min ?? 0) === 0 && val === 100
+                          ? null
+                          : { min: prev.matchScoreRange?.min ?? 0, max: val },
+                      }));
+                    }}
+                    style={{ pointerEvents: 'none' }}
+                    className="absolute w-full h-2 appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -755,6 +802,37 @@ export function FindMentorshipView() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
               </div>
+
+              {filterOptions.languages.length > 0 && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Language
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {filterOptions.languages.map((lang) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            languages: prev.languages.includes(lang)
+                              ? prev.languages.filter((l) => l !== lang)
+                              : [...prev.languages, lang],
+                          }))
+                        }
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          filters.languages.includes(lang)
+                            ? "bg-purple-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

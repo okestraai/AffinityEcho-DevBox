@@ -5,6 +5,9 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { resolveDisplayName } from "../../../utils/nameUtils";
@@ -13,9 +16,11 @@ import { MentionText } from "../../shared/MentionText";
 interface NookMessageProps {
   message: {
     id: string;
-    user_id: string;
+    user_id?: string;
+    is_mine?: boolean;
     content: string;
     created_at: string;
+    updated_at?: string;
     heard_count: number;
     validated_count: number;
     helpful_count: number;
@@ -31,7 +36,15 @@ interface NookMessageProps {
   onUserClick: (userId: string) => void;
   onReact: (messageId: string, reactionType: string) => void;
   onReply: (messageId: string, messageContent: string) => void;
+  onEdit?: (messageId: string, newContent: string) => Promise<void>;
   isReplying?: boolean;
+}
+
+/** Detects whether a string is an emoji (multi-codepoint or non-ASCII) */
+function isEmoji(str: string): boolean {
+  if (!str) return false;
+  // Emoji are typically surrogate pairs (length > 1 for a single char) or have charCode > 127
+  return str.length > 1 || str.charCodeAt(0) > 127;
 }
 
 export function NookMessage({
@@ -41,16 +54,24 @@ export function NookMessage({
   onUserClick,
   onReact,
   onReply,
+  onEdit,
   isReplying = false,
 }: NookMessageProps) {
   const [showReplies, setShowReplies] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+  const [isSaving, setIsSaving] = useState(false);
+
   const hasReplies = !!message.replies && message.replies.length > 0;
+  const isEdited = !!message.updated_at && message.updated_at !== message.created_at;
+  const canEdit = onEdit && message.is_mine;
 
   // Safe user data with fallbacks
   const user = message.user ?? null;
   const displayName = resolveDisplayName(user?.display_name, user?.username);
   const avatar = user?.avatar ?? "A"; // fallback character
   const isAnonymous = displayName === "Anonymous" || !user;
+  const avatarIsEmoji = isEmoji(avatar);
 
   const getAvatarColor = (avatarChar: string) => {
     const colors = [
@@ -59,7 +80,7 @@ export function NookMessage({
       "from-green-400 to-emerald-400",
       "from-yellow-400 to-orange-400",
       "from-purple-400 to-pink-400",
-      "from-gray-500 to-gray-700", // extra fallback
+      "from-gray-500 to-gray-700",
     ];
     const index = avatarChar.charCodeAt(0) % colors.length;
     return colors[index];
@@ -94,6 +115,23 @@ export function NookMessage({
 
   const toggleReplies = () => setShowReplies(!showReplies);
 
+  const handleSaveEdit = async () => {
+    const trimmed = editContent.trim();
+    if (!trimmed || trimmed === message.content || !onEdit) return;
+    setIsSaving(true);
+    try {
+      await onEdit(message.id, trimmed);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content);
+    setIsEditing(false);
+  };
+
   return (
     <div
       className={`bg-white rounded-xl p-3 sm:p-4 shadow-sm border transition-all duration-200 ${
@@ -106,14 +144,16 @@ export function NookMessage({
         {/* Avatar */}
         <button
           onClick={() => !isAnonymous && onUserClick(message.user_id)}
-          className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${getAvatarColor(
-            avatar
-          )} rounded-full flex items-center justify-center text-white text-sm sm:text-base font-bold hover:scale-105 transition-transform ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-bold hover:scale-105 transition-transform ${
             !isAnonymous ? "cursor-pointer" : "cursor-default"
-          } shadow-md flex-shrink-0`}
+          } shadow-md flex-shrink-0 ${
+            avatarIsEmoji
+              ? "bg-gray-100 text-base sm:text-xl"
+              : `bg-gradient-to-br ${getAvatarColor(avatar)} text-white`
+          }`}
           disabled={isAnonymous}
         >
-          {avatar[0].toUpperCase()}
+          {avatarIsEmoji ? avatar : avatar[0].toUpperCase()}
         </button>
 
         <div className="flex-1 min-w-0">
@@ -132,17 +172,63 @@ export function NookMessage({
             <span className="text-xs text-gray-400 flex-shrink-0">
               • {getTimeAgo(message.created_at)}
             </span>
+            {isEdited && (
+              <span className="text-xs text-gray-400 italic flex-shrink-0">(edited)</span>
+            )}
             {isReplying && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 ml-auto">
                 Replying
               </span>
             )}
+            {canEdit && !isEditing && (
+              <button
+                onClick={() => { setEditContent(message.content); setIsEditing(true); }}
+                className="ml-auto p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                title="Edit message"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <MentionText
-            text={message.content}
-            className="text-sm sm:text-base text-gray-700 mb-3 leading-relaxed break-words block"
-          />
+          {isEditing ? (
+            <div className="mb-3">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={3}
+                className="w-full text-sm text-gray-700 border border-purple-300 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSaveEdit();
+                  if (e.key === "Escape") handleCancelEdit();
+                }}
+              />
+              <div className="flex items-center gap-2 mt-1.5">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editContent.trim() || editContent.trim() === message.content}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Check className="w-3 h-3" />
+                  {isSaving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Cancel
+                </button>
+                <span className="text-xs text-gray-400 ml-auto">⌘↵ to save · Esc to cancel</span>
+              </div>
+            </div>
+          ) : (
+            <MentionText
+              text={message.content}
+              className="text-sm sm:text-base text-gray-700 mb-3 leading-relaxed break-words block"
+            />
+          )}
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -253,7 +339,8 @@ export function NookMessage({
                       onUserClick={onUserClick}
                       onReact={onReact}
                       onReply={onReply}
-                      isReplying={false} // or pass through if needed
+                      onEdit={onEdit}
+                      isReplying={false}
                     />
                   ))}
                 </div>

@@ -11,10 +11,11 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
   children,
   redirectTo = '/dashboard',
 }) => {
-  const { isAuthenticated, hasCompletedOnboarding } = useAuth();
+  const { isAuthenticated, hasCompletedOnboarding, user } = useAuth();
 
   if (isAuthenticated && hasCompletedOnboarding) {
-    return <Navigate to={redirectTo} replace />;
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+    return <Navigate to={isAdmin ? '/admin' : redirectTo} replace />;
   }
 
   return <>{children}</>;

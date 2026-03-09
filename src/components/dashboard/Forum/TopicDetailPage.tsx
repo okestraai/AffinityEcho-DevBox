@@ -1,5 +1,5 @@
 // src/pages/TopicDetailPage.tsx - ISOLATED ACTIONS VERSION
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -63,7 +63,36 @@ export function TopicDetailPage() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   const [showViewersModal, setShowViewersModal] = useState(false);
+  const [visibleCommentCount, setVisibleCommentCount] = useState(15);
+  const commentSentinelRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Reset visible count when topic changes
+  useEffect(() => { setVisibleCommentCount(15); }, [topicId]);
+
+  // Infinite scroll for comments (client-side since API returns all at once)
+  const loadMoreComments = useCallback(() => {
+    setVisibleCommentCount((prev) => prev + 15);
+  }, []);
+  const loadMoreCommentsRef = useRef(loadMoreComments);
+  useEffect(() => { loadMoreCommentsRef.current = loadMoreComments; }, [loadMoreComments]);
+  useEffect(() => {
+    const el = commentSentinelRef.current;
+    if (!el) return;
+    const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
+      if (!node || node === document.body) return null;
+      const ov = getComputedStyle(node).overflowY;
+      if (ov === "auto" || ov === "scroll") return node;
+      return getScrollParent(node.parentElement);
+    };
+    const root = getScrollParent(el.parentElement);
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMoreCommentsRef.current(); },
+      { threshold: 0, rootMargin: "200px 0px", root }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch topic details
   useEffect(() => {
     const fetchTopic = async () => {
@@ -811,7 +840,17 @@ export function TopicDetailPage() {
           </form>
 
           <div className="space-y-4">
-            {rootComments.map((comment) => renderComment(comment))}
+            {rootComments.slice(0, visibleCommentCount).map((comment) => renderComment(comment))}
+          </div>
+
+          {/* Infinite scroll sentinel for comments */}
+          <div ref={commentSentinelRef} className="h-8 mt-2 flex items-center justify-center">
+            {visibleCommentCount < rootComments.length && (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                Loading more comments...
+              </div>
+            )}
           </div>
 
           {rootComments.length === 0 && (
