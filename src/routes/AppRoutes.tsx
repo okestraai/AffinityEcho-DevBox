@@ -3,7 +3,7 @@ import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import ProtectedRoute from "./ProtectedRoute";
-import PublicOnlyRoute from "./PublicOnlyRoute";
+import PublicOnlyRoute from "./publicOnlyRoute";
 import { ProtectedAdminRoute } from "../admin/layout/AdminLayout";
 
 // Branded loading screen with animated logo
