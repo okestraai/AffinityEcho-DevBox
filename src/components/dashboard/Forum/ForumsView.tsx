@@ -64,6 +64,7 @@ export function ForumsView() {
     !currentUser?.company_encrypted
   );
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [hasMoreTopics, setHasMoreTopics] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getCompanyDisplayName = () => {
@@ -176,7 +177,7 @@ export function ForumsView() {
           sortBy: sortBy,
           timeFilter: timeFilter,
           page: currentPage,
-          limit: 10,
+          limit: 50,
         };
 
         if (searchTerm) {
@@ -188,7 +189,11 @@ export function ForumsView() {
         }
 
         const data = await GetRecentDiscussions(apiCompanyName || "", filters);
-        setRecentDiscussions(data?.topics || []);
+        const newTopics = data?.topics || [];
+        setRecentDiscussions((prev) =>
+          currentPage === 1 ? newTopics : [...prev, ...newTopics]
+        );
+        setHasMoreTopics(newTopics.length >= 50);
       } catch (err) {
         console.error("Error fetching recent discussions:", err);
       } finally {
@@ -208,6 +213,12 @@ export function ForumsView() {
     viewMode,
     initialLoading,
   ]);
+
+  // Reset to page 1 when any filter changes so topics are replaced, not appended
+  useEffect(() => {
+    setCurrentPage(1);
+    setRecentDiscussions([]);
+  }, [sortBy, timeFilter, searchTerm, viewMode]);
 
   const handleUserClick = (userId: string) => {
     if (currentUser && userId === currentUser.id) return;
@@ -558,6 +569,7 @@ export function ForumsView() {
     foundationForums,
     userJoinedForums,
     topicsLoading,
+    hasMoreTopics,
     initialLoading,
     error,
     handleViewAllGlobalForums,

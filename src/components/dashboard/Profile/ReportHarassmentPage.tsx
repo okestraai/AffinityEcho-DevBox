@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, AlertTriangle, Lock, CheckCircle, FileText, User, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, Shield, AlertTriangle, Lock, CheckCircle, FileText, User, Calendar, MapPin, Loader2, Search, X } from 'lucide-react';
 import { SubmitHarassmentReport } from '../../../../api/profileApis';
+import { GetConnectableUsers } from '../../../../api/messaging';
 import { showToast } from '../../../Helper/ShowToast';
+
+interface ReportedUser { id: string; username: string; display_name?: string; avatar?: string; }
 
 export function ReportHarassmentPage() {
   const navigate = useNavigate();
@@ -16,12 +19,70 @@ export function ReportHarassmentPage() {
     evidence: '',
     reporterType: 'anonymous',
     contactEmail: '',
-    immediateRisk: false
+    immediateRisk: false,
+    reportedUserId: '',
   });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
+
+  // Reported user search state
+  const [reportedUserSearch, setReportedUserSearch] = useState('');
+  const [reportedUserResults, setReportedUserResults] = useState<ReportedUser[]>([]);
+  const [reportedUserSearching, setReportedUserSearching] = useState(false);
+  const [showReportedUserDrop, setShowReportedUserDrop] = useState(false);
+  const [selectedReportedUser, setSelectedReportedUser] = useState<ReportedUser | null>(null);
+  const reportedUserDebounce = useRef<ReturnType<typeof setTimeout>>();
+  const reportedUserRef = useRef<HTMLDivElement>(null);
+
+  const searchReportedUser = useCallback(async (q: string) => {
+    if (!q.trim()) { setReportedUserResults([]); setShowReportedUserDrop(false); return; }
+    setReportedUserSearching(true);
+    try {
+      const res = await GetConnectableUsers({ search: q, limit: 8 });
+      const raw: ReportedUser[] = (res?.users || res?.data || (Array.isArray(res) ? res : [])).map((u: { id?: string; user_id?: string; username: string; display_name?: string; avatar?: string }) => ({
+        id: u.id || u.user_id || '',
+        username: u.username,
+        display_name: u.display_name,
+        avatar: u.avatar,
+      }));
+      setReportedUserResults(raw);
+      setShowReportedUserDrop(true);
+    } catch { setReportedUserResults([]); }
+    finally { setReportedUserSearching(false); }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (reportedUserRef.current && !reportedUserRef.current.contains(e.target as Node)) {
+        setShowReportedUserDrop(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleReportedUserSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setReportedUserSearch(val);
+    clearTimeout(reportedUserDebounce.current);
+    if (!val.trim()) { setReportedUserResults([]); setShowReportedUserDrop(false); return; }
+    reportedUserDebounce.current = setTimeout(() => searchReportedUser(val), 300);
+  };
+
+  const selectReportedUser = (user: ReportedUser) => {
+    setSelectedReportedUser(user);
+    setFormData(f => ({ ...f, reportedUserId: user.id }));
+    setReportedUserSearch('');
+    setShowReportedUserDrop(false);
+  };
+
+  const clearReportedUser = () => {
+    setSelectedReportedUser(null);
+    setFormData(f => ({ ...f, reportedUserId: '' }));
+    setReportedUserSearch('');
+  };
 
   const incidentTypes = [
     'Racial discrimination',
@@ -47,7 +108,8 @@ export function ReportHarassmentPage() {
         evidence: formData.evidence || undefined,
         reporterType,
         contactEmail: formData.contactEmail || undefined,
-        immediateRisk: formData.immediateRisk
+        immediateRisk: formData.immediateRisk,
+        reportedUserId: formData.reportedUserId || undefined
       });
       if (response?.referenceNumber) {
         setReferenceNumber(response.referenceNumber);
@@ -205,6 +267,70 @@ export function ReportHarassmentPage() {
                         <option key={type} value={type}>{type}</option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Reported user search */}
+                  <div ref={reportedUserRef}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Person Being Reported (optional)
+                    </label>
+
+                    {selectedReportedUser ? (
+                      <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-sm flex-shrink-0">
+                          {selectedReportedUser.avatar || selectedReportedUser.username[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{selectedReportedUser.display_name || selectedReportedUser.username}</p>
+                          <p className="text-xs text-gray-500">@{selectedReportedUser.username}</p>
+                        </div>
+                        <button type="button" onClick={clearReportedUser} className="text-gray-400 hover:text-red-500 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={reportedUserSearch}
+                          onChange={handleReportedUserSearchChange}
+                          onFocus={() => reportedUserResults.length > 0 && setShowReportedUserDrop(true)}
+                          placeholder="Search by username..."
+                          className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {showReportedUserDrop && (
+                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                            {reportedUserSearching ? (
+                              <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Searching...
+                              </div>
+                            ) : reportedUserResults.length === 0 ? (
+                              <div className="px-4 py-3 text-sm text-gray-500">No users found</div>
+                            ) : (
+                              reportedUserResults.map((user) => (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => selectReportedUser(user)}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition-colors"
+                                >
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-sm flex-shrink-0">
+                                    {user.avatar || user.username[0]?.toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{user.display_name || user.username}</p>
+                                    <p className="text-xs text-gray-500">@{user.username}</p>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">Search for the person you are reporting. Leave blank to report anonymously without identifying them.</p>
                   </div>
 
                   <div>

@@ -1,5 +1,5 @@
 // src/components/dashboard/DashboardLayout.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { BottomNavigation } from '../components/NavComponent/BottomNavigation';
 import { MentorshipModal } from '../components/Modals/MentorShipModals/MentorshipModal';
@@ -66,7 +66,7 @@ export function DashboardLayout() {
   const closeMentorshipModal = useCallback(() => setShowMentorshipModal(false), []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 relative">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50/30 overflow-hidden">
       <DashboardHeader
         activeTab={activeTab}
         unreadCount={unreadCount}
@@ -78,14 +78,14 @@ export function DashboardLayout() {
         onUnreadCountChange={fetchUnreadCount}
       />
 
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-8 pb-24 md:pb-8">
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-8 pb-20 md:pb-8">
           <Outlet />
         </div>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden">
+      <div className="md:hidden flex-shrink-0">
         <BottomNavigation activeTab={activeTab} setActiveTab={handleTabChange} />
       </div>
 

@@ -670,19 +670,7 @@ export function NotificationsView() {
         );
 
       case "report_status_update":
-        return (
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(notification, "view_case");
-              }}
-              className="px-3 sm:px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium"
-            >
-              View Case
-            </button>
-          </div>
-        );
+        return null;
 
       case "message_received":
         return (

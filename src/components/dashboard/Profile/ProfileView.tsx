@@ -1202,7 +1202,10 @@ export function ProfileView() {
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2">
                           <span className={`text-base sm:text-lg font-bold ${item.color}`}>{item.value}</span>
-                          {item.nav && <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />}
+                          {item.nav
+                            ? <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />
+                            : <span className="w-4 h-4 shrink-0" />
+                          }
                         </div>
                       </button>
                     );
@@ -1238,6 +1241,9 @@ export function ProfileView() {
                     </button>
                   )}
 
+                  {user.demographics?.affinityTags && user.demographics.affinityTags.length > 0 && (
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mt-2 mb-1">Affinity Groups</p>
+                  )}
                   {user.demographics?.affinityTags?.map((tag) => {
                     const groupNames: { [key: string]: string } = {
                       'black-women-tech': 'Black Women in Tech',
@@ -1411,7 +1417,13 @@ export function ProfileView() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-gray-900 text-xs sm:text-sm">{name}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                                    className="font-semibold text-gray-900 text-xs sm:text-sm hover:text-purple-600 hover:underline text-left"
+                                  >
+                                    {name}
+                                  </button>
                                   {jobTitle && (
                                     <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{jobTitle}{company ? ` at ${company}` : ''}</p>
                                   )}
@@ -1484,7 +1496,13 @@ export function ProfileView() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div>
-                                <p className="font-semibold text-gray-900 text-xs sm:text-sm">{name}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                                  className="font-semibold text-gray-900 text-xs sm:text-sm hover:text-purple-600 hover:underline text-left"
+                                >
+                                  {name}
+                                </button>
                                 {jobTitle && (
                                   <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{jobTitle}{company ? ` at ${company}` : ''}</p>
                                 )}
