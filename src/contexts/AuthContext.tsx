@@ -25,14 +25,44 @@ export interface User {
   avatar: string | null;
   first_name?: string;
   last_name?: string;
+  role: "user" | "admin" | "super_admin";
+  /** Granular permission keys — only populated for role === "admin". super_admin implicitly has all permissions. */
+  permissions?: string[];
   has_completed_onboarding: boolean;
-  demographics: {
+  is_deactivated?: boolean;
+  company_encrypted?: string;
+  company_type?: string;
+  demographics?: {
     race?: string;
     gender?: string;
     careerLevel?: string;
     company?: string;
     affinityTags?: string[];
   };
+}
+
+interface LoginResponseData {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    role: "user" | "admin" | "super_admin";
+    has_completed_onboarding: boolean;
+    is_deactivated?: boolean;
+    first_name?: string;
+    last_name?: string;
+    avatar?: string | null;
+  };
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
 interface AuthContextType {
@@ -58,17 +88,87 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Static arrays hoisted outside component to avoid re-creation on every render
-const USERNAME_ADJECTIVES = ["Brave", "Quiet", "Rising", "Bold", "True", "Free"];
+// Static arrays for username generation
+const USERNAME_ADJECTIVES = [
+  "Brave",
+  "Quiet",
+  "Rising",
+  "Bold",
+  "True",
+  "Free",
+];
 const USERNAME_NOUNS = ["Lion", "Eagle", "Wolf", "Fox", "Phoenix", "Bear"];
 const AVATAR_EMOJIS = [
-  "🌟", "⭐", "✨", "💫", "🔥", "⚡", "💎", "👑", "🏆", "🎯",
-  "🎨", "🎭", "🎪", "🎬", "🎮", "🎲", "🎸", "🎹", "🎺", "🎻",
-  "📦", "📚", "📖", "📝", "📌", "📍", "📎", "📐", "📏", "📊",
-  "⚙️", "🔧", "🔨", "⚒️", "🛠️", "🔩", "⚗️", "🧪", "🧬", "🔬",
-  "🚀", "✈️", "🛸", "🎈", "🎆", "🎇", "🌈", "☀️", "🌙", "⭐",
-  "💼", "🎓", "🏅", "🥇", "🥈", "🥉", "🏵️", "🎖️", "🔔", "🔑",
-  "🗝️", "💡", "🔦", "🕯️", "🧭", "🗺️", "⏰", "⏱️", "⌚", "🔮"
+  "🌟",
+  "⭐",
+  "✨",
+  "💫",
+  "🔥",
+  "⚡",
+  "💎",
+  "👑",
+  "🏆",
+  "🎯",
+  "🎨",
+  "🎭",
+  "🎪",
+  "🎬",
+  "🎮",
+  "🎲",
+  "🎸",
+  "🎹",
+  "🎺",
+  "🎻",
+  "📦",
+  "📚",
+  "📖",
+  "📝",
+  "📌",
+  "📍",
+  "📎",
+  "📐",
+  "📏",
+  "📊",
+  "⚙️",
+  "🔧",
+  "🔨",
+  "⚒️",
+  "🛠️",
+  "🔩",
+  "⚗️",
+  "🧪",
+  "🧬",
+  "🔬",
+  "🚀",
+  "✈️",
+  "🛸",
+  "🎈",
+  "🎆",
+  "🎇",
+  "🌈",
+  "☀️",
+  "🌙",
+  "⭐",
+  "💼",
+  "🎓",
+  "🏅",
+  "🥇",
+  "🥈",
+  "🥉",
+  "🏵️",
+  "🎖️",
+  "🔔",
+  "🔑",
+  "🗝️",
+  "💡",
+  "🔦",
+  "🕯️",
+  "🧭",
+  "🗺️",
+  "⏰",
+  "⏱️",
+  "⌚",
+  "🔮",
 ];
 
 const generateUsername = () => {
@@ -104,9 +204,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const loadUser = async () => {
     try {
+     
       const res = await GetCurrentUser();
-      setUser(res);
-    } catch {
+     
+      
+      // Check if the response has the expected structure
+      let userData: any = res;
+      
+      // Handle different response structures
+      if (res && typeof res === "object") {
+        // If the response has a 'data' property with nested user
+        if ('data' in res && res.data && typeof res.data === 'object') {
+          userData = res.data;
+        }
+        
+        // Ensure role is set (default to 'user' if not present)
+        if (!userData.role) {
+          console.warn("User role not found in API response, defaulting to 'user'");
+          userData.role = "user";
+        }
+        
+        // Map the response to our User interface
+        const mappedUser: User = {
+          id: userData.id || userData.userId || '',
+          email: userData.email || '',
+          username: userData.username || '',
+          avatar: userData.avatar || userData.avatar_url || null,
+          first_name: userData.first_name || userData.firstName,
+          last_name: userData.last_name || userData.lastName,
+          role: userData.role as "user" | "admin" | "super_admin",
+          permissions: userData.permissions ?? [],
+          has_completed_onboarding: userData.has_completed_onboarding ?? userData.hasCompletedOnboarding ?? false,
+          is_deactivated: userData.is_deactivated ?? userData.isDeactivated,
+          company_encrypted: userData.company_encrypted,
+          company_type: userData.company_type,
+          demographics: userData.demographics || {},
+        };
+        
+        
+        setUser(mappedUser);
+      } else {
+        console.error("Invalid user data structure:", res);
+        clearAuth();
+      }
+    } catch (error) {
+      console.error("Error loading user:", error);
       clearAuth();
     } finally {
       setIsLoading(false);
@@ -114,11 +256,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
-      const raw = await loginUser({ email, password });
-      // Handle both unwrapped { access_token, ... } and wrapped { data: { access_token, ... } }
-      const loginData = raw?.access_token ? raw : raw?.data ?? raw;
+
+      const response = await loginUser({ email, password });
+
+
+      // Handle the response structure
+      let loginData: LoginResponseData;
+
+      // Check if response has the ApiResponse wrapper
+      if (
+        response &&
+        typeof response === "object" &&
+        "success" in response &&
+        response.success === true &&
+        "data" in response
+      ) {
+        loginData = response.data;
+      } else if (response && "access_token" in response) {
+        // Response is already the data object
+        loginData = response;
+      } else {
+        console.error("Unexpected response structure:", response);
+        throw new Error("Invalid login response structure");
+      }
 
       const accessToken = loginData?.access_token;
       const refreshToken = loginData?.refresh_token;
@@ -127,10 +288,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         throw new Error("Invalid login response — missing tokens");
       }
 
+      // Save tokens FIRST before anything else
       saveTokens(accessToken, refreshToken);
+ 
 
-      // Check if the account is deactivated (returned from backend login response)
-      if (loginData.is_deactivated) {
+      // Check if the account is deactivated
+      if (loginData.user?.is_deactivated) {
         const shouldReactivate = await new Promise<boolean>((resolve) => {
           setReactivateResolver({ resolve });
           setShowReactivateModal(true);
@@ -154,24 +317,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
       }
 
-      // Set user directly from login response instead of calling /auth/me
-      // (the token may not be accepted by /auth/me immediately after issuance)
-      const loginUserData = loginData.user || {};
-      setUser({
-        id: loginUserData.id || "",
-        email: loginUserData.email || email,
-        username: loginUserData.username || email.split("@")[0],
-        avatar: loginUserData.avatar || null,
-        has_completed_onboarding: loginData.has_completed_onboarding ?? false,
+      // Set user from login response immediately (don't wait for loadUser)
+      const userData: User = {
+        id: loginData.user.id,
+        email: loginData.user.email,
+        username: loginData.user.username,
+        avatar: loginData.user.avatar || null,
+        first_name: loginData.user.first_name,
+        last_name: loginData.user.last_name,
+        role: loginData.user.role,
+        permissions: (loginData.user as LoginResponseData['user'] & { permissions?: string[] }).permissions ?? [],
+        has_completed_onboarding: loginData.user.has_completed_onboarding,
+        is_deactivated: loginData.user.is_deactivated,
         demographics: {},
-      });
-      setIsLoading(false);
+      };
+
+    
+      setUser(userData);
 
       showToast("Welcome back!", "success");
-      navigate(loginData.has_completed_onboarding ? "/dashboard" : "/onboarding");
 
-      // Full user profile will be loaded on next app init (page refresh)
-      // We skip /auth/me here because the interceptor hard-redirects on 401
+      // Determine redirect path based on role and onboarding
+      let redirectPath = "/dashboard"; // default
+
+      if (!userData.has_completed_onboarding) {
+        redirectPath = "/onboarding";
+      } else {
+        // User has completed onboarding, redirect based on role
+        if (userData.role === "admin" || userData.role === "super_admin") {
+          redirectPath = "/admin";
+        } else {
+          redirectPath = "/dashboard";
+        }
+      }
+
+   
+
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       console.error("Login error:", err);
       const message =
@@ -180,8 +362,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         err.message ||
         "Login failed";
       showToast(message, "error");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -192,7 +372,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const avatar = generateAvatar();
       await registerUser({ email, password, username, avatar });
       showToast("Check your email for the code!", "success");
-      navigate('/verify-otp', { state: { email }, replace: true });
+      navigate("/verify-otp", { state: { email }, replace: true });
     } catch (err: any) {
       showToast(err.response?.data?.message || "Signup failed", "error");
     } finally {
@@ -208,14 +388,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const url = new URL(socialData.url);
       const allowedHosts = [
         window.location.hostname,
-        'accounts.google.com',
-        'www.facebook.com',
+        "accounts.google.com",
+        "www.facebook.com",
       ];
-      if (!allowedHosts.some(host => url.hostname === host || url.hostname.endsWith('.' + host))) {
-        throw new Error('Invalid redirect URL');
+      if (
+        !allowedHosts.some(
+          (host) => url.hostname === host || url.hostname.endsWith("." + host),
+        )
+      ) {
+        throw new Error("Invalid redirect URL");
       }
       window.location.href = socialData.url;
-    } catch {
+    } catch (error) {
       showToast("Social login failed", "error");
       setIsLoading(false);
     }
@@ -226,8 +410,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       await ForgotPassword(email);
       showToast("Check your email", "success");
-      navigate('/verify-otp', { state: { email, type: 'password-reset' }, replace: true });
-    } catch {
+      navigate("/verify-otp", {
+        state: { email, type: "password-reset" },
+        replace: true,
+      });
+    } catch (error) {
       showToast("If email exists, code sent", "info");
     } finally {
       setIsLoading(false);
@@ -241,21 +428,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = () => {
     clearAuth();
     showToast("Logged out", "info");
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
-  // NEW: Complete onboarding flow
   const completeOnboarding = async (onboardingData?: any) => {
     setIsLoading(true);
     try {
-      await loadUser(); // Refresh user to get updated has_completed_onboarding = true
+      // Here you would typically send the onboarding data to your API
+      // await submitOnboardingData(onboardingData);
+
+      // Then refresh user to get updated has_completed_onboarding = true
+      await loadUser();
+
       showToast(
         "Welcome to Affinity Echo!",
-        "Your profile is complete. Let’s get started!",
-        "success"
+        "Your profile is complete. Let's get started!",
+        "success",
       );
-      navigate("/dashboard");
-    } catch {
+
+      // After onboarding, redirect based on role
+      if (user?.role === "admin" || user?.role === "super_admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch (error) {
       showToast("Something went wrong. Please refresh.", "error");
     } finally {
       setIsLoading(false);
@@ -265,8 +462,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     // Check for token (cookies first, localStorage as fallback)
     if (TokenUtils.hasTokens()) {
+      
       loadUser();
     } else {
+      
       setIsLoading(false);
     }
   }, []);
@@ -296,13 +495,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
             <div className="text-center mb-6">
               <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v2m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                <svg
+                  className="w-7 h-7 text-yellow-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10 9v2m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Account Paused</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                Account Paused
+              </h3>
               <p className="text-sm text-gray-600">
-                Your account is currently paused. Would you like to reactivate it and continue?
+                Your account is currently paused. Would you like to reactivate
+                it and continue?
               </p>
             </div>
             <div className="flex gap-3">

@@ -140,6 +140,12 @@ export const GetIdentityRevealRequests = async (filter: {
   return unwrap(res);
 };
 
+export const CancelIdentityReveal = async (revealId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.delete(`${API_URL}/identity-reveal/${revealId}`);
+  return unwrap(res);
+};
+
 export const GetIdentityRevealStatusForConversation = async (
   conversationId: string,
 ) => {

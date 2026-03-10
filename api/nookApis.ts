@@ -249,3 +249,16 @@ export const ToggleNookBookmark = async (nookId: string) => {
   const res = await authFetch.post(`${API_URL}/nooks/${nookId}/bookmark`);
   return unwrap(res);
 };
+
+export const EditNookMessage = async (
+  nookId: string | number,
+  messageId: string | number,
+  content: string
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(
+    `${API_URL}/nooks/${nookId}/messages/${messageId}`,
+    { content }
+  );
+  return unwrap(res);
+};

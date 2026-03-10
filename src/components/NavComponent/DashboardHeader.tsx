@@ -1,16 +1,20 @@
 // src/components/dashboard/DashboardHeader.tsx
 
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
   MessageCircle,
   Zap,
   Target,
-  Briefcase,
   Bell,
   User,
+  Search,
+  X,
 } from "lucide-react";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { GetConnectableUsers } from "../../../api/messaging";
 
 interface DashboardHeaderProps {
   activeTab: string;
@@ -37,6 +41,13 @@ const mobileNavItems = [
   { id: "profile" as const, label: "Profile" as const, icon: User },
 ];
 
+interface SearchUser {
+  id: string;
+  username: string;
+  display_name?: string;
+  avatar?: string;
+}
+
 export function DashboardHeader({
   activeTab,
   unreadCount,
@@ -47,30 +58,146 @@ export function DashboardHeader({
   onTabChange,
   onUnreadCountChange,
 }: DashboardHeaderProps) {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showSearchDrop, setShowSearchDrop] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
   const handleTabChange = (tab: string) => {
     onTabChange(tab);
-    // Close mobile menu on tab selection
     if (showMobileMenu) {
       setShowMobileMenu(false);
     }
   };
 
+  const searchUsers = useCallback(async (q: string) => {
+    if (!q.trim()) {
+      setSearchResults([]);
+      setShowSearchDrop(false);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await GetConnectableUsers({ search: q, limit: 8 });
+      const raw: { id?: string; user_id?: string; username: string; display_name?: string; displayName?: string; avatar?: string; avatar_emoji?: string }[] = res?.users || res?.data || (Array.isArray(res) ? res : []);
+      const users: SearchUser[] = raw.map((u) => ({
+        id: u.id || u.user_id,
+        username: u.username,
+        display_name: u.display_name || u.displayName,
+        avatar: u.avatar || u.avatar_emoji,
+      }));
+      setSearchResults(users);
+      setShowSearchDrop(true);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    clearTimeout(debounceRef.current);
+    if (!val.trim()) {
+      setSearchResults([]);
+      setShowSearchDrop(false);
+      return;
+    }
+    debounceRef.current = setTimeout(() => searchUsers(val), 300);
+  };
+
+  const handleSelectUser = (user: SearchUser) => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchDrop(false);
+    navigate(`/dashboard/profile/${user.id}`);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchDrop(false);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchDrop(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   return (
     <header
-      className="bg-white/95 backdrop-blur-xl border-b border-gray-200/50 px-3 py-3 sm:px-4 md:px-6 md:py-4 shadow-sm sticky top-0 z-40"
-      style={{ position: "sticky" }}
+      className="bg-white/95 backdrop-blur-xl border-b border-gray-200/50 px-3 py-3 sm:px-4 md:px-6 md:py-4 shadow-sm relative z-40 flex-shrink-0"
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2 md:gap-3">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        {/* Logo */}
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           <img
             src="/affinity-echo-logo-hd.png"
             alt="Affinity Echo Logo"
             className="w-10 h-10 md:w-12 md:h-12 rounded-2xl shadow-lg object-contain"
           />
-          <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+          <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent hidden sm:inline">
             Affinity Echo
           </span>
+        </div>
+
+        {/* Search bar — desktop */}
+        <div ref={searchRef} className="relative hidden md:block flex-1 max-w-xs">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => searchResults.length > 0 && setShowSearchDrop(true)}
+              placeholder="Search users..."
+              className="w-full pl-9 pr-8 py-2 text-sm bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-gray-300 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+            />
+            {searchQuery && (
+              <button type="button" onClick={clearSearch} className="absolute right-2 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {showSearchDrop && (
+            <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              {searching ? (
+                <div className="px-4 py-3 text-sm text-gray-500">Searching...</div>
+              ) : searchResults.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-500">No users found</div>
+              ) : (
+                searchResults.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => handleSelectUser(user)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-sm flex-shrink-0">
+                      {user.avatar || user.username?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {user.display_name || user.username}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -119,7 +246,7 @@ export function DashboardHeader({
                 isOpen={showNotificationsDropdown}
                 onClose={() => setShowNotificationsDropdown(false)}
                 unreadCount={unreadCount}
-                onUnreadCountChange={onUnreadCountChange} // Fixed: use the prop instead of undefined function
+                onUnreadCountChange={onUnreadCountChange}
               />
             </div>
 
@@ -167,6 +294,44 @@ export function DashboardHeader({
             onClick={() => setShowMobileMenu(false)}
           />
           <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            {/* Mobile search */}
+            <div className="px-4 pt-3 pb-1" ref={searchRef}>
+              <div className="relative flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search users..."
+                  className="w-full pl-9 pr-8 py-2 text-sm bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-gray-300 outline-none"
+                />
+                {searchQuery && (
+                  <button type="button" onClick={clearSearch} className="absolute right-2 text-gray-400">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {showSearchDrop && searchResults.length > 0 && (
+                <div className="mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => { handleSelectUser(user); setShowMobileMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-sm flex-shrink-0">
+                        {user.avatar || user.username?.[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{user.display_name || user.username}</p>
+                        <p className="text-xs text-gray-500">@{user.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <nav className="px-4 py-2">
               {mobileNavItems.map((tab) => {
                 const Icon = tab.icon;

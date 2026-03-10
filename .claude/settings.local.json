@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run test:run:*)"
+      "Bash(npm run test:run:*)",
+      "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''C:/Users/USER/write_admin_pages.js'', ''console.log\\(42\\)''\\)\")",
+      "Bash(node:*)"
     ]
   }
 }

@@ -17,6 +17,7 @@ import {
   GetNookMessagesByNookId,
   PostNookMessageByNookId,
   toggleMessageReaction, // ← Use the toggle function (POST only)
+  EditNookMessage,
 } from "../../../../api/nookApis";
 
 import { NookMessageSkeleton } from "../../../Helper/SkeletonLoader";
@@ -59,8 +60,9 @@ export function NookDetail({
   const [userReactions, setUserReactions] = useState<Record<string, string[]>>(
     {}
   );
+  const [silentRefreshing, setSilentRefreshing] = useState(false);
   const [localMemberCount] = useState(nook.members_count);
-    const [showOkestraPanel, setShowOkestraPanel] = useState(false);
+  const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   const [localMessageCount, setLocalMessageCount] = useState(
     nook.messages_count
   );
@@ -82,9 +84,13 @@ export function NookDetail({
     fetchMessages();
   }, [nook.id]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (silent = false) => {
     try {
-      setLoading(true);
+      if (silent) {
+        setSilentRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       const response = await GetNookMessagesByNookId(nook.id, {
         sortOrder: "asc",
@@ -111,6 +117,7 @@ export function NookDetail({
       setError(err.response?.data?.error?.message || "Failed to load messages");
     } finally {
       setLoading(false);
+      setSilentRefreshing(false);
     }
   };
 
@@ -128,6 +135,7 @@ export function NookDetail({
         id: optimisticId,
         content,
         user_id: currentUserId,
+        is_mine: true,
         nook_id: nook.id,
         created_at: new Date().toISOString(),
         parent_message_id: replyingTo || null,
@@ -154,11 +162,19 @@ export function NookDetail({
       const response = await PostNookMessageByNookId(nook.id, payload);
 
       const realMessage = response?.message;
+      const wasReply = !!payload.parent_message_id;
       if (realMessage) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticId ? realMessage : m))
-        );
-        setUserReactions((prev) => ({ ...prev, [realMessage.id]: [] }));
+        if (wasReply) {
+          // For replies: silently refresh so nested structure is correct
+          setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+          setLocalMessageCount((prev) => prev - 1); // fetchMessages will restore the real count
+          await fetchMessages(true);
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === optimisticId ? realMessage : m))
+          );
+          setUserReactions((prev) => ({ ...prev, [realMessage.id]: [] }));
+        }
         onNookUpdated?.();
       } else {
         // Rollback on failure
@@ -227,6 +243,22 @@ export function NookDetail({
   const cancelReply = () => {
     setReplyingTo(null);
     setReplyingToContent("");
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    try {
+      await EditNookMessage(nook.id, messageId, newContent);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, content: newContent, updated_at: new Date().toISOString() }
+            : msg
+        )
+      );
+    } catch (err: any) {
+      showToast(err.response?.data?.error?.message || "Failed to edit message", "error");
+      throw err;
+    }
   };
 
   // ── RENDER ───────────────────────────────────────────────────────────────
@@ -303,6 +335,13 @@ export function NookDetail({
         </div>
       )}
 
+      {silentRefreshing && (
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-2">
+          <div className="w-3 h-3 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
+          Refreshing replies...
+        </div>
+      )}
+
       {!loading && messages.length > 0 && (
         <div className="space-y-5 mb-8">
           {messages.map((msg) => (
@@ -314,6 +353,7 @@ export function NookDetail({
               onUserClick={onUserClick}
               onReact={handleReact}
               onReply={handleReply}
+              onEdit={handleEditMessage}
               isReplying={replyingTo === msg.id}
             />
           ))}

@@ -53,9 +53,10 @@ interface NotificationsDropdownProps {
   onClose: () => void;
   unreadCount: number;
   onUnreadCountChange: () => void;
+  viewAllRoute?: string;
 }
 
-export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCountChange }: NotificationsDropdownProps) {
+export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCountChange, viewAllRoute = '/dashboard/notifications' }: NotificationsDropdownProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -537,19 +538,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         return null;
 
       case 'report_status_update':
-        return (
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(notification, 'view_case');
-              }}
-              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
-            >
-              View Case
-            </button>
-          </div>
-        );
+        return null;
 
       case 'mention':
         return (
@@ -620,7 +609,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
   return (
     <div
       ref={dropdownRef}
-      className="fixed md:absolute right-2 md:right-0 left-2 md:left-auto top-16 md:top-full md:mt-2 w-auto md:w-96 max-h-[calc(100vh-5rem)] md:max-h-[600px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+      className="fixed md:absolute right-2 md:right-0 left-2 md:left-auto top-16 md:top-full md:mt-2 w-auto md:w-96 max-h-[calc(100vh-5rem)] md:max-h-[600px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[200]"
     >
       <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
         <div className="flex items-center justify-between mb-3">
@@ -766,7 +755,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-3">
           <button
             onClick={() => {
-              navigate('/dashboard/notifications');
+              navigate(viewAllRoute);
               onClose();
             }}
             className="w-full text-center text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
