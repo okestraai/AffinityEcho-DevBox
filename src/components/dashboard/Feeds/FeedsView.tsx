@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
@@ -125,6 +125,10 @@ export function FeedsView() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [expandedComments, setExpandedComments] = useState<Record<string, FeedComment[]>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
+  const isLoadingRef = useRef(false);
+  const currentPageRef = useRef(1);
+  const hasMoreRef = useRef(true);
+  const loadFeedRef = useRef<(page: number) => Promise<void>>(null!);
 
   useEffect(() => {
     loadFeed(1);
@@ -188,6 +192,8 @@ export function FeedsView() {
   };
 
   const loadFeed = async (page: number = 1) => {
+    if (page > 1 && isLoadingRef.current) return;
+    isLoadingRef.current = true;
     try {
       setLoading(true);
       const response = await GetFeed({ page, limit: 20 });
@@ -198,26 +204,30 @@ export function FeedsView() {
       if (page === 1) {
         setFeedItems(items);
       } else {
-        setFeedItems((prev) => [...prev, ...items]);
+        setFeedItems((prev) => {
+          const existingIds = new Set(prev.map((i) => i.id));
+          const newItems = items.filter((i) => !existingIds.has(i.id));
+          return [...prev, ...newItems];
+        });
       }
 
       const pagination = response?.pagination;
-      setHasMore(pagination?.hasMore ?? items.length >= 20);
+      const more = pagination?.hasMore ?? items.length >= 20;
+      setHasMore(more);
+      hasMoreRef.current = more;
       setCurrentPage(page);
+      currentPageRef.current = page;
     } catch {
       if (page === 1) setFeedItems([]);
     } finally {
+      isLoadingRef.current = false;
       setLoading(false);
     }
   };
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  loadFeedRef.current = loadFeed;
 
-  const handleLoadMore = useCallback(() => {
-    if (!loading && hasMore) {
-      loadFeed(currentPage + 1);
-    }
-  }, [loading, hasMore, currentPage]);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Infinite scroll: trigger load when sentinel enters viewport
   useEffect(() => {
@@ -225,15 +235,15 @@ export function FeedsView() {
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore();
+        if (entries[0].isIntersecting && !isLoadingRef.current && hasMoreRef.current) {
+          loadFeedRef.current(currentPageRef.current + 1);
         }
       },
       { threshold: 0.1 }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [handleLoadMore]);
+  }, []);
 
   const handleCreatePost = async () => {
     if (!postContent.trim() || !user) return;
@@ -264,6 +274,7 @@ export function FeedsView() {
         navigate(`/dashboard/nooks/${item.content_id}`);
         break;
       case "post":
+        navigate(`/dashboard/feeds/post/${item.content_id}`);
         break;
     }
   };
@@ -949,22 +960,33 @@ export function FeedsView() {
                         </div>
                       ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
                         <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
-                          {expandedComments[item.id].map((c) => (
+                          {expandedComments[item.id].map((c) => {
+                            const cName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+                            return (
                             <div key={c.id} className="flex items-start gap-2">
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username))} text-white`}>
-                                {c.author?.avatar || c.user_profile?.avatar || resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username).charAt(0).toUpperCase()}
-                              </div>
+                              <button
+                                onClick={() => c.user_id && handleUserClick(c.user_id)}
+                                className="flex-shrink-0 cursor-pointer"
+                              >
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${getAvatarColor(cName)} text-white`}>
+                                  {c.author?.avatar || c.user_profile?.avatar || cName.charAt(0).toUpperCase()}
+                                </div>
+                              </button>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-semibold text-gray-800">
-                                    {resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username)}
-                                  </span>
+                                  <button
+                                    onClick={() => c.user_id && handleUserClick(c.user_id)}
+                                    className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                                  >
+                                    {cName}
+                                  </button>
                                   <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                                 </div>
                                 <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="px-4 pt-3 pb-1">
@@ -987,7 +1009,8 @@ export function FeedsView() {
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                onClick={() => handleItemClick(item)}
+                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -1144,22 +1167,33 @@ export function FeedsView() {
                       </div>
                     ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
                       <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
-                        {expandedComments[item.id].map((c) => (
+                        {expandedComments[item.id].map((c) => {
+                          const cName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+                          return (
                           <div key={c.id} className="flex items-start gap-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U")} text-white`}>
-                              {c.author?.avatar || c.user_profile?.avatar || (c.author?.display_name || c.user_profile?.display_name || c.user_profile?.username || "U").charAt(0).toUpperCase()}
-                            </div>
+                            <button
+                              onClick={() => c.user_id && handleUserClick(c.user_id)}
+                              className="flex-shrink-0 cursor-pointer"
+                            >
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${getAvatarColor(cName)} text-white`}>
+                                {c.author?.avatar || c.user_profile?.avatar || cName.charAt(0).toUpperCase()}
+                              </div>
+                            </button>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold text-gray-800">
-                                  {resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username)}
-                                </span>
+                                <button
+                                  onClick={() => c.user_id && handleUserClick(c.user_id)}
+                                  className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                                >
+                                  {cName}
+                                </button>
                                 <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                               </div>
                               <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="px-4 pt-3 pb-1">

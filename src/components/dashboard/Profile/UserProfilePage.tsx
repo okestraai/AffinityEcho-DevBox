@@ -372,7 +372,7 @@ export function UserProfilePage() {
                   {followLoading ? <Loader2 className="w-4 h-4 animate-spin" />
                     : isFollowing ? <UserMinus className="w-4 h-4" />
                     : <UserPlus className="w-4 h-4" />}
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? 'Unfollow' : 'Follow'}
                 </button>
                 <button type="button" onClick={handleChat}
                   className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm active:scale-95">
