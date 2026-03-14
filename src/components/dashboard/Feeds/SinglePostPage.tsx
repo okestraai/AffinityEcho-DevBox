@@ -430,12 +430,22 @@ export function SinglePostPage() {
                   const commentName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
                   return (
                     <div key={c.id} className="flex items-start gap-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(commentName)} text-white`}>
-                        {c.author?.avatar || c.user_profile?.avatar || commentName.charAt(0).toUpperCase()}
-                      </div>
+                      <button
+                        onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
+                        className="flex-shrink-0 cursor-pointer"
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${getAvatarColor(commentName)} text-white`}>
+                          {c.author?.avatar || c.user_profile?.avatar || commentName.charAt(0).toUpperCase()}
+                        </div>
+                      </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-gray-800">{commentName}</span>
+                          <button
+                            onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
+                            className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                          >
+                            {commentName}
+                          </button>
                           <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                         </div>
                         <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />

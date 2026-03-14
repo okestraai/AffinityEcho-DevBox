@@ -3,7 +3,17 @@
     "allow": [
       "Bash(npm run test:run:*)",
       "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''C:/Users/USER/write_admin_pages.js'', ''console.log\\(42\\)''\\)\")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(ls \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEchoMobile\\\\app\\\\\\(dashboard\\)\\\\forums\")",
+      "Bash(ls \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEchoMobile\\\\app\\\\\\(dashboard\\)\")",
+      "Bash(ls \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEchoMobile\\\\app\\\\\\(dashboard\\)\\\\messages\")",
+      "Bash(ls \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEchoMobile\\\\app\\\\\\(dashboard\\)\\\\feeds\")",
+      "Bash(ls /e/codebase/Personal/Okestra/AffinityEchoDevFrontend/AffinityEchoMobile/app/\\\\\\(dashboard\\\\\\)/messages/)",
+      "Bash(ls \"E:/codebase/Personal/Okestra/AffinityEchoDevFrontend/AffinityEchoMobile/app/\\(dashboard\\)/forums/\")",
+      "Bash(dir \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\\\\src\" | grep -i api)",
+      "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -60)",
+      "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -30)",
+      "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -20)"
     ]
   }
 }

@@ -292,19 +292,21 @@ export function MentorshipUserProfileModal({
       return;
     }
 
+    let newRequestType: "mentor" | "mentee";
     if (context === "find-mentorship") {
       if (profile.mentoringAs === "mentee" || profile.mentoringAs === "both") {
-        setRequestType("mentor");
+        newRequestType = "mentor";
       } else if (profile.mentoringAs === "mentor") {
-        setRequestType("mentee");
+        newRequestType = "mentee";
       } else {
-        setRequestType("mentor");
+        newRequestType = "mentor";
       }
     } else {
-      setRequestType(profile.mentoringAs === "mentee" ? "mentor" : "mentee");
+      newRequestType = profile.mentoringAs === "mentee" ? "mentor" : "mentee";
     }
 
-    setRequestMessage(getDefaultMessage());
+    setRequestType(newRequestType);
+    setRequestMessage(getDefaultMessage(newRequestType));
     setShowRequestForm(true);
   };
 
@@ -352,11 +354,12 @@ export function MentorshipUserProfileModal({
     }
   };
 
-  const getDefaultMessage = () => {
+  const getDefaultMessage = (type?: "mentor" | "mentee") => {
     if (!profile) return "";
     const displayName = resolveDisplayName(profile.displayName, profile.display_name, profile.username);
+    const currentType = type ?? requestType;
 
-    if (requestType === "mentee") {
+    if (currentType === "mentee") {
       return `Hello ${
         displayName
       },\n\nI would like to request you as my mentor. I'm impressed by your experience in ${

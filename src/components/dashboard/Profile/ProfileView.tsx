@@ -731,7 +731,7 @@ export function ProfileView() {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => navigate('/dashboard/feeds')}
+                      onClick={() => navigate(`/dashboard/feeds/post/${item.content_id || item.id}`)}
                       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                     >
                       <div className="p-3 sm:p-4">
@@ -816,7 +816,7 @@ export function ProfileView() {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => navigate(`/dashboard/forums/topic/${item.id}`)}
+                      onClick={() => navigate(`/dashboard/forums/topic/${item.content_id || item.id}`)}
                       className="bg-white/90 backdrop-blur-xl rounded-2xl p-3 sm:p-4 md:p-6 border border-gray-200/50 hover:shadow-lg hover:border-purple-300 transition-all duration-300 group relative overflow-hidden cursor-pointer"
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
