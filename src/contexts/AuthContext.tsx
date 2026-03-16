@@ -69,6 +69,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  actionLoading: boolean;
   hasCompletedOnboarding: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
@@ -187,6 +188,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [showReactivateModal, setShowReactivateModal] = useState(false);
   const [reactivateResolver, setReactivateResolver] = useState<{
     resolve: (value: boolean) => void;
@@ -256,6 +258,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (email: string, password: string) => {
+    setActionLoading(true);
     try {
 
       const response = await loginUser({ email, password });
@@ -354,6 +357,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
    
 
       navigate(redirectPath, { replace: true });
+
+      // Load full user profile in background (login response may lack fields like company_encrypted)
+      loadUser();
     } catch (err: any) {
       console.error("Login error:", err);
       const message =
@@ -362,11 +368,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         err.message ||
         "Login failed";
       showToast(message, "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const signup = async (email: string, password: string) => {
-    setIsLoading(true);
+    setActionLoading(true);
     try {
       const username = generateUsername();
       const avatar = generateAvatar();
@@ -376,12 +384,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (err: any) {
       showToast(err.response?.data?.message || "Signup failed", "error");
     } finally {
-      setIsLoading(false);
+      setActionLoading(false);
     }
   };
 
   const socialLogin = async (provider: "google" | "facebook") => {
-    setIsLoading(true);
+    setActionLoading(true);
     try {
       const socialData = await SocialMediaLogin(provider);
       // Validate redirect URL to prevent open redirect attacks
@@ -401,12 +409,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       window.location.href = socialData.url;
     } catch (error) {
       showToast("Social login failed", "error");
-      setIsLoading(false);
+      setActionLoading(false);
     }
   };
 
   const forgotPassword = async (email: string) => {
-    setIsLoading(true);
+    setActionLoading(true);
     try {
       await ForgotPassword(email);
       showToast("Check your email", "success");
@@ -417,7 +425,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       showToast("If email exists, code sent", "info");
     } finally {
-      setIsLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -432,7 +440,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const completeOnboarding = async (onboardingData?: any) => {
-    setIsLoading(true);
+    setActionLoading(true);
     try {
       // Here you would typically send the onboarding data to your API
       // await submitOnboardingData(onboardingData);
@@ -455,7 +463,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       showToast("Something went wrong. Please refresh.", "error");
     } finally {
-      setIsLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -476,6 +484,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         user,
         isAuthenticated: !!user,
         isLoading,
+        actionLoading,
         hasCompletedOnboarding: user?.has_completed_onboarding ?? false,
         login,
         signup,

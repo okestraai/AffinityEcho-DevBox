@@ -257,7 +257,7 @@ export function SinglePostPage() {
   const contentTitle = contentIsString ? null : post.content?.title;
   const authorName = resolveDisplayName(post.author?.display_name, post.author?.username) || "Anonymous";
   const authorAvatar = post.author?.avatar || post.author?.avatar_url || null;
-  const authorBio = post.author?.bio || null;
+  const authorId = post.user_id || post.author?.id || null;
   const createdAt = post.created_at;
   const reactionCounts = {
     heard: post.reaction_counts?.heard ?? 0,
@@ -295,13 +295,17 @@ export function SinglePostPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-gray-900">{authorName}</span>
+                <button
+                  onClick={() => authorId && navigate(`/dashboard/profile/${authorId}`)}
+                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer"
+                >
+                  {authorName}
+                </button>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
                   <FileText className="w-3.5 h-3.5" />
                   <span>Post</span>
                 </div>
               </div>
-              {authorBio && <p className="text-sm text-gray-600">{authorBio}</p>}
               {createdAt && (
                 <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                   <Clock className="w-3.5 h-3.5" />

@@ -20,7 +20,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 
 export function LoginScreen() {
-  const { login, signup, socialLogin, forgotPassword, isLoading } = useAuth();
+  const { login, signup, socialLogin, forgotPassword, actionLoading } = useAuth();
 
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -269,10 +269,10 @@ export function LoginScreen() {
 
                       <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={actionLoading}
                         className="w-full py-3.5 sm:py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 min-h-[48px]"
                       >
-                        {isLoading ? (
+                        {actionLoading ? (
                           <>
                             <Loader2 className="w-5 h-5 animate-spin" />
                             Sending...
@@ -397,10 +397,10 @@ export function LoginScreen() {
 
                       <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={actionLoading}
                         className="w-full py-3.5 sm:py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[48px]"
                       >
-                        {isLoading ? (
+                        {actionLoading ? (
                           <>
                             <Loader2 className="w-5 h-5 animate-spin" />
                             Please wait...
@@ -429,7 +429,7 @@ export function LoginScreen() {
                         <button
                           type="button"
                           onClick={() => handleSocialLogin("google")}
-                          disabled={isLoading}
+                          disabled={actionLoading}
                           className="w-full flex items-center justify-center gap-3 px-4 py-3.5 sm:py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 min-h-[48px]"
                         >
                           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -459,7 +459,7 @@ export function LoginScreen() {
                         <button
                           type="button"
                           onClick={() => handleSocialLogin("facebook")}
-                          disabled={isLoading}
+                          disabled={actionLoading}
                           className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50"
                         >
                           <svg

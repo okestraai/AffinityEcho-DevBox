@@ -235,6 +235,36 @@ export function MentorshipRequestModal({
       const basicProfile = response?.basicProfile || {};
       const status = response?.status || {};
 
+      // Decrypt encrypted fields from basicProfile
+      if (basicProfile.company && typeof basicProfile.company === "string" && !decryptedCompanyName) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.company });
+          if (result?.decryptedData) setDecryptedCompanyName(result.decryptedData);
+        } catch {}
+      }
+      if (basicProfile.careerLevel && typeof basicProfile.careerLevel === "string" && !decryptedCareerLevel) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.careerLevel });
+          if (result?.decryptedData) setDecryptedCareerLevel(result.decryptedData);
+        } catch {}
+      }
+      if (basicProfile.affinityTags && typeof basicProfile.affinityTags === "string" && decryptedAffinityTags.length === 0) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.affinityTags });
+          if (result?.decryptedData) {
+            let tags: string[] = [];
+            if (Array.isArray(result.decryptedData)) {
+              tags = result.decryptedData;
+            } else {
+              try { tags = JSON.parse(result.decryptedData); } catch {
+                tags = result.decryptedData.split(",").map((t: string) => t.trim()).filter(Boolean);
+              }
+            }
+            setDecryptedAffinityTags(Array.isArray(tags) ? tags : []);
+          }
+        } catch {}
+      }
+
       setFormData((prev) => ({
         ...prev,
         topic: menteeProfile.topic || "",
@@ -314,11 +344,10 @@ export function MentorshipRequestModal({
         jobTitle: formData.jobTitle,
         yearsExperience: formData.yearsExperience,
         location: formData.location,
-        careerLevel: currentUser?.career_level_encrypted,
-        company: currentUser?.company_encrypted,
+        careerLevel: decryptedCareerLevel || formData.careerLevel,
+        company: decryptedCompanyName || formData.company,
 
-        // Send encrypted string for affinityTags, not array
-        affinityTags: currentUser?.affinity_tags_encrypted || "",
+        affinityTags: decryptedAffinityTags.length > 0 ? decryptedAffinityTags : formData.affinityTags,
       };
 
       if (hasProfile || mode === "edit") {
