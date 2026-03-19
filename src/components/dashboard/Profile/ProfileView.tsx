@@ -86,7 +86,7 @@ export function ProfileView() {
 
   // API Data States
   const [stats, setStats] = useState({
-    topicsCreated: 0,
+    postsCreated: 0,
     commentsPosted: 0,
     helpfulReactions: 0,
     reputationScore: 0,
@@ -196,7 +196,7 @@ export function ProfileView() {
       if (statsResult.status === "fulfilled") {
         const s = statsResult.value;
         setStats({
-          topicsCreated: s?.topicsCreated || 0,
+          postsCreated: s?.postsCreated || 0,
           commentsPosted: s?.commentsPosted || 0,
           helpfulReactions: s?.helpfulReactions || 0,
           reputationScore: s?.reputationScore || 0,
@@ -1075,7 +1075,7 @@ export function ProfileView() {
                   ) : (
                     <>
                       {[
-                        { value: stats.topicsCreated, label: 'Posts', color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/forums' },
+                        { value: stats.postsCreated, label: 'Posts', color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/forums' },
                         { value: stats.commentsPosted, label: 'Comments', color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums' },
                         { value: stats.reputationScore, label: 'Reputation', color: 'text-amber-600', bg: 'bg-amber-50', nav: '' },
                         { value: stats.helpfulReactions, label: 'Helpful', color: 'text-rose-600', bg: 'bg-rose-50', nav: '/dashboard/forums' },
@@ -1181,7 +1181,7 @@ export function ProfileView() {
 
                 <div className="space-y-2">
                   {[
-                    { label: 'Forum Posts', value: stats.topicsCreated, icon: MessageCircle, color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums' },
+                    { label: 'Forum Posts', value: stats.postsCreated, icon: MessageCircle, color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums' },
                     { label: 'Comments Posted', value: stats.commentsPosted, icon: MessageSquare, color: 'text-green-600', bg: 'bg-green-50', nav: '/dashboard/forums' },
                     { label: 'Helpful Reactions', value: stats.helpfulReactions, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', nav: '/dashboard/forums' },
                     { label: 'Reputation Score', value: stats.reputationScore, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', nav: '' },
@@ -1272,36 +1272,7 @@ export function ProfileView() {
                 </div>
               </div>
 
-              {/* Demographics */}
-              <div className="bg-white rounded-2xl p-4 md:p-5 border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base flex-wrap">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
-                  </div>
-                  Demographics
-                  <span className="text-xs text-gray-400 font-normal bg-gray-100 px-2 py-0.5 rounded-full">Private</span>
-                </h3>
-
-                <div className="space-y-3">
-                  {[
-                    { label: 'Race/Ethnicity', value: user.demographics?.race },
-                    { label: 'Gender', value: user.demographics?.gender },
-                    { label: 'Career Level', value: user.demographics?.careerLevel },
-                  ].filter(d => d.value).map((d) => (
-                    <div key={d.label} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                      <span className="text-sm text-gray-500">{d.label}</span>
-                      <span className="text-sm font-semibold text-gray-900">{d.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>This information is never shared with other users</span>
-                  </div>
-                </div>
-              </div>
+              {/* Demographics section removed */}
 
               {/* Safety & Support */}
               <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-4 md:p-5 border border-red-200 shadow-sm">

@@ -448,11 +448,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Then refresh user to get updated has_completed_onboarding = true
       await loadUser();
 
-      showToast(
-        "Welcome to Affinity Echo!",
-        "Your profile is complete. Let's get started!",
-        "success",
-      );
+      showToast("Welcome to Affinity Echo! Your profile is complete. Let's get started!", "success");
 
       // After onboarding, redirect based on role
       if (user?.role === "admin" || user?.role === "super_admin") {
