@@ -135,8 +135,21 @@ export function TopicDetailPage() {
   };
 
 
+  // Recursively flatten pre-nested comments into a flat array
+  const flattenComments = (comments: any[]): any[] => {
+    const result: any[] = [];
+    for (const c of comments) {
+      result.push(c);
+      if (c.replies && c.replies.length > 0) {
+        result.push(...flattenComments(c.replies));
+      }
+    }
+    return result;
+  };
+
   // Build comment tree from flat array if needed
-  const buildCommentTree = (flatComments: any[]) => {
+  const buildCommentTree = (comments: any[]) => {
+    const flatComments = flattenComments(comments);
     const commentMap = new Map();
     const rootComments: any[] = [];
 
@@ -144,11 +157,11 @@ export function TopicDetailPage() {
     flatComments.forEach((comment) => {
       commentMap.set(comment.id, {
         ...comment,
-        replies: comment.replies || [], // Use existing replies if API provides them
+        replies: [],
       });
     });
 
-    // Second pass: build tree if comments are flat
+    // Second pass: build tree
     flatComments.forEach((comment) => {
       const node = commentMap.get(comment.id);
 

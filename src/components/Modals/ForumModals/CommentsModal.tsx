@@ -32,6 +32,17 @@ interface Props {
   onUserClick?: (userId: string) => void;
 }
 
+function flattenComments(comments: any[]): any[] {
+  const result: any[] = [];
+  for (const c of comments) {
+    result.push(c);
+    if (c.replies && c.replies.length > 0) {
+      result.push(...flattenComments(c.replies));
+    }
+  }
+  return result;
+}
+
 export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
@@ -53,7 +64,8 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       try {
         setLoading(true);
         const result = await GetAllCommentsForATopic(topic.id);
-        setComments(Array.isArray(result) ? result : (result?.comments || []));
+        const raw = Array.isArray(result) ? result : (result?.comments || []);
+        setComments(flattenComments(raw));
       } catch (error) {
         console.error("Error fetching comments:", error);
       } finally {
@@ -81,7 +93,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
       setNewComment("");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
@@ -107,7 +119,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
       setReplyText("");
       setReplyingTo(null);
     } catch (error: any) {
@@ -127,7 +139,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
     } catch (error) {
       console.error("Error reacting to comment:", error);
     }
@@ -141,7 +153,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
     } catch (error: any) {
       console.error("Error deleting comment:", error);
       showToast(error.response?.data?.message || "Failed to delete comment", "error");

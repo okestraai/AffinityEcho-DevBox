@@ -49,6 +49,17 @@ interface PostComment {
   };
 }
 
+function flattenComments(comments: PostComment[]): PostComment[] {
+  const result: PostComment[] = [];
+  for (const c of comments) {
+    result.push(c);
+    if (c.replies && c.replies.length > 0) {
+      result.push(...flattenComments(c.replies));
+    }
+  }
+  return result;
+}
+
 function buildCommentTree(flatComments: PostComment[]): PostComment[] {
   const map = new Map<string, PostComment & { replies: PostComment[] }>();
   const roots: PostComment[] = [];
@@ -112,7 +123,8 @@ export function SinglePostPage() {
       setLoadingComments(true);
       const response = await GetComments("post", postId);
       const raw = response?.comments ?? (Array.isArray(response) ? response : []);
-      const flat = Array.isArray(raw) ? raw : [];
+      const arr = Array.isArray(raw) ? raw : [];
+      const flat = flattenComments(arr);
       setComments(buildCommentTree(flat));
     } catch {
       setComments([]);

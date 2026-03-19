@@ -100,17 +100,23 @@ export function NookDetail({
       const messagesData = response?.messages || [];
       setMessages(messagesData);
 
-      // Build current user's reactions map
+      // Build current user's reactions map (including nested replies)
       const reactionsMap: Record<string, string[]> = {};
-      messagesData.forEach((msg: any) => {
-        if (msg.user_reactions) {
-          reactionsMap[msg.id] = msg.user_reactions
-            .filter((r: any) => r.user_id === currentUserId)
-            .map((r: any) => r.reaction_type);
-        } else {
-          reactionsMap[msg.id] = [];
-        }
-      });
+      const collectReactions = (msgs: any[]) => {
+        msgs.forEach((msg: any) => {
+          if (msg.user_reactions) {
+            reactionsMap[msg.id] = msg.user_reactions
+              .filter((r: any) => r.user_id === currentUserId)
+              .map((r: any) => r.reaction_type);
+          } else {
+            reactionsMap[msg.id] = [];
+          }
+          if (msg.replies && msg.replies.length > 0) {
+            collectReactions(msg.replies);
+          }
+        });
+      };
+      collectReactions(messagesData);
       setUserReactions(reactionsMap);
     } catch (err: any) {
       console.error("Error fetching messages:", err);
