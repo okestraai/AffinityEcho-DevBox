@@ -70,15 +70,8 @@ export const getTimeAgo = (date: string | Date): string => {
     if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
     if (mins < 10080) return `${Math.floor(mins / 1440)}d ago`;
     if (mins < 43200) return `${Math.floor(mins / 10080)}w ago`;
-
-    return dateObj.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year:
-        dateObj.getFullYear() !== new Date().getFullYear()
-          ? "numeric"
-          : undefined,
-    });
+    if (mins < 525600) return `${Math.floor(mins / 43200)}mo ago`;
+    return `${Math.floor(mins / 525600)}y ago`;
   } catch (error) {
     console.error("Error getting time ago:", error);
     return "Invalid date";

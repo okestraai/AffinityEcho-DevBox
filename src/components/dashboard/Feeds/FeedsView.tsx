@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveDisplayName, resolveAuthorName } from "../../../utils/nameUtils";
 import {
   MessageSquare,
   Heart,
@@ -9,8 +9,7 @@ import {
   Users as UsersIcon,
   FileText,
   X,
-  ThumbsUp,
-  Star,
+  Lightbulb,
   MoreHorizontal,
   Globe,
   Send,
@@ -21,6 +20,7 @@ import {
   Building,
   Loader2,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetFeed,
@@ -227,22 +227,34 @@ export function FeedsView() {
 
   loadFeedRef.current = loadFeed;
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Infinite scroll: trigger load when sentinel enters viewport
-  useEffect(() => {
-    const el = sentinelRef.current;
+  // Infinite scroll: callback ref so the observer attaches whenever the sentinel mounts
+  const sentinelRef = useCallback((el: HTMLDivElement | null) => {
+    // Disconnect any previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
     if (!el) return;
+    // Find the nearest scrollable ancestor (the <main overflow-y-auto> wrapper)
+    const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
+      if (!node || node === document.body) return null;
+      const ov = getComputedStyle(node).overflowY;
+      if (ov === "auto" || ov === "scroll") return node;
+      return getScrollParent(node.parentElement);
+    };
+    const root = getScrollParent(el.parentElement);
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !isLoadingRef.current && hasMoreRef.current) {
           loadFeedRef.current(currentPageRef.current + 1);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0, rootMargin: "200px 0px", root }
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
 
   const handleCreatePost = async () => {
@@ -522,7 +534,9 @@ export function FeedsView() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   const getAvatarColor = (displayName: string) => {
@@ -861,8 +875,8 @@ export function FeedsView() {
                           onClick={(e) => { e.stopPropagation(); handleUserClick(item.user_id); }}
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                         >
-                          {renderAvatar(item.author.avatar, resolveDisplayName(item.author.display_name, item.author.username), "w-6 h-6", "text-sm")}
-                          <span>{resolveDisplayName(item.author.display_name, item.author.username)}</span>
+                          {renderAvatar(item.author.avatar, resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username), "w-6 h-6", "text-sm")}
+                          <span>{resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}</span>
                         </button>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -905,7 +919,7 @@ export function FeedsView() {
                           item.user_reactions.validated ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-600"
                         }`}
                       >
-                        <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                        <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.validated ? "animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.validated)}</span>
                       </button>
                       <button
@@ -914,7 +928,7 @@ export function FeedsView() {
                           item.user_reactions.inspired ? "text-yellow-500 font-semibold" : "text-gray-600 hover:text-yellow-500"
                         }`}
                       >
-                        <Star className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                        <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.inspired)}</span>
                       </button>
                       <button
@@ -961,7 +975,7 @@ export function FeedsView() {
                       ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
                         <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
                           {expandedComments[item.id].map((c) => {
-                            const cName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+                            const cName = resolveAuthorName(user, c.user_id, c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
                             return (
                             <div key={c.id} className="flex items-start gap-2">
                               <button
@@ -1031,14 +1045,14 @@ export function FeedsView() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {item.is_anonymous ? (
                             <span className="font-semibold text-gray-900">
-                              {item.author.display_name}
+                              {resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}
                             </span>
                           ) : (
                             <button
                               onClick={() => handleUserClick(item.user_id)}
                               className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
                             >
-                              {item.author.display_name}
+                              {resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}
                             </button>
                           )}
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
@@ -1072,11 +1086,11 @@ export function FeedsView() {
                         <span>{formatNumber(item.reaction_counts.heard)}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                        <ClapIcon className="w-3.5 h-3.5 text-blue-600" />
                         <span>{formatNumber(item.reaction_counts.validated)}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-yellow-500" />
+                        <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
                         <span>{formatNumber(item.reaction_counts.inspired)}</span>
                       </span>
                     </div>
@@ -1117,7 +1131,7 @@ export function FeedsView() {
                       }`}
                       title="Validated"
                     >
-                      <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                      <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.validated ? "animate-reaction-pop" : ""}`} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleReaction(item.id, "inspired"); }}
@@ -1126,7 +1140,7 @@ export function FeedsView() {
                       }`}
                       title="Inspired"
                     >
-                      <Star className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                      <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                     </button>
                     <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
                     <button
@@ -1168,7 +1182,7 @@ export function FeedsView() {
                     ) : expandedComments[item.id] && expandedComments[item.id].length > 0 ? (
                       <div className="px-4 pt-3 pb-1 space-y-3 max-h-48 md:max-h-64 overflow-y-auto">
                         {expandedComments[item.id].map((c) => {
-                          const cName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+                          const cName = resolveAuthorName(user, c.user_id, c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
                           return (
                           <div key={c.id} className="flex items-start gap-2">
                             <button

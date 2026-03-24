@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveDisplayName, resolveAuthorName } from "../../../utils/nameUtils";
 import {
   ArrowLeft,
   Heart,
-  ThumbsUp,
-  Star,
+  Lightbulb,
   MessageSquare,
   Share2,
   Bookmark,
@@ -17,6 +16,7 @@ import {
   Reply,
   X,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetPostById,
@@ -226,7 +226,9 @@ export function SinglePostPage() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   const formatNumber = (num: number): string => {
@@ -241,7 +243,7 @@ export function SinglePostPage() {
   };
 
   const renderCommentNode = (c: PostComment, depth: number): React.ReactNode => {
-    const commentName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+    const commentName = resolveAuthorName(user, c.user_id, c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
     const replies = c.replies || [];
     const hasReplies = replies.length > 0;
     const isExpanded = expandedComments.has(c.id);
@@ -375,7 +377,7 @@ export function SinglePostPage() {
   const contentIsString = typeof post.content === "string";
   const contentText = contentIsString ? post.content : (post.content?.text ?? "");
   const contentTitle = contentIsString ? null : post.content?.title;
-  const authorName = resolveDisplayName(post.author?.display_name, post.author?.username) || "Anonymous";
+  const authorName = resolveAuthorName(user, post.user_id, post.author?.display_name, post.author?.username) || "Anonymous";
   const authorAvatar = post.author?.avatar || post.author?.avatar_url || null;
   const authorId = post.user_id || post.author?.id || null;
   const createdAt = post.created_at;
@@ -464,11 +466,11 @@ export function SinglePostPage() {
                 <span>{formatNumber(reactionCounts.heard)}</span>
               </span>
               <span className="flex items-center gap-1">
-                <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                <ClapIcon className="w-3.5 h-3.5 text-blue-600" />
                 <span>{formatNumber(reactionCounts.validated)}</span>
               </span>
               <span className="flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-yellow-500" />
+                <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
                 <span>{formatNumber(reactionCounts.inspired)}</span>
               </span>
             </div>
@@ -500,7 +502,7 @@ export function SinglePostPage() {
               }`}
               title="Validated"
             >
-              <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${userReactions.validated ? "fill-blue-600" : ""}`} />
+              <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${userReactions.validated ? "animate-reaction-pop" : ""}`} />
             </button>
             <button
               onClick={() => handleReaction("inspired")}
@@ -509,7 +511,7 @@ export function SinglePostPage() {
               }`}
               title="Inspired"
             >
-              <Star className={`w-5 h-5 transition-transform duration-200 ${userReactions.inspired ? "fill-yellow-500" : ""}`} />
+              <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${userReactions.inspired ? "fill-yellow-500" : ""}`} />
             </button>
             <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
             <button

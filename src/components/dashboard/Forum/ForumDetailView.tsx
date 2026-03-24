@@ -12,9 +12,9 @@ import {
   Info,
   Plus,
   Eye,
-  ThumbsUp,
   Clock,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import {
   GetForumById,
   UserJoinForum,
@@ -30,7 +30,7 @@ import {
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { ForumCardSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 
 interface Props {
   forum: any;
@@ -478,7 +478,7 @@ export function ForumDetailView({
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs">
                           {topic.author.avatar}
                         </div>
-                        <span>{resolveDisplayName(topic.author.display_name, topic.author.username)}</span>
+                        <span>{resolveAuthorName(currentUser, topic.user_id, topic.author.display_name, topic.author.username)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -495,7 +495,7 @@ export function ForumDetailView({
                       <span className="text-gray-600">{topic.views}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <ThumbsUp className="w-4 h-4 text-gray-400" />
+                      <ClapIcon className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-600">
                         {topic.reactions.validated}
                       </span>

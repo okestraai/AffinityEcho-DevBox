@@ -6,7 +6,7 @@ import {
   MessageCircle,
   Heart,
   Eye,
-  ThumbsUp,
+  Lightbulb,
   Bookmark,
   Share2,
   MoreVertical,
@@ -20,9 +20,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Star,
   Sparkles,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetForumTopicById,
@@ -39,7 +39,7 @@ import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
 import { OkestraPanel } from "../OkestraPanel";
 import { ViewersModal } from "../../Modals/ViewersModal";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 
@@ -518,7 +518,7 @@ export function TopicDetailPage() {
                   onMouseLeave={handleUserHoverLeave}
                   className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                 >
-                  {resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username)}{" "}
+                  {resolveAuthorName(currentUser, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}{" "}
                   {comment.user_profile?.avatar || "👤"}
                 </button>
                 {isAuthor && (
@@ -640,7 +640,7 @@ export function TopicDetailPage() {
                     onMouseLeave={handleUserHoverLeave}
                     className="font-bold text-gray-900 hover:text-blue-600 transition-colors block"
                   >
-                    {resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username)}
+                    {resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username)}
                   </button>
 
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -721,7 +721,7 @@ export function TopicDetailPage() {
                       : "text-gray-500 hover:text-blue-600"
                   }`}
                 >
-                  <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                  <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_validated_count || topic.reactions?.validated || 0}</span>
                 </button>
                 <button
@@ -732,7 +732,7 @@ export function TopicDetailPage() {
                       : "text-gray-500 hover:text-yellow-500"
                   }`}
                 >
-                  <Star className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                  <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_inspired_count || topic.reactions?.inspired || 0}</span>
                 </button>
 

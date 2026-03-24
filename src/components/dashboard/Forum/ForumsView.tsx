@@ -368,10 +368,14 @@ export function ForumsView() {
     if (!date) return "N/A";
     const dateObj = typeof date === "string" ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return "N/A";
-    const mins = Math.floor((Date.now() - dateObj.getTime()) / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
-    return `${Math.floor(mins / 1440)}d ago`;
+    const seconds = Math.floor((Date.now() - dateObj.getTime()) / 1000);
+    if (seconds < 60) return "Just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   const handleCommentClick = (topicId: string, e: React.MouseEvent) => {

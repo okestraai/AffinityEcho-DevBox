@@ -13,7 +13,7 @@ import {
   TrendingUp,
   LogOut,
   ChevronRight,
-  Star,
+  Lightbulb,
   Zap,
   Edit3,
   Key,
@@ -26,12 +26,12 @@ import {
   Clock,
   Flame,
   Eye,
-  ThumbsUp,
   Globe,
   Building,
   UserPlus,
   UserMinus
 } from 'lucide-react';
+import { ClapIcon } from '../../shared/ClapIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -53,7 +53,7 @@ import { GetFollowers, GetFollowing, UnfollowUser } from '../../../../api/mentor
 import { showToast } from '../../../Helper/ShowToast';
 import { ProfileSkeleton, ProfilePageSkeleton, FollowListSkeleton, SettingsSkeleton } from '../../../Helper/SkeletonLoader';
 import { DecryptData } from '../../../../api/EncrytionApis';
-import { resolveDisplayName } from '../../../utils/nameUtils';
+import { resolveAuthorName } from '../../../utils/nameUtils';
 
 interface PrivacySettings {
   profileVisibility: 'public' | 'connections' | 'private';
@@ -421,12 +421,14 @@ export function ProfileView() {
   // Helper: format time ago
   const getTimeAgo = (date: string | undefined) => {
     if (!date) return '';
-    const ms = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(ms / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   // Helper: calculate time remaining from expires_at
@@ -692,8 +694,32 @@ export function ProfileView() {
 
           {/* Content List */}
           {contentLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 animate-pulse">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-24 bg-gray-200 rounded-full" />
+                        <div className="h-4 w-14 bg-gray-100 rounded-full" />
+                      </div>
+                      <div className="h-3 w-20 bg-gray-100 rounded-full" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="h-4 bg-gray-200 rounded w-full" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-100 rounded w-1/2" />
+                  </div>
+                  <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+                    <div className="h-3 w-12 bg-gray-100 rounded" />
+                    <div className="h-3 w-12 bg-gray-100 rounded" />
+                    <div className="h-3 w-12 bg-gray-100 rounded" />
+                    <div className="ml-auto h-3 w-16 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-12 text-center">
@@ -724,7 +750,7 @@ export function ProfileView() {
               {filteredItems.map((item) => {
                 // === POST CARD (matches FeedsView post card) ===
                 if (item._type === 'post') {
-                  const authorName = item.author?.display_name || item.author?.username || 'Anonymous';
+                  const authorName = resolveAuthorName(user, item.user_id, item.author?.display_name, item.author?.username);
                   const postText = item.content?.text || item.content || '';
                   const displayText = typeof postText === 'string' ? postText : '';
 
@@ -767,11 +793,11 @@ export function ProfileView() {
                               <span>{item.reaction_counts?.heard || item.likes_count || 0}</span>
                             </span>
                             <span className="flex items-center gap-1">
-                              <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                              <ClapIcon className="w-3.5 h-3.5 text-blue-600" />
                               <span>{item.reaction_counts?.validated || 0}</span>
                             </span>
                             <span className="flex items-center gap-1">
-                              <Star className="w-3.5 h-3.5 text-yellow-500" />
+                              <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
                               <span>{item.reaction_counts?.inspired || 0}</span>
                             </span>
                           </div>
@@ -787,10 +813,10 @@ export function ProfileView() {
                             <Heart className="w-5 h-5" />
                           </button>
                           <button className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Validated">
-                            <ThumbsUp className="w-5 h-5" />
+                            <ClapIcon className="w-5 h-5" />
                           </button>
                           <button className="p-2.5 sm:p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Inspired">
-                            <Star className="w-5 h-5" />
+                            <Lightbulb className="w-5 h-5" />
                           </button>
                           <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
                           <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Comment">
@@ -811,7 +837,7 @@ export function ProfileView() {
                 // === TOPIC CARD (matches OverviewMode topic card) ===
                 if (item._type === 'topic') {
                   const avatarEmoji = item.user_profile?.avatar || item.author?.avatar || '👤';
-                  const username = item.user_profile?.username || item.author?.username || 'Anonymous';
+                  const username = resolveAuthorName(user, item.user_id, item.author?.display_name, item.user_profile?.display_name, item.author?.username, item.user_profile?.username);
 
                   return (
                     <div
@@ -878,11 +904,11 @@ export function ProfileView() {
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.heard || item.reactions?.heard || 0}</span>
                             </button>
                             <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-blue-600 min-h-[44px]">
-                              <ThumbsUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <ClapIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.validated || item.reactions?.validated || 0}</span>
                             </button>
                             <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-yellow-500 min-h-[44px]">
-                              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.inspired || item.reactions?.inspired || 0}</span>
                             </button>
                             <button className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-purple-600 hover:bg-purple-50 min-h-[44px]">
@@ -924,7 +950,7 @@ export function ProfileView() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="font-semibold text-gray-900 text-sm">{item.author?.username || 'You'}</span>
+                              <span className="font-semibold text-gray-900 text-sm">{resolveAuthorName(user, item.user_id, item.author?.display_name, item.author?.username)}</span>
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-600">
                                 <MessageCircle className="w-3 h-3" />
                                 <span>Comment</span>

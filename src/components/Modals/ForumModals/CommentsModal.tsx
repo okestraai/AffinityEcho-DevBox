@@ -1,11 +1,10 @@
 // src/components/Modals/CommentsModal.tsx
 import React, { useState, useEffect } from "react";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 import {
   X,
   MessageCircle,
   Heart,
-  ThumbsUp,
   Reply,
   Send,
   Trash2,
@@ -206,7 +205,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                   onClick={() => handleUserClick(comment.user_id)}
                   className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                 >
-                  {resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username)}
+                  {resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -286,7 +285,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                         value={replyText}
                         onChange={setReplyText}
                         placeholder={`Reply to ${
-                          resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username) || "comment"
+                          resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username) || "comment"
                         }... Use @ to mention`}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm"

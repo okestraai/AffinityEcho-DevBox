@@ -1,6 +1,5 @@
 import {
   Heart,
-  ThumbsUp,
   Star,
   ChevronDown,
   ChevronUp,
@@ -9,8 +8,10 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { useState } from "react";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
+import { useAuth } from "../../../hooks/useAuth";
 import { MentionText } from "../../shared/MentionText";
 
 interface NookMessageProps {
@@ -57,6 +58,7 @@ export function NookMessage({
   onEdit,
   isReplying = false,
 }: NookMessageProps) {
+  const { user: authUser } = useAuth();
   const [showReplies, setShowReplies] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -68,7 +70,7 @@ export function NookMessage({
 
   // Safe user data with fallbacks
   const user = message.user ?? null;
-  const displayName = resolveDisplayName(user?.display_name, user?.username);
+  const displayName = resolveAuthorName(authUser, message.user_id, user?.display_name, user?.username);
   const avatar = user?.avatar ?? "A"; // fallback character
   const isAnonymous = displayName === "Anonymous" || !user;
   const avatarIsEmoji = isEmoji(avatar);
@@ -92,11 +94,17 @@ export function NookMessage({
     const diffMs = now.getTime() - messageDate.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
+    if (diffMins < 1) return "just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffWeeks < 4) return `${diffWeeks}w ago`;
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) return `${diffMonths}mo ago`;
+    return `${Math.floor(diffDays / 365)}y ago`;
   };
 
   const hasReacted = (reactionType: string): boolean => {
@@ -256,7 +264,7 @@ export function NookMessage({
                 }`}
                 title="Validated"
               >
-                <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${hasReacted("validated") ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${hasReacted("validated") ? "animate-reaction-pop" : ""}`} />
                 {getReactionCount("validated") > 0 && (
                   <span>{getReactionCount("validated")}</span>
                 )}

@@ -65,9 +65,11 @@ export function DashboardHeader({
   const [showSearchDrop, setShowSearchDrop] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const inactivityRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleTabChange = (tab: string) => {
     onTabChange(tab);
+    clearSearch();
     if (showMobileMenu) {
       setShowMobileMenu(false);
     }
@@ -102,12 +104,15 @@ export function DashboardHeader({
     const val = e.target.value;
     setSearchQuery(val);
     clearTimeout(debounceRef.current);
+    clearTimeout(inactivityRef.current);
     if (!val.trim()) {
       setSearchResults([]);
       setShowSearchDrop(false);
       return;
     }
     debounceRef.current = setTimeout(() => searchUsers(val), 300);
+    // Auto-clear after 1 minute of inactivity
+    inactivityRef.current = setTimeout(() => clearSearch(), 60000);
   };
 
   const handleSelectUser = (user: SearchUser) => {
@@ -160,6 +165,11 @@ export function DashboardHeader({
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={() => searchResults.length > 0 && setShowSearchDrop(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchResults.length > 0) {
+                  handleSelectUser(searchResults[0]);
+                }
+              }}
               placeholder="Search users..."
               className="w-full pl-9 pr-8 py-2 text-sm bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-gray-300 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
             />
@@ -302,6 +312,12 @@ export function DashboardHeader({
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchResults.length > 0) {
+                      handleSelectUser(searchResults[0]);
+                      setShowMobileMenu(false);
+                    }
+                  }}
                   placeholder="Search users..."
                   className="w-full pl-9 pr-8 py-2 text-sm bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-gray-300 outline-none"
                 />

@@ -39,6 +39,8 @@ interface NookDetailProps {
   };
   userAvatar: string;
   currentUserId: string;
+  currentUsername?: string;
+  currentDisplayName?: string;
   onBack: () => void;
   onUserClick: (userId: string) => void;
   onNookUpdated?: () => void;
@@ -48,6 +50,8 @@ export function NookDetail({
   nook,
   userAvatar,
   currentUserId,
+  currentUsername,
+  currentDisplayName,
   onBack,
   onUserClick,
   onNookUpdated,
@@ -135,59 +139,22 @@ export function NookDetail({
       };
 
       if (replyingTo) payload.parent_message_id = replyingTo;
-
-      const optimisticId = `temp-${Date.now()}`;
-      const optimisticMsg = {
-        id: optimisticId,
-        content,
-        user_id: currentUserId,
-        is_mine: true,
-        nook_id: nook.id,
-        created_at: new Date().toISOString(),
-        parent_message_id: replyingTo || null,
-        heard_count: 0,
-        validated_count: 0,
-        helpful_count: 0,
-        user: { avatar: userAvatar || "?", username: "Anonymous" },
-        replies: [],
-        user_reactions: [],
-      };
-
-      setMessages((prev) => [...prev, optimisticMsg]);
-      setLocalMessageCount((prev) => prev + 1);
       cancelReply();
 
-      // Auto-scroll
+      await PostNookMessageByNookId(nook.id, payload);
+
+      // Silent refresh to get the properly decrypted message from the API
+      await fetchMessages(true);
+      setLocalMessageCount((prev) => prev + 1);
+      onNookUpdated?.();
+
+      // Auto-scroll to bottom after new message loads
       setTimeout(() => {
         document.querySelector(".space-y-4.mb-6")?.scrollTo({
           top: document.querySelector(".space-y-4.mb-6")!.scrollHeight,
           behavior: "smooth",
         });
       }, 100);
-
-      const response = await PostNookMessageByNookId(nook.id, payload);
-
-      const realMessage = response?.message;
-      const wasReply = !!payload.parent_message_id;
-      if (realMessage) {
-        if (wasReply) {
-          // For replies: silently refresh so nested structure is correct
-          setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-          setLocalMessageCount((prev) => prev - 1); // fetchMessages will restore the real count
-          await fetchMessages(true);
-        } else {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === optimisticId ? realMessage : m))
-          );
-          setUserReactions((prev) => ({ ...prev, [realMessage.id]: [] }));
-        }
-        onNookUpdated?.();
-      } else {
-        // Rollback on failure
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-        setLocalMessageCount((prev) => prev - 1);
-        throw new Error("Message send failed");
-      }
     } catch (err: any) {
       console.error("Send message error:", err);
       showToast(err.response?.data?.error?.message || "Failed to send message", "error");

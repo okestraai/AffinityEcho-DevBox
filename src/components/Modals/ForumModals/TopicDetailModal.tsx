@@ -1,5 +1,6 @@
 import React from 'react';
-import { resolveDisplayName } from '../../../utils/nameUtils';
+import { resolveAuthorName } from '../../../utils/nameUtils';
+import { useAuth } from '../../../hooks/useAuth';
 import { Topic } from '../../../types/forum';
 
 interface TopicDetailModalProps {
@@ -10,6 +11,7 @@ interface TopicDetailModalProps {
 }
 
 export function TopicDetailModal({ topic, isOpen, onClose, onUserClick }: TopicDetailModalProps) {
+  const { user } = useAuth();
   if (!isOpen || !topic) return null;
 
   return (
@@ -38,7 +40,7 @@ export function TopicDetailModal({ topic, isOpen, onClose, onUserClick }: TopicD
               onClick={() => onUserClick(topic.author.id)}
               className="text-purple-600 hover:underline"
             >
-              {resolveDisplayName(topic.author.display_name, topic.author.username)}
+              {resolveAuthorName(user, topic.author.id, topic.author.display_name, topic.author.username)}
             </button>
           </div>
           <button
