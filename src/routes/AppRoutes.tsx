@@ -42,6 +42,23 @@ const OTPVerificationPage = React.lazy(() =>
     default: m.OTPVerificationPage,
   })),
 );
+
+// Legal / public pages
+const TermsOfServicePage = React.lazy(() =>
+  import("../components/legal/TermsOfServicePage").then((m) => ({
+    default: m.TermsOfServicePage,
+  })),
+);
+const PrivacyPolicyPage = React.lazy(() =>
+  import("../components/legal/PrivacyPolicyPage").then((m) => ({
+    default: m.PrivacyPolicyPage,
+  })),
+);
+const FAQPage = React.lazy(() =>
+  import("../components/legal/FAQPage").then((m) => ({
+    default: m.FAQPage,
+  })),
+);
 const ResetPasswordPage = React.lazy(() =>
   import("../components/auth/ResetPasswordPage").then((m) => ({
     default: m.ResetPasswordPage,
@@ -247,6 +264,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/verify-otp/*" element={<OTPVerificationPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/faq" element={<FAQPage />} />
 
         {/* ONBOARDING — only for logged-in users who haven't completed it */}
         <Route
