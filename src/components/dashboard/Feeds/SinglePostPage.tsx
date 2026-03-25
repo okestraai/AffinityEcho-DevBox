@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveDisplayName, resolveAuthorName } from "../../../utils/nameUtils";
 import {
   ArrowLeft,
   Heart,
-  ThumbsUp,
-  Star,
+  Lightbulb,
   MessageSquare,
   Share2,
   Bookmark,
   FileText,
   Loader2,
   Clock,
+  ChevronDown,
+  ChevronUp,
+  Reply,
+  X,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetPostById,
@@ -31,6 +35,9 @@ interface PostComment {
   user_id: string;
   content: string;
   created_at: string;
+  parent_comment_id?: string | null;
+  parentCommentId?: string | null;
+  replies?: PostComment[];
   user_profile?: {
     display_name?: string;
     username?: string;
@@ -40,6 +47,39 @@ interface PostComment {
     display_name?: string;
     avatar?: string;
   };
+}
+
+function flattenComments(comments: PostComment[]): PostComment[] {
+  const result: PostComment[] = [];
+  for (const c of comments) {
+    result.push(c);
+    if (c.replies && c.replies.length > 0) {
+      result.push(...flattenComments(c.replies));
+    }
+  }
+  return result;
+}
+
+function buildCommentTree(flatComments: PostComment[]): PostComment[] {
+  const map = new Map<string, PostComment & { replies: PostComment[] }>();
+  const roots: PostComment[] = [];
+
+  flatComments.forEach((c) => map.set(c.id, { ...c, replies: [] }));
+
+  flatComments.forEach((c) => {
+    const node = map.get(c.id)!;
+    const parentId = c.parent_comment_id ?? c.parentCommentId;
+    if (parentId) {
+      const parent = map.get(parentId);
+      if (parent) {
+        parent.replies.push(node);
+        return;
+      }
+    }
+    roots.push(node);
+  });
+
+  return roots;
 }
 
 export function SinglePostPage() {
@@ -53,6 +93,8 @@ export function SinglePostPage() {
   const [comments, setComments] = useState<PostComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [showComments, setShowComments] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string } | null>(null);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (postId) {
@@ -81,7 +123,9 @@ export function SinglePostPage() {
       setLoadingComments(true);
       const response = await GetComments("post", postId);
       const raw = response?.comments ?? (Array.isArray(response) ? response : []);
-      setComments(Array.isArray(raw) ? raw : []);
+      const arr = Array.isArray(raw) ? raw : [];
+      const flat = flattenComments(arr);
+      setComments(buildCommentTree(flat));
     } catch {
       setComments([]);
     } finally {
@@ -93,14 +137,17 @@ export function SinglePostPage() {
     if (!post) return;
     const contentId = post.content_id || post.id;
     const wasActive = post.user_reactions?.[reactionType];
+    const currentCount = post.reaction_counts?.[reactionType] ?? post.reactions?.[reactionType] ?? post[`reaction_${reactionType}_count`] ?? 0;
+    const delta = wasActive ? -1 : 1;
 
     setPost((prev: any) => ({
       ...prev,
       user_reactions: { ...prev.user_reactions, [reactionType]: !wasActive },
       reaction_counts: {
         ...prev.reaction_counts,
-        [reactionType]: (prev.reaction_counts?.[reactionType] ?? 0) + (wasActive ? -1 : 1),
+        [reactionType]: Math.max(0, currentCount + delta),
       },
+      [`reaction_${reactionType}_count`]: Math.max(0, currentCount + delta),
     }));
 
     try {
@@ -111,8 +158,9 @@ export function SinglePostPage() {
         user_reactions: { ...prev.user_reactions, [reactionType]: wasActive },
         reaction_counts: {
           ...prev.reaction_counts,
-          [reactionType]: (prev.reaction_counts?.[reactionType] ?? 0) + (wasActive ? 1 : -1),
+          [reactionType]: currentCount,
         },
+        [`reaction_${reactionType}_count`]: currentCount,
       }));
     }
   };
@@ -142,7 +190,10 @@ export function SinglePostPage() {
     const contentId = post.content_id || post.id;
 
     try {
-      await AddComment("post", contentId, { content: comment });
+      const payload: any = { content: comment };
+      if (replyingTo) payload.parentCommentId = replyingTo.id;
+      await AddComment("post", contentId, payload);
+      setReplyingTo(null);
       setPost((prev: any) => ({
         ...prev,
         engagement: {
@@ -157,6 +208,15 @@ export function SinglePostPage() {
     }
   };
 
+  const toggleCommentExpanded = (id: string) => {
+    setExpandedComments((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -166,7 +226,9 @@ export function SinglePostPage() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   const formatNumber = (num: number): string => {
@@ -178,6 +240,66 @@ export function SinglePostPage() {
     const colors = ["bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-red-500", "bg-pink-500", "bg-teal-500", "bg-orange-500", "bg-cyan-500"];
     const index = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
+  };
+
+  const renderCommentNode = (c: PostComment, depth: number): React.ReactNode => {
+    const commentName = resolveAuthorName(user, c.user_id, c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
+    const replies = c.replies || [];
+    const hasReplies = replies.length > 0;
+    const isExpanded = expandedComments.has(c.id);
+    const canNest = depth < 3;
+
+    return (
+      <div key={c.id} className={`${depth > 0 ? "ml-6 mt-2 pl-3 border-l-2 border-purple-100" : ""}`}>
+        <div className="flex items-start gap-2">
+          <button
+            onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
+            className="flex-shrink-0 cursor-pointer"
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${getAvatarColor(commentName)} text-white`}>
+              {c.author?.avatar || c.user_profile?.avatar || commentName.charAt(0).toUpperCase()}
+            </div>
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
+                className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+              >
+                {commentName}
+              </button>
+              <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
+            </div>
+            <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
+            <div className="flex items-center gap-3 mt-1">
+              {canNest && (
+                <button
+                  onClick={() => setReplyingTo({ id: c.id, authorName: commentName })}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                >
+                  <Reply className="w-3 h-3" />
+                  Reply
+                </button>
+              )}
+              {hasReplies && canNest && (
+                <button
+                  onClick={() => toggleCommentExpanded(c.id)}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
+                >
+                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {isExpanded ? "Hide" : "Show"} {replies.length} {replies.length === 1 ? "reply" : "replies"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        {hasReplies && isExpanded && canNest && (
+          <div className="mt-2 space-y-2">
+            {replies.map((reply) => renderCommentNode(reply, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderAvatar = (avatar: string | null | undefined, displayName: string, size = "w-12 h-12", textSize = "text-2xl") => {
@@ -255,14 +377,14 @@ export function SinglePostPage() {
   const contentIsString = typeof post.content === "string";
   const contentText = contentIsString ? post.content : (post.content?.text ?? "");
   const contentTitle = contentIsString ? null : post.content?.title;
-  const authorName = resolveDisplayName(post.author?.display_name, post.author?.username) || "Anonymous";
+  const authorName = resolveAuthorName(user, post.user_id, post.author?.display_name, post.author?.username) || "Anonymous";
   const authorAvatar = post.author?.avatar || post.author?.avatar_url || null;
-  const authorBio = post.author?.bio || null;
+  const authorId = post.user_id || post.author?.id || null;
   const createdAt = post.created_at;
   const reactionCounts = {
-    heard: post.reaction_counts?.heard ?? 0,
-    validated: post.reaction_counts?.validated ?? 0,
-    inspired: post.reaction_counts?.inspired ?? 0,
+    heard: post.reaction_counts?.heard ?? post.reactions?.heard ?? post.reaction_heard_count ?? 0,
+    validated: post.reaction_counts?.validated ?? post.reactions?.validated ?? post.reaction_validated_count ?? 0,
+    inspired: post.reaction_counts?.inspired ?? post.reactions?.inspired ?? post.reaction_inspired_count ?? 0,
   };
   const userReactions = {
     heard: post.user_reactions?.heard ?? false,
@@ -295,13 +417,17 @@ export function SinglePostPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-gray-900">{authorName}</span>
+                <button
+                  onClick={() => authorId && navigate(`/dashboard/profile/${authorId}`)}
+                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer"
+                >
+                  {authorName}
+                </button>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
                   <FileText className="w-3.5 h-3.5" />
                   <span>Post</span>
                 </div>
               </div>
-              {authorBio && <p className="text-sm text-gray-600">{authorBio}</p>}
               {createdAt && (
                 <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                   <Clock className="w-3.5 h-3.5" />
@@ -340,11 +466,11 @@ export function SinglePostPage() {
                 <span>{formatNumber(reactionCounts.heard)}</span>
               </span>
               <span className="flex items-center gap-1">
-                <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                <ClapIcon className="w-3.5 h-3.5 text-blue-600" />
                 <span>{formatNumber(reactionCounts.validated)}</span>
               </span>
               <span className="flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-yellow-500" />
+                <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
                 <span>{formatNumber(reactionCounts.inspired)}</span>
               </span>
             </div>
@@ -376,7 +502,7 @@ export function SinglePostPage() {
               }`}
               title="Validated"
             >
-              <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${userReactions.validated ? "fill-blue-600" : ""}`} />
+              <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${userReactions.validated ? "animate-reaction-pop" : ""}`} />
             </button>
             <button
               onClick={() => handleReaction("inspired")}
@@ -385,7 +511,7 @@ export function SinglePostPage() {
               }`}
               title="Inspired"
             >
-              <Star className={`w-5 h-5 transition-transform duration-200 ${userReactions.inspired ? "fill-yellow-500" : ""}`} />
+              <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${userReactions.inspired ? "fill-yellow-500" : ""}`} />
             </button>
             <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
             <button
@@ -426,43 +552,27 @@ export function SinglePostPage() {
               </div>
             ) : comments.length > 0 ? (
               <div className="px-4 md:px-5 pt-4 pb-2 space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
-                {comments.map((c) => {
-                  const commentName = resolveDisplayName(c.author?.display_name, c.user_profile?.display_name, c.user_profile?.username);
-                  return (
-                    <div key={c.id} className="flex items-start gap-2">
-                      <button
-                        onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
-                        className="flex-shrink-0 cursor-pointer"
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${getAvatarColor(commentName)} text-white`}>
-                          {c.author?.avatar || c.user_profile?.avatar || commentName.charAt(0).toUpperCase()}
-                        </div>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
-                            className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
-                          >
-                            {commentName}
-                          </button>
-                          <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
-                        </div>
-                        <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
-                      </div>
-                    </div>
-                  );
-                })}
+                {comments.map((c) => renderCommentNode(c, 0))}
               </div>
             ) : (
               <div className="px-4 md:px-5 pt-4 pb-2">
                 <p className="text-xs text-gray-400 text-center">No comments yet — be the first!</p>
               </div>
             )}
+            {replyingTo && (
+              <div className="px-4 py-2 bg-purple-50 border-t border-purple-200 flex items-center justify-between">
+                <span className="text-xs text-purple-700 font-medium">
+                  Replying to {replyingTo.authorName}
+                </span>
+                <button onClick={() => setReplyingTo(null)} className="text-purple-500 hover:text-purple-700">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <InlineCommentInput
               onSubmit={handleCommentSubmit}
-              onCancel={() => setShowComments(false)}
-              placeholder="Share your thoughts..."
+              onCancel={() => { setShowComments(false); setReplyingTo(null); }}
+              placeholder={replyingTo ? `Reply to ${replyingTo.authorName}...` : "Share your thoughts..."}
             />
           </div>
         )}

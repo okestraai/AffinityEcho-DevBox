@@ -328,7 +328,36 @@ export function MentorshipProfileModal({
       const mentorProfile = response?.mentorProfile || {};
       const basicProfile = response?.basicProfile || {};
 
-  
+      // Decrypt encrypted fields from basicProfile
+      if (basicProfile.company && typeof basicProfile.company === "string" && !decryptedCompanyName) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.company });
+          if (result?.decryptedData) setDecryptedCompanyName(result.decryptedData);
+        } catch {}
+      }
+      if (basicProfile.careerLevel && typeof basicProfile.careerLevel === "string" && !decryptedCareerLevel) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.careerLevel });
+          if (result?.decryptedData) setDecryptedCareerLevel(result.decryptedData);
+        } catch {}
+      }
+      if (basicProfile.affinityTags && typeof basicProfile.affinityTags === "string" && decryptedAffinityTags.length === 0) {
+        try {
+          const result = await DecryptData({ encryptedData: basicProfile.affinityTags });
+          if (result?.decryptedData) {
+            let tags: string[] = [];
+            if (Array.isArray(result.decryptedData)) {
+              tags = result.decryptedData;
+            } else {
+              try { tags = JSON.parse(result.decryptedData); } catch {
+                tags = result.decryptedData.split(",").map((t: string) => t.trim()).filter(Boolean);
+              }
+            }
+            setDecryptedAffinityTags(Array.isArray(tags) ? tags : []);
+          }
+        } catch {}
+      }
+
       setFormData((prev) => ({
         ...prev,
         isWillingToMentor: mentorProfile.isWillingToMentor ?? true,
@@ -348,10 +377,6 @@ export function MentorshipProfileModal({
         yearsExperience: basicProfile.yearsExperience || prev.yearsExperience,
         bio: basicProfile.bio || prev.bio,
         location: basicProfile.location || prev.location,
-        // Use affinity tags from basicProfile if available, otherwise keep existing
-        affinityTags: Array.isArray(basicProfile.affinityTags)
-          ? basicProfile.affinityTags
-          : prev.affinityTags,
         newExpertise: "",
         newIndustry: "",
         newLanguage: "",
@@ -400,11 +425,11 @@ export function MentorshipProfileModal({
         availability: formData.availability,
         mentoringStyle: formData.mentoringStyle,
         languages: formData.languages,
-        careerLevel: currentUser?.career_level_encrypted,
+        careerLevel: decryptedCareerLevel || formData.careerLevel,
         location: formData.location,
-        affinityTags: currentUser?.affinity_tags_encrypted || "", // Send encrypted string
+        affinityTags: decryptedAffinityTags.length > 0 ? decryptedAffinityTags : formData.affinityTags,
         jobTitle: formData.jobTitle,
-        company: currentUser?.company_encrypted,
+        company: decryptedCompanyName || formData.company,
         yearsExperience: formData.yearsExperience,
         bio: formData.bio,
       };

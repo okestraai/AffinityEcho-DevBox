@@ -1,11 +1,10 @@
 // src/components/Modals/CommentsModal.tsx
 import React, { useState, useEffect } from "react";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 import {
   X,
   MessageCircle,
   Heart,
-  ThumbsUp,
   Reply,
   Send,
   Trash2,
@@ -32,6 +31,17 @@ interface Props {
   onUserClick?: (userId: string) => void;
 }
 
+function flattenComments(comments: any[]): any[] {
+  const result: any[] = [];
+  for (const c of comments) {
+    result.push(c);
+    if (c.replies && c.replies.length > 0) {
+      result.push(...flattenComments(c.replies));
+    }
+  }
+  return result;
+}
+
 export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
@@ -53,7 +63,8 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       try {
         setLoading(true);
         const result = await GetAllCommentsForATopic(topic.id);
-        setComments(Array.isArray(result) ? result : (result?.comments || []));
+        const raw = Array.isArray(result) ? result : (result?.comments || []);
+        setComments(flattenComments(raw));
       } catch (error) {
         console.error("Error fetching comments:", error);
       } finally {
@@ -81,7 +92,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
       setNewComment("");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
@@ -107,7 +118,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
       setReplyText("");
       setReplyingTo(null);
     } catch (error: any) {
@@ -127,7 +138,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
     } catch (error) {
       console.error("Error reacting to comment:", error);
     }
@@ -141,7 +152,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
 
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
-      setComments(result.data || []);
+      setComments(flattenComments(result.data || []));
     } catch (error: any) {
       console.error("Error deleting comment:", error);
       showToast(error.response?.data?.message || "Failed to delete comment", "error");
@@ -194,7 +205,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                   onClick={() => handleUserClick(comment.user_id)}
                   className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                 >
-                  {resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username)}
+                  {resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -274,7 +285,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                         value={replyText}
                         onChange={setReplyText}
                         placeholder={`Reply to ${
-                          resolveDisplayName(comment.user_profile?.display_name, comment.user_profile?.username) || "comment"
+                          resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username) || "comment"
                         }... Use @ to mention`}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm"

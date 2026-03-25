@@ -32,9 +32,31 @@ const LoginScreen = React.lazy(() =>
     default: m.LoginScreen,
   })),
 );
+const AuthCallback = React.lazy(() =>
+  import("../components/auth/AuthCallback").then((m) => ({
+    default: m.AuthCallback,
+  })),
+);
 const OTPVerificationPage = React.lazy(() =>
   import("../components/auth/OTPVerificationPage").then((m) => ({
     default: m.OTPVerificationPage,
+  })),
+);
+
+// Legal / public pages
+const TermsOfServicePage = React.lazy(() =>
+  import("../components/legal/TermsOfServicePage").then((m) => ({
+    default: m.TermsOfServicePage,
+  })),
+);
+const PrivacyPolicyPage = React.lazy(() =>
+  import("../components/legal/PrivacyPolicyPage").then((m) => ({
+    default: m.PrivacyPolicyPage,
+  })),
+);
+const FAQPage = React.lazy(() =>
+  import("../components/legal/FAQPage").then((m) => ({
+    default: m.FAQPage,
   })),
 );
 const ResetPasswordPage = React.lazy(() =>
@@ -237,10 +259,14 @@ const AppRoutes: React.FC = () => {
             </PublicOnlyRoute>
           }
         />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/verify-otp" element={<OTPVerificationPage />} />
         <Route path="/verify-otp/*" element={<OTPVerificationPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/faq" element={<FAQPage />} />
 
         {/* ONBOARDING — only for logged-in users who haven't completed it */}
         <Route

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { GetNookById } from "../../../../api/nookApis";
@@ -89,6 +89,16 @@ export function NookDetailPage() {
         nook={nookData}
         userAvatar={user?.avatar || "?"}
         currentUserId={user?.id || ""}
+        currentUsername={user?.username}
+        currentDisplayName={(() => {
+          const fn = user?.first_name;
+          const ln = user?.last_name;
+          // Skip encrypted-looking values (long base64/hex strings)
+          const isEnc = (s?: string) => !!s && (s.length > 60 || /^[A-Za-z0-9+/=]{30,}$/.test(s) || /^[0-9a-f]{24,}$/i.test(s));
+          const safeFn = fn && !isEnc(fn) ? fn : undefined;
+          const safeLn = ln && !isEnc(ln) ? ln : undefined;
+          return safeFn ? `${safeFn}${safeLn ? ` ${safeLn}` : ''}` : undefined;
+        })()}
         onBack={() => navigate("/dashboard/nooks")}
         onUserClick={handleUserClick}
       />

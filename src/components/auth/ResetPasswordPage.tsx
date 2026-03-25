@@ -21,7 +21,7 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     if (!email) {
-      showToast( 'No email provided', 'error');
+      showToast('No email provided', 'error');
       navigate('/login');
     }
   }, [email, navigate]);
@@ -74,7 +74,7 @@ export function ResetPasswordPage() {
       await ResetPassword(email, newPassword, otp);
 
       setMessage('Password reset successfully! Redirecting to login...');
-      showToast('Your password has been changed.', 'success', );
+      showToast('Your password has been changed.', 'success');
 
       setTimeout(() => {
         navigate('/login');
@@ -82,7 +82,7 @@ export function ResetPasswordPage() {
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Invalid or expired code. Please request a new one.';
       setError(msg);
-      showToast('error', 'Failed', msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

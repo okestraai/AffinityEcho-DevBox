@@ -369,6 +369,8 @@ export function NooksView() {
           nook={selectedNookData}
           userAvatar={user?.avatar || "?"}
           currentUserId={user?.id || ""}
+          currentUsername={user?.username}
+          currentDisplayName={user?.first_name ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ''}` : undefined}
           onBack={handleBackFromDetail}
           onUserClick={handleUserClick}
           onNookUpdated={handleNookUpdated}

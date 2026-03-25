@@ -9,19 +9,19 @@ import {
   Heart,
   Flame,
   MessageCircle,
-  Star,
+  Lightbulb,
   Eye,
-  ThumbsUp,
   Heart as HeartIcon,
   Globe,
   Bookmark,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 
 export function ForumTopicsMode(props: any) {
   const {
@@ -312,7 +312,7 @@ export function ForumTopicsMode(props: any) {
                           onClick={() => handleUserClick(topic.user_id)}
                           className="text-xs text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-2.5 py-1 rounded-full border border-purple-200 hover:text-purple-800 transition-colors"
                         >
-                          {resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username)}
+                          {resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username)}
                         </button>
                         {topic.is_pinned && (
                           <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
@@ -353,8 +353,8 @@ export function ForumTopicsMode(props: any) {
                       {[
                         { key: "seen", Icon: Eye, active: "text-green-600 bg-green-50", hover: "hover:text-green-600 hover:bg-green-50" },
                         { key: "heard", Icon: HeartIcon, active: "text-red-500 bg-red-50", hover: "hover:text-red-500 hover:bg-red-50" },
-                        { key: "validated", Icon: ThumbsUp, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50" },
-                        { key: "inspired", Icon: Star, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50" },
+                        { key: "validated", Icon: ClapIcon, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50" },
+                        { key: "inspired", Icon: Lightbulb, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50" },
                       ].map(({ key, Icon, active, hover }) => (
                         <button
                           key={key}

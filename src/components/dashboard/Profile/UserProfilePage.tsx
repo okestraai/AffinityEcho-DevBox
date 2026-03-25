@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, MessageCircle, UserPlus, UserMinus, Calendar,
   Shield, Loader2, MapPin, Briefcase, ExternalLink,
-  FileText, Users, Star, Heart, Eye, MessageSquare,
-  Zap, Share2, ThumbsUp, Bookmark,
+  FileText, Users, Lightbulb, Heart, Eye, MessageSquare,
+  Zap, Share2, Bookmark, Star,
 } from 'lucide-react';
+import { ClapIcon } from '../../shared/ClapIcon';
 import {
   GetFullUserProfile,
   GetUserProfileById,
@@ -96,8 +97,10 @@ function timeAgo(dateStr: string | null | undefined): string {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  if (d < 7) return `${d}d ago`;
+  if (d < 30) return `${Math.floor(d / 7)}w ago`;
+  if (d < 365) return `${Math.floor(d / 30)}mo ago`;
+  return `${Math.floor(d / 365)}y ago`;
 }
 
 function formatJoinDate(dateStr?: string): string {
@@ -550,11 +553,11 @@ export function UserProfilePage() {
                         <span>{post.reaction_counts.heard}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+                        <ClapIcon className="w-3.5 h-3.5 text-blue-600" />
                         <span>{post.reaction_counts.validated}</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 text-yellow-500" />
+                        <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
                         <span>{post.reaction_counts.inspired}</span>
                       </span>
                     </div>
@@ -580,13 +583,13 @@ export function UserProfilePage() {
                       onClick={(e) => { e.stopPropagation(); handlePostReact(post.id, 'validated'); }}
                       className={`p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_reactions.validated ? 'text-blue-600 bg-blue-50' : 'text-gray-500'}`}
                       title="Validated">
-                      <ThumbsUp className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.validated ? 'fill-blue-600 animate-reaction-pop' : ''}`} />
+                      <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.validated ? 'animate-reaction-pop' : ''}`} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostReact(post.id, 'inspired'); }}
                       className={`p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_reactions.inspired ? 'text-yellow-500 bg-yellow-50' : 'text-gray-500'}`}
                       title="Inspired">
-                      <Star className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.inspired ? 'fill-yellow-500 animate-reaction-pop' : ''}`} />
+                      <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.inspired ? 'fill-yellow-500 animate-reaction-pop' : ''}`} />
                     </button>
                     <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
                     <button
@@ -661,8 +664,8 @@ export function UserProfilePage() {
                         {([
                           { key: 'seen', Icon: Eye, active: 'text-green-600 bg-green-50', hover: 'hover:text-green-600 hover:bg-green-50' },
                           { key: 'heard', Icon: Heart, active: 'text-red-500 bg-red-50', hover: 'hover:text-red-500 hover:bg-red-50' },
-                          { key: 'validated', Icon: ThumbsUp, active: 'text-blue-600 bg-blue-50', hover: 'hover:text-blue-600 hover:bg-blue-50' },
-                          { key: 'inspired', Icon: Star, active: 'text-yellow-500 bg-yellow-50', hover: 'hover:text-yellow-500 hover:bg-yellow-50' },
+                          { key: 'validated', Icon: ClapIcon, active: 'text-blue-600 bg-blue-50', hover: 'hover:text-blue-600 hover:bg-blue-50' },
+                          { key: 'inspired', Icon: Lightbulb, active: 'text-yellow-500 bg-yellow-50', hover: 'hover:text-yellow-500 hover:bg-yellow-50' },
                         ] as const).map(({ key, Icon, active, hover }) => (
                           <button
                             key={key}

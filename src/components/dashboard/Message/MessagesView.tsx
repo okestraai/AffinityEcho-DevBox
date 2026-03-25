@@ -1421,7 +1421,9 @@ export function MessagesView() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+    return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
   const getIdentityRevealStatus = (conversation: Conversation) => {
@@ -1464,14 +1466,26 @@ export function MessagesView() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-2xl`}>
-              {otherUser.avatar || "👤"}
-            </div>
+            <button
+              type="button"
+              onClick={() => otherUser.id && navigate(`/dashboard/profile/${otherUser.id}`)}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              title="View profile"
+            >
+              <div className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-2xl`}>
+                {otherUser.avatar || "👤"}
+              </div>
+            </button>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900">
+                <button
+                  type="button"
+                  onClick={() => otherUser.id && navigate(`/dashboard/profile/${otherUser.id}`)}
+                  className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                  title="View profile"
+                >
                   {resolveDisplayName(otherUser.display_name, otherUser.username) || "User"}
-                </h3>
+                </button>
                 {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
                     Mentorship

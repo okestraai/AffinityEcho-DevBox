@@ -17,11 +17,12 @@ import {
   Users,
   Star,
   Eye,
-  ThumbsUp,
+  Lightbulb,
   Heart as HeartIcon,
   Sparkles,
   Bookmark,
 } from "lucide-react";
+import { ClapIcon } from "../../shared/ClapIcon";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
@@ -36,7 +37,7 @@ import { OkestraPanel } from "../OkestraPanel";
 import { Topic } from "../../../types/forum";
 import { useState, useRef } from "react";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
-import { resolveDisplayName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 
 export function OverviewMode(props: any) {
   const {
@@ -69,6 +70,7 @@ export function OverviewMode(props: any) {
     handleTopicClick,
     handleHashtagClick,
     getTimeAgo,
+    currentUser,
     handleCompanySelect,
     handleForumSelect,
     globalForums,
@@ -249,7 +251,7 @@ export function OverviewMode(props: any) {
             <div className="space-y-4">
               {paginatedTopics.topics.map((topic: any) => {
                 const avatarEmoji = topic.user_profile?.avatar || "👤";
-                const username = resolveDisplayName(topic.user_profile?.display_name, topic.user_profile?.username);
+                const username = resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username);
 
                 return (
                   <div
@@ -378,7 +380,7 @@ export function OverviewMode(props: any) {
                                 : "text-gray-500 hover:text-blue-600"
                             }`}
                           >
-                            <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "fill-blue-600 animate-reaction-pop" : ""}`} />
+                            <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.validated ||
                                 topic.reaction_validated_count ||
@@ -393,7 +395,7 @@ export function OverviewMode(props: any) {
                                 : "text-gray-500 hover:text-yellow-500"
                             }`}
                           >
-                            <Star className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
+                            <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.inspired ||
                                 topic.reaction_inspired_count ||

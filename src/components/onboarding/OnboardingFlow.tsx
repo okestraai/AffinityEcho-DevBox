@@ -109,7 +109,7 @@ export function OnboardingFlow() {
       const message =
         error?.response?.data?.message ||
         "Failed to complete setup. Please try again.";
-      showToast("Oops!", message, "error");
+      showToast(message, "error");
     } finally {
       setIsSubmitting(false);
     }
