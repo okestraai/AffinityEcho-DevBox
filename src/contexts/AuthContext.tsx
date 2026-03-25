@@ -204,28 +204,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
   };
 
-  const loadUser = async () => {
+  const loadUser = async (): Promise<User | null> => {
     try {
-     
+
       const res = await GetCurrentUser();
-     
-      
+
+
       // Check if the response has the expected structure
       let userData: any = res;
-      
+
       // Handle different response structures
       if (res && typeof res === "object") {
         // If the response has a 'data' property with nested user
         if ('data' in res && res.data && typeof res.data === 'object') {
           userData = res.data;
         }
-        
+
         // Ensure role is set (default to 'user' if not present)
         if (!userData.role) {
           console.warn("User role not found in API response, defaulting to 'user'");
           userData.role = "user";
         }
-        
+
         // Map the response to our User interface
         const mappedUser: User = {
           id: userData.id || userData.userId || '',
@@ -242,16 +242,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           company_type: userData.company_type,
           demographics: userData.demographics || {},
         };
-        
-        
+
+
         setUser(mappedUser);
+        return mappedUser;
       } else {
         console.error("Invalid user data structure:", res);
         clearAuth();
+        return null;
       }
     } catch (error) {
       console.error("Error loading user:", error);
       clearAuth();
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -398,6 +401,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         window.location.hostname,
         "accounts.google.com",
         "www.facebook.com",
+        "supabase.co",
       ];
       if (
         !allowedHosts.some(

@@ -32,6 +32,11 @@ const LoginScreen = React.lazy(() =>
     default: m.LoginScreen,
   })),
 );
+const AuthCallback = React.lazy(() =>
+  import("../components/auth/AuthCallback").then((m) => ({
+    default: m.AuthCallback,
+  })),
+);
 const OTPVerificationPage = React.lazy(() =>
   import("../components/auth/OTPVerificationPage").then((m) => ({
     default: m.OTPVerificationPage,
@@ -237,6 +242,7 @@ const AppRoutes: React.FC = () => {
             </PublicOnlyRoute>
           }
         />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/verify-otp" element={<OTPVerificationPage />} />
         <Route path="/verify-otp/*" element={<OTPVerificationPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
