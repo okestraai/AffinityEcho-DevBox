@@ -48,7 +48,7 @@ export function CreateTopicModal({
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(true);
+  // isAnonymous always true — removed UI toggle since anonymity is the point of the app
   const navigate = useNavigate();
   // API State
   const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
@@ -161,7 +161,7 @@ export function CreateTopicModal({
         content: content.trim(),
         forumId: selectedForumId,
         scope: scope,
-        isAnonymous: isAnonymous,
+        isAnonymous: true,
         tags: hashtags,
       };
 
@@ -597,24 +597,6 @@ export function CreateTopicModal({
               Include a link to relevant resources or references
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="anonymous"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <label htmlFor="anonymous" className="text-sm text-gray-700">
-              Post anonymously
-            </label>
-          </div>
-          <p className="text-xs text-gray-500 -mt-2">
-            {isAnonymous
-              ? "Your identity will be hidden from other members"
-              : "Your name and profile will be visible to other members"}
-          </p>
 
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
             <div className="flex items-center gap-2 mb-1">
