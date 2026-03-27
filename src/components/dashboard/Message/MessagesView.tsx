@@ -1283,6 +1283,16 @@ export function MessagesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refetch conversations when returning from chat view (selectedConversation becomes null)
+  const prevSelectedRef = useRef(selectedConversation);
+  useEffect(() => {
+    if (prevSelectedRef.current && !selectedConversation) {
+      // User just left a conversation — refresh the list to show updated last_message
+      fetchConversations();
+    }
+    prevSelectedRef.current = selectedConversation;
+  }, [selectedConversation, fetchConversations]);
+
   // Handle ?tab=mentorship-requests to auto-open mentorship requests view
   useEffect(() => {
     const tab = searchParams.get("tab");

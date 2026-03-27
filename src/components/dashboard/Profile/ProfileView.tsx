@@ -29,7 +29,8 @@ import {
   Globe,
   Building,
   UserPlus,
-  UserMinus
+  UserMinus,
+  Star
 } from 'lucide-react';
 import { ClapIcon } from '../../shared/ClapIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
