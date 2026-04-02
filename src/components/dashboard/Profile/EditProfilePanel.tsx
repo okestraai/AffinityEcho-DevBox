@@ -591,10 +591,16 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
           )}
 
           {/* MENTOR PROFILE */}
-          {hasMentor && (
-            <>
-              <SectionHeader title="Mentor Profile" icon={Target} expanded={sections.mentor} onToggle={() => toggle('mentor')} />
-              {sections.mentor && (
+          {/* MENTOR PROFILE */}
+          <SectionHeader title="Mentor Profile" icon={Target} expanded={sections.mentor} onToggle={() => toggle('mentor')} />
+          {sections.mentor && !hasMentor && (
+            <div className="text-center py-8 bg-white border border-gray-100 rounded-lg">
+              <Target className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 mb-1 font-medium">No mentor profile yet</p>
+              <p className="text-xs text-gray-400">Set up your mentor profile from the Mentorship tab to start mentoring others.</p>
+            </div>
+          )}
+          {sections.mentor && hasMentor && (
                 <div className="space-y-4 p-4 bg-white border border-gray-100 rounded-lg">
                   <div>
                     <label className="text-xs font-semibold text-gray-600 mb-1 block">Mentor Bio</label>
@@ -626,14 +632,17 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
                   </div>
                 </div>
               )}
-            </>
-          )}
 
           {/* MENTEE PROFILE */}
-          {hasMentee && (
-            <>
-              <SectionHeader title="Mentee Profile" icon={BookOpen} expanded={sections.mentee} onToggle={() => toggle('mentee')} />
-              {sections.mentee && (
+          <SectionHeader title="Mentee Profile" icon={BookOpen} expanded={sections.mentee} onToggle={() => toggle('mentee')} />
+          {sections.mentee && !hasMentee && (
+            <div className="text-center py-8 bg-white border border-gray-100 rounded-lg">
+              <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 mb-1 font-medium">No mentee profile yet</p>
+              <p className="text-xs text-gray-400">Set up your mentee profile from the Mentorship tab to find mentors.</p>
+            </div>
+          )}
+          {sections.mentee && hasMentee && (
                 <div className="space-y-4 p-4 bg-white border border-gray-100 rounded-lg">
                   <div>
                     <label className="text-xs font-semibold text-gray-600 mb-1 block">Mentee Bio</label>
@@ -677,8 +686,6 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
                   </div>
                 </div>
               )}
-            </>
-          )}
 
         </div>
       </div>
