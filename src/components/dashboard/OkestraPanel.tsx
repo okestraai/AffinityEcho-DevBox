@@ -292,11 +292,12 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
     return actions.slice(0, 4);
   };
 
-  const determineSentimentFromThemes = (themes: { name: string; sentiment: 'positive' | 'neutral' | 'negative' }[]): OkestraInsight['sentiment'] => {
+  const determineSentimentFromThemes = (themes: { name: string; sentiment: string }[]): OkestraInsight['sentiment'] => {
     if (!themes || themes.length === 0) return 'neutral';
 
     const sentimentCounts = themes.reduce((acc, theme) => {
-      acc[theme.sentiment] = (acc[theme.sentiment] || 0) + 1;
+      const key = theme.sentiment.toLowerCase();
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
