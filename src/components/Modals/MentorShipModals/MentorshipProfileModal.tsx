@@ -98,8 +98,27 @@ export function MentorshipProfileModal({
   const loadUserData = async () => {
     try {
       if (currentUser) {
+        // Use basicProfile from /me endpoint (plain text, no decryption needed)
+        const bp = currentUser.basicProfile;
+        if (bp) {
+          setDecryptedCompanyName(bp.company || "");
+          setDecryptedCareerLevel(bp.careerLevel || "");
+          setDecryptedLocation(bp.location || "");
+          setDecryptedAffinityTags(bp.affinityTags || []);
+          setFormData((prev) => ({
+            ...prev,
+            company: bp.company || "",
+            careerLevel: bp.careerLevel || "",
+            affinityTags: bp.affinityTags || [],
+            location: bp.location || "",
+            jobTitle: bp.jobTitle || "",
+            yearsExperience: bp.yearsExperience || 0,
+            bio: bp.bio || "",
+          }));
+          return;
+        }
 
-
+        // Fallback: decrypt from encrypted fields if basicProfile not available
         const encryptedFields = [
           {
             key: "company_encrypted",
@@ -328,34 +347,20 @@ export function MentorshipProfileModal({
       const mentorProfile = response?.mentorProfile || {};
       const basicProfile = response?.basicProfile || {};
 
-      // Decrypt encrypted fields from basicProfile
-      if (basicProfile.company && typeof basicProfile.company === "string" && !decryptedCompanyName) {
-        try {
-          const result = await DecryptData({ encryptedData: basicProfile.company });
-          if (result?.decryptedData) setDecryptedCompanyName(result.decryptedData);
-        } catch {}
+      // Use basicProfile fields directly (plain text from /me endpoint)
+      if (basicProfile.company && !decryptedCompanyName) {
+        setDecryptedCompanyName(basicProfile.company);
       }
-      if (basicProfile.careerLevel && typeof basicProfile.careerLevel === "string" && !decryptedCareerLevel) {
-        try {
-          const result = await DecryptData({ encryptedData: basicProfile.careerLevel });
-          if (result?.decryptedData) setDecryptedCareerLevel(result.decryptedData);
-        } catch {}
+      if (basicProfile.careerLevel && !decryptedCareerLevel) {
+        setDecryptedCareerLevel(basicProfile.careerLevel);
       }
-      if (basicProfile.affinityTags && typeof basicProfile.affinityTags === "string" && decryptedAffinityTags.length === 0) {
-        try {
-          const result = await DecryptData({ encryptedData: basicProfile.affinityTags });
-          if (result?.decryptedData) {
-            let tags: string[] = [];
-            if (Array.isArray(result.decryptedData)) {
-              tags = result.decryptedData;
-            } else {
-              try { tags = JSON.parse(result.decryptedData); } catch {
-                tags = result.decryptedData.split(",").map((t: string) => t.trim()).filter(Boolean);
-              }
-            }
-            setDecryptedAffinityTags(Array.isArray(tags) ? tags : []);
-          }
-        } catch {}
+      if (basicProfile.affinityTags && decryptedAffinityTags.length === 0) {
+        const tags = Array.isArray(basicProfile.affinityTags)
+          ? basicProfile.affinityTags
+          : typeof basicProfile.affinityTags === "string"
+            ? basicProfile.affinityTags.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : [];
+        setDecryptedAffinityTags(tags);
       }
 
       setFormData((prev) => ({
@@ -425,11 +430,8 @@ export function MentorshipProfileModal({
         availability: formData.availability,
         mentoringStyle: formData.mentoringStyle,
         languages: formData.languages,
-        careerLevel: decryptedCareerLevel || formData.careerLevel,
         location: formData.location,
-        affinityTags: decryptedAffinityTags.length > 0 ? decryptedAffinityTags : formData.affinityTags,
         jobTitle: formData.jobTitle,
-        company: decryptedCompanyName || formData.company,
         yearsExperience: formData.yearsExperience,
         bio: formData.bio,
       };
@@ -552,7 +554,7 @@ export function MentorshipProfileModal({
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 >
                   <option value="">Select expertise area</option>
-                  {filterOptions?.expertiseAreas?.map((exp) => (
+                  {filterOptions?.expertiseAreas?.filter((exp) => !formData.expertise.includes(exp)).map((exp) => (
                     <option key={exp} value={exp}>
                       {exp}
                     </option>
@@ -602,7 +604,7 @@ export function MentorshipProfileModal({
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 >
                   <option value="">Select industry</option>
-                  {filterOptions.industries?.map((ind) => (
+                  {filterOptions.industries?.filter((ind) => !formData.industries.includes(ind)).map((ind) => (
                     <option key={ind} value={ind}>
                       {ind}
                     </option>
@@ -766,7 +768,7 @@ export function MentorshipProfileModal({
             {/* Years of Experience */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Years of Experience *
+                Years of Mentoring Experience *
               </label>
               <input
                 type="number"
@@ -774,7 +776,7 @@ export function MentorshipProfileModal({
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    yearsExperience: parseInt(e.target.value) || 0,
+                    yearsExperience: e.target.value === '' ? '' : Math.max(0, Math.min(50, parseInt(e.target.value) || 0)),
                   }))
                 }
                 min="0"

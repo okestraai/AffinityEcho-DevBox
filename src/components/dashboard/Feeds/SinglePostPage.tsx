@@ -174,8 +174,10 @@ export function SinglePostPage() {
 
     try {
       await ToggleBookmark("post", contentId);
+      showToast(!was ? "Post bookmarked" : "Bookmark removed", "success");
     } catch {
       setPost((prev: any) => ({ ...prev, user_has_bookmarked: was, user_bookmarked: was }));
+      showToast("Failed to update bookmark", "error");
     }
   };
 

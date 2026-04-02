@@ -27,6 +27,7 @@ import {
   DeleteNotification as DeleteNotificationApi,
   UpdateNotification,
   ClearAllNotifications,
+  MarkNotificationGroupRead,
 } from "../../../../api/notificationApis";
 import { RespondToIdentityReveal } from "../../../../api/messaging";
 import { RespondToDirectMentorshipRequest } from "../../../../api/mentorshipApis";
@@ -51,6 +52,10 @@ interface Notification {
   read_at: string | null;
   actor_username?: string;
   actor_avatar?: string;
+  // Aggregation fields
+  count?: number;
+  actors?: { display_name: string; avatar: string | null }[];
+  notification_ids?: string[];
 }
 
 type NotificationFilter =
@@ -103,7 +108,7 @@ export function NotificationsView() {
     try {
       setLoading(true);
 
-      const params: { is_read?: boolean; type?: string; page?: number; limit?: number } = { limit };
+      const params: { is_read?: boolean; type?: string; grouped?: boolean; page?: number; limit?: number } = { limit, grouped: true };
       if (filter === "unread") params.is_read = false;
       if (filter === "follows") params.type = "follow";
       if (filter === "mentions") params.type = "mention";
@@ -111,10 +116,11 @@ export function NotificationsView() {
       if (filter === "mentorship") params.type = "mentorship_request";
 
       const response = await GetNotifications(params);
-      const raw = response?.items ?? (Array.isArray(response) ? response : []);
+      const raw = response?.data ?? response?.items ?? (Array.isArray(response) ? response : []);
       const allNotifications = Array.isArray(raw) ? raw : [];
 
-      setHasMore(allNotifications.length >= limit);
+      const pagination = response?.pagination;
+      setHasMore(pagination ? pagination.page < pagination.totalPages : allNotifications.length >= limit);
 
       // Client-side filtering for types not covered by API filter
       let filteredNotifications = allNotifications;
@@ -150,11 +156,16 @@ export function NotificationsView() {
     setLimit((prev) => prev + 50);
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (notification: Notification) => {
     try {
-      await MarkNotificationAsRead(notificationId);
+      // For grouped notifications, mark the entire group
+      if (notification.notification_ids && notification.notification_ids.length > 1) {
+        await MarkNotificationGroupRead(notification.notification_ids);
+      } else {
+        await MarkNotificationAsRead(notification.id);
+      }
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
       );
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -367,7 +378,7 @@ export function NotificationsView() {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    await markAsRead(notification.id);
+    await markAsRead(notification);
 
     const route = resolveNotificationRoute(notification);
     if (route) {
@@ -384,7 +395,7 @@ export function NotificationsView() {
   };
 
   const handleAction = async (notification: Notification, action: string) => {
-    await markAsRead(notification.id);
+    await markAsRead(notification);
 
     try {
       // --- API actions (accept/decline) — these perform an API call, then navigate ---
@@ -515,15 +526,6 @@ export function NotificationsView() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const renderNotificationActions = (notification: Notification) => {
-    if (notification.action_taken) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-green-600">
-          <CheckCircle className="w-3 h-3" />
-          Action taken
-        </div>
-      );
-    }
-
     switch (notification.type) {
       case "mentorship_request":
         return (
@@ -905,7 +907,7 @@ export function NotificationsView() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    markAsRead(notification.id);
+                                    markAsRead(notification);
                                     setShowMenu(null);
                                   }}
                                   className="w-full px-3 sm:px-4 py-2.5 sm:py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -934,6 +936,28 @@ export function NotificationsView() {
                     <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed">
                       {notification.message}
                     </p>
+
+                    {/* Grouped notification actor avatars */}
+                    {notification.actors && notification.actors.length > 1 && (
+                      <div className="flex items-center gap-1 mb-2">
+                        <div className="flex -space-x-2">
+                          {notification.actors.slice(0, 5).map((actor, i) => (
+                            <div
+                              key={i}
+                              className="w-6 h-6 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-xs"
+                              title={actor.display_name}
+                            >
+                              {actor.avatar || actor.display_name?.charAt(0) || "?"}
+                            </div>
+                          ))}
+                        </div>
+                        {(notification.count ?? 0) > 5 && (
+                          <span className="text-xs text-gray-500 ml-1">
+                            +{(notification.count ?? 0) - 5} more
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {renderNotificationActions(notification)}
                   </div>

@@ -442,15 +442,6 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
   };
 
   const renderNotificationActions = (notification: Notification) => {
-    if (notification.action_taken) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
-          <CheckCircle className="w-3 h-3" />
-          Action taken
-        </div>
-      );
-    }
-
     switch (notification.type) {
       case 'mentorship_request':
         return (

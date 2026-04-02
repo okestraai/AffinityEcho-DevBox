@@ -1,5 +1,5 @@
 // src/components/forums/forum/ForumTopicsMode.tsx - GLOBAL VIEW FIXED
-import { useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   Search,
@@ -21,6 +21,7 @@ import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
+import { showToast } from "../../../Helper/ShowToast";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
 export function ForumTopicsMode(props: any) {
@@ -95,12 +96,23 @@ export function ForumTopicsMode(props: any) {
     ioRef.current = observer;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
+
+  const isTopicBookmarked = (topic: any) => {
+    if (topic.id in bookmarkOverrides) return bookmarkOverrides[topic.id];
+    return !!topic.user_has_bookmarked;
+  };
+
   const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: any) => t.id === topicId)?.user_has_bookmarked ?? false;
+    setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
-    } catch (error) {
-      console.error("Error toggling bookmark:", error);
+      showToast(!currentState ? "Topic bookmarked" : "Bookmark removed", "success");
+    } catch {
+      setBookmarkOverrides((prev) => ({ ...prev, [topicId]: currentState }));
+      showToast("Failed to update bookmark", "error");
     }
   };
 
@@ -377,10 +389,10 @@ export function ForumTopicsMode(props: any) {
                       <button
                         onClick={(e) => handleBookmarkTopic(topic.id, e)}
                         className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 rounded-lg text-xs ${
-                          topic.user_has_bookmarked ? "text-amber-500 bg-amber-50" : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
+                          isTopicBookmarked(topic) ? "text-amber-500 bg-amber-50" : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
                         }`}
                       >
-                        <Bookmark className={`w-3.5 h-3.5 ${topic.user_has_bookmarked ? "fill-current" : ""}`} />
+                        <Bookmark className={`w-3.5 h-3.5 ${isTopicBookmarked(topic) ? "fill-current" : ""}`} />
                       </button>
                     </div>
                     <span className="text-xs text-gray-400">

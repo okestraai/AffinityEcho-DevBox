@@ -534,3 +534,25 @@ export const CheckFollowingStatus = async (userId: string) => {
   );
   return unwrap(res);
 };
+
+// ============================================================================
+// COMPANY VERIFICATION ENDPOINTS
+// ============================================================================
+
+/**
+ * Send company verification email
+ */
+export const SendCompanyVerificationEmail = async (email: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/user/verify-company-email`, { email });
+  return unwrap(res);
+};
+
+/**
+ * Get company verification status
+ */
+export const GetCompanyVerificationStatus = async () => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(`${API_URL}/user/company-verification-status`);
+  return unwrap(res);
+};

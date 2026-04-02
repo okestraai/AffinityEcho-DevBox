@@ -31,6 +31,7 @@ export const CreateNotification = async (payload: {
 export const GetNotifications = async (params: {
   is_read?: boolean;
   type?: string;
+  grouped?: boolean;
   page?: number;
   limit?: number;
 } = {}) => {
@@ -38,11 +39,23 @@ export const GetNotifications = async (params: {
   const queryParams = new URLSearchParams();
   if (params.is_read !== undefined) queryParams.append("is_read", String(params.is_read));
   if (params.type) queryParams.append("type", params.type);
+  if (params.grouped) queryParams.append("grouped", "true");
   if (params.page) queryParams.append("page", String(params.page));
   if (params.limit) queryParams.append("limit", String(params.limit));
 
   const qs = queryParams.toString();
   const res = await authFetch.get(`${API_URL}/notifications${qs ? `?${qs}` : ""}`);
+  return unwrap(res);
+};
+
+/**
+ * Mark a group of aggregated notifications as read
+ */
+export const MarkNotificationGroupRead = async (notificationIds: string[]) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/notifications/mark-group-read`, {
+    notification_ids: notificationIds,
+  });
   return unwrap(res);
 };
 

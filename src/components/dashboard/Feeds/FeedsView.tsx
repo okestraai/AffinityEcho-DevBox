@@ -378,11 +378,13 @@ export function FeedsView() {
     try {
       const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
       await ToggleBookmark(contentType as "post" | "topic" | "nook_message", item.content_id);
+      showToast(!item.user_has_bookmarked ? "Bookmarked" : "Bookmark removed", "success");
     } catch {
       // Revert on failure
       setFeedItems((prev) =>
         prev.map((i) => (i.id === itemId ? item : i))
       );
+      showToast("Failed to update bookmark", "error");
     }
   };
 

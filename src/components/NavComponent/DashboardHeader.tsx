@@ -19,6 +19,7 @@ import { GetConnectableUsers } from "../../../api/messaging";
 interface DashboardHeaderProps {
   activeTab: string;
   unreadCount: number;
+  messageUnreadCount?: number;
   showNotificationsDropdown: boolean;
   setShowNotificationsDropdown: (open: boolean) => void;
   showMobileMenu: boolean;
@@ -51,6 +52,7 @@ interface SearchUser {
 export function DashboardHeader({
   activeTab,
   unreadCount,
+  messageUnreadCount = 0,
   showNotificationsDropdown,
   setShowNotificationsDropdown,
   showMobileMenu,
@@ -221,13 +223,18 @@ export function DashboardHeader({
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   title={tab.label}
-                  className={`nav-icon-btn flex items-center justify-center p-3 rounded-xl transition-all ${
+                  className={`nav-icon-btn relative flex items-center justify-center p-3 rounded-xl transition-all ${
                     isActive
                       ? "text-purple-600 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent hover:border-gray-200"
                   }`}
                 >
                   <Icon className="w-6 h-6" />
+                  {tab.id === "messages" && messageUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {messageUnreadCount > 9 ? "9+" : messageUnreadCount}
+                    </span>
+                  )}
                 </button>
               );
             })}

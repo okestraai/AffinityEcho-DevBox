@@ -9,11 +9,11 @@ export interface MentorProfilePayload {
   availability: string;
   mentoringStyle: string;
   languages: string[];
-  careerLevel: string;
+  careerLevel?: string;
   location: string;
-  affinityTags: string[];
+  affinityTags?: string[];
   jobTitle: string;
-  company: string;
+  company?: string;
   yearsExperience: number;
   bio: string;
 }
@@ -25,10 +25,10 @@ export interface MenteeProfilePayload {
   communicationMethod: string;
   urgency: "low" | "medium" | "high";
   jobTitle: string;
-  company: string;
+  company?: string;
   yearsExperience: number;
   location: string;
-  careerLevel: string;
+  careerLevel?: string;
   bio: string;
   menteeBio?: string;
   mentoredStyle?: string;

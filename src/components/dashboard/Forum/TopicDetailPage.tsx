@@ -31,6 +31,7 @@ import {
   CreateForumTopicsComments,
   TopicsCommentsReactions,
   DeleteTopicsComments,
+  ToggleTopicBookmark,
 } from "../../../../api/forumApis";
 import { shareContent } from "../../../utils/shareUtils";
 import { formatLastActivity, getTimeAgo } from "../../../utils/forumUtils";
@@ -64,6 +65,7 @@ export function TopicDetailPage() {
   const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   const [showViewersModal, setShowViewersModal] = useState(false);
   const [visibleCommentCount, setVisibleCommentCount] = useState(15);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const commentSentinelRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Reset visible count when topic changes
@@ -93,6 +95,18 @@ export function TopicDetailPage() {
     return () => observer.disconnect();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleBookmark = async () => {
+    const prev = isBookmarked;
+    setIsBookmarked(!prev);
+    try {
+      await ToggleTopicBookmark(topicId!);
+      showToast(!prev ? "Topic bookmarked" : "Bookmark removed", "success");
+    } catch {
+      setIsBookmarked(prev);
+      showToast("Failed to update bookmark", "error");
+    }
+  };
+
   // Fetch topic details
   useEffect(() => {
     const fetchTopic = async () => {
@@ -102,6 +116,7 @@ export function TopicDetailPage() {
 
         const result = await GetForumTopicById(topicId);
         setTopic(result);
+        setIsBookmarked(!!result?.user_bookmarked);
       } catch (err) {
         console.error("Error fetching topic:", err);
       } finally {
@@ -758,8 +773,12 @@ export function TopicDetailPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
-                  <Bookmark className="w-5 h-5" />
+                <button
+                  onClick={handleBookmark}
+                  className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${isBookmarked ? "text-amber-600" : "text-gray-600"}`}
+                  title={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                >
+                  <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-amber-600" : ""}`} />
                 </button>
 
                 <button

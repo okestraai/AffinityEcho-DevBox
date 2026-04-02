@@ -30,7 +30,10 @@ import {
   Building,
   UserPlus,
   UserMinus,
-  Star
+  Star,
+  BadgeCheck,
+  Mail,
+  CheckCircle2,
 } from 'lucide-react';
 import { ClapIcon } from '../../shared/ClapIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -44,7 +47,9 @@ import {
   GetNotificationSettings,
   UpdateNotificationSettings,
   DeactivateAccount,
-  DeleteAccount
+  DeleteAccount,
+  SendCompanyVerificationEmail,
+  GetCompanyVerificationStatus,
 } from '../../../../api/profileApis';
 import { GetUserPosts, GetBookmarks } from '../../../../api/feedApis';
 import { GetMyForumTopics, GetBookmarkedForumTopics } from '../../../../api/forumApis';
@@ -55,6 +60,8 @@ import { showToast } from '../../../Helper/ShowToast';
 import { ProfileSkeleton, ProfilePageSkeleton, FollowListSkeleton, SettingsSkeleton } from '../../../Helper/SkeletonLoader';
 import { DecryptData } from '../../../../api/EncrytionApis';
 import { resolveAuthorName } from '../../../utils/nameUtils';
+import { validateEmailDomain, getDomainsForCompany } from '../../../utils/companyDomains';
+import { VerifiedBadge } from '../../shared/VerifiedBadge';
 
 interface PrivacySettings {
   profileVisibility: 'public' | 'connections' | 'private';
@@ -135,6 +142,14 @@ export function ProfileView() {
 
   // Decrypted name
   const [displayName, setDisplayName] = useState('');
+
+  // Company verification
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState<'none' | 'pending' | 'verified'>('none');
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [verificationEligible, setVerificationEligible] = useState(false);
+  const [verificationCompany, setVerificationCompany] = useState('');
 
   // Page-level tab: My Posts, My Profile, Settings — persisted in URL so back navigation preserves it
   const validTabs = ['activity', 'profile', 'settings'] as const;
@@ -223,15 +238,31 @@ export function ProfileView() {
     const fetchSettings = async () => {
       setSettingsLoading(true);
       try {
-        const [privacyRes, notifRes] = await Promise.all([
+        const [privacyRes, notifRes, verifyRes] = await Promise.all([
           GetPrivacySettings().catch(() => null),
-          GetNotificationSettings().catch(() => null)
+          GetNotificationSettings().catch(() => null),
+          GetCompanyVerificationStatus().catch(() => null),
         ]);
         if (privacyRes) {
           setPrivacySettings(privacyRes);
         }
         if (notifRes) {
           setNotificationSettings(notifRes);
+        }
+        if (verifyRes) {
+          setVerificationEligible(!!verifyRes.is_eligible);
+          setVerificationCompany(verifyRes.company || '');
+          if (verifyRes.is_verified) {
+            setVerificationStatus('verified');
+          } else if (verifyRes.email_sent_at) {
+            setVerificationStatus('pending');
+            if (verifyRes.verification_email) {
+              setVerificationEmail(verifyRes.verification_email);
+            }
+          }
+        }
+        if (user?.is_company_verified) {
+          setVerificationStatus('verified');
         }
       } catch {
         // Silent failure for settings fetch
@@ -500,6 +531,33 @@ export function ProfileView() {
       await UpdateNotificationSettings({ [key]: newValue });
     } catch {
       setNotificationSettings(notificationSettings); // revert on failure
+    }
+  };
+
+  // Company verification handler
+  const userCompany = verificationCompany || user?.basicProfile?.company || '';
+  const showVerificationSection = verificationEligible;
+
+  const handleSendVerification = async () => {
+    setVerificationError('');
+    if (!verificationEmail.trim()) {
+      setVerificationError('Please enter your company email');
+      return;
+    }
+    if (!validateEmailDomain(verificationEmail, userCompany)) {
+      const domains = getDomainsForCompany(userCompany);
+      setVerificationError(`Email must be from: ${domains.map(d => '@' + d).join(', ')}`);
+      return;
+    }
+    setVerificationSending(true);
+    try {
+      await SendCompanyVerificationEmail(verificationEmail.trim());
+      setVerificationStatus('pending');
+      showToast('Verification email sent! Check your inbox.', 'success');
+    } catch (error: any) {
+      setVerificationError(error?.response?.data?.message || 'Failed to send verification email');
+    } finally {
+      setVerificationSending(false);
     }
   };
 
@@ -1084,6 +1142,7 @@ export function ProfileView() {
                       <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-full text-xs sm:text-sm font-medium text-purple-700">
                         <Building className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         {user.demographics.company}
+                        {user.is_company_verified && <VerifiedBadge size={14} />}
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 bg-green-50 border border-green-200 rounded-full text-xs sm:text-sm font-medium text-green-700">
@@ -1261,7 +1320,7 @@ export function ProfileView() {
                         </span>
                       </div>
                       <div className="text-left flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-xs sm:text-sm truncate">{user.demographics?.company}</p>
+                        <p className="font-semibold text-gray-900 text-xs sm:text-sm truncate flex items-center gap-1">{user.demographics?.company}{user.is_company_verified && <VerifiedBadge size={12} />}</p>
                         <p className="text-[10px] sm:text-xs text-gray-500">Company Forum</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -1609,6 +1668,71 @@ export function ProfileView() {
                   </div>
                 </div>
               </div>
+
+              {/* Company Verification */}
+              {showVerificationSection && (
+                <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200">
+                  <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2 text-sm sm:text-base">
+                    <BadgeCheck className="w-4 h-4 text-blue-500" />
+                    Company Verification
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-4">
+                    Verify you work at <span className="font-medium text-gray-700">{userCompany}</span> to get a verified badge
+                  </p>
+
+                  {verificationStatus === 'verified' ? (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800">Company Verified</p>
+                        <p className="text-xs text-green-600">Your {userCompany} affiliation has been verified</p>
+                      </div>
+                      <VerifiedBadge size={20} className="ml-auto" />
+                    </div>
+                  ) : verificationStatus === 'pending' ? (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">Verification Pending</p>
+                        <p className="text-xs text-amber-600">Check your email and click the verification link</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Your {userCompany} email address
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            value={verificationEmail}
+                            onChange={(e) => { setVerificationEmail(e.target.value); setVerificationError(''); }}
+                            placeholder={`you@${getDomainsForCompany(userCompany)[0] || 'company.com'}`}
+                            className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[44px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSendVerification}
+                            disabled={verificationSending}
+                            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2 min-h-[44px]"
+                          >
+                            {verificationSending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Mail className="w-4 h-4" />
+                            )}
+                            Verify
+                          </button>
+                        </div>
+                        {verificationError && (
+                          <p className="text-xs text-red-600 mt-1">{verificationError}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Notifications */}
               <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200">

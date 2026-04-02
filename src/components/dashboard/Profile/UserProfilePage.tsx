@@ -253,10 +253,13 @@ export function UserProfilePage() {
     ));
     try {
       await ToggleBookmark('post', postId);
+      const post = posts.find((p) => p.id === postId);
+      showToast(post && !post.user_bookmarked ? "Bookmark removed" : "Post bookmarked", "success");
     } catch {
       setPosts((prev) => prev.map((p) =>
         p.id === postId ? { ...p, user_bookmarked: !p.user_bookmarked } : p
       ));
+      showToast("Failed to update bookmark", "error");
     }
   }, []);
 
@@ -292,10 +295,13 @@ export function UserProfilePage() {
     ));
     try {
       await ToggleTopicBookmark(topicId);
+      const topic = topics.find((t) => t.id === topicId);
+      showToast(topic && !topic.user_bookmarked ? "Bookmark removed" : "Topic bookmarked", "success");
     } catch {
       setTopics((prev) => prev.map((t) =>
         t.id === topicId ? { ...t, user_bookmarked: !t.user_bookmarked } : t
       ));
+      showToast("Failed to update bookmark", "error");
     }
   }, []);
 
