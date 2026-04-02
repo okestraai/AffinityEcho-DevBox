@@ -37,6 +37,8 @@ import { OkestraPanel } from "../OkestraPanel";
 import { Topic } from "../../../types/forum";
 import { useState, useRef } from "react";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
+import { showToast } from "../../../Helper/ShowToast";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
 export function OverviewMode(props: any) {
@@ -101,12 +103,23 @@ export function OverviewMode(props: any) {
     }
   };
 
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
+
+  const isTopicBookmarked = (topic: any) => {
+    if (topic.id in bookmarkOverrides) return bookmarkOverrides[topic.id];
+    return !!topic.user_has_bookmarked;
+  };
+
   const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: any) => t.id === topicId)?.user_has_bookmarked ?? false;
+    setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
-    } catch (error) {
-      console.error("Error toggling bookmark:", error);
+      showToast(!currentState ? "Topic bookmarked" : "Bookmark removed", "success");
+    } catch {
+      setBookmarkOverrides((prev) => ({ ...prev, [topicId]: currentState }));
+      showToast("Failed to update bookmark", "error");
     }
   };
 
@@ -426,13 +439,13 @@ export function OverviewMode(props: any) {
                           <button
                             onClick={(e) => handleBookmarkTopic(topic.id, e)}
                             className={`flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-2 md:px-3 py-1.5 md:py-2 rounded-lg ${
-                              topic.user_has_bookmarked
+                              isTopicBookmarked(topic)
                                 ? "text-amber-500 bg-amber-50"
                                 : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
                             }`}
                             title="Bookmark"
                           >
-                            <Bookmark className={`w-4 h-4 transition-transform duration-200 ${topic.user_has_bookmarked ? "fill-amber-500 animate-reaction-pop" : ""}`} />
+                            <Bookmark className={`w-4 h-4 transition-transform duration-200 ${isTopicBookmarked(topic) ? "fill-amber-500 animate-reaction-pop" : ""}`} />
                           </button>
                         </div>
                         <div className="text-xs md:text-sm text-gray-500 w-full md:w-auto mt-2 md:mt-0">

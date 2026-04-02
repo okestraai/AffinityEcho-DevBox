@@ -181,7 +181,11 @@ export function ForumsView() {
         };
 
         if (searchTerm) {
-          filters.search = searchTerm;
+          if (searchTerm.startsWith("#")) {
+            filters.hashtag = searchTerm.slice(1).trim();
+          } else {
+            filters.search = searchTerm;
+          }
         }
 
         if (viewMode === "global") {
@@ -509,7 +513,11 @@ export function ForumsView() {
       };
 
       if (searchTerm) {
-        filters.search = searchTerm;
+        if (searchTerm.startsWith("#")) {
+          filters.hashtag = searchTerm.slice(1).trim();
+        } else {
+          filters.search = searchTerm;
+        }
       }
 
       if (viewMode === "global") {

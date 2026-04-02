@@ -39,6 +39,18 @@ export interface User {
     company?: string;
     affinityTags?: string[];
   };
+  basicProfile?: {
+    bio?: string;
+    jobTitle?: string;
+    location?: string;
+    yearsExperience?: number;
+    skills?: string[];
+    linkedinUrl?: string | null;
+    careerLevel?: string;
+    company?: string;
+    affinityTags?: string[];
+  };
+  is_company_verified?: boolean;
 }
 
 interface LoginResponseData {
@@ -241,6 +253,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           company_encrypted: userData.company_encrypted,
           company_type: userData.company_type,
           demographics: userData.demographics || {},
+          basicProfile: userData.basicProfile || undefined,
+          is_company_verified: userData.is_company_verified ?? userData.isCompanyVerified ?? false,
         };
 
 

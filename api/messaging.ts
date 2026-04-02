@@ -175,6 +175,39 @@ export const SetTypingStatus = async (payload: {
   return unwrap(res);
 };
 
+/**
+ * Delete a message (soft-delete for the requesting user only)
+ */
+export const DeleteMessage = async (
+  messageId: string,
+  conversationId: string,
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.delete(
+    `${API_URL}/messaging/messages/${messageId}`,
+    { data: { conversation_id: conversationId } },
+  );
+  return unwrap(res);
+};
+
+/**
+ * Edit a message (only your own text messages)
+ */
+export const EditMessage = async (
+  messageId: string,
+  payload: {
+    conversation_id: string;
+    content_encrypted: string;
+  },
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(
+    `${API_URL}/messaging/messages/${messageId}`,
+    payload,
+  );
+  return unwrap(res);
+};
+
 // NEW: User discovery functions
 export const GetConnectableUsers = async (filters: {
   search?: string;

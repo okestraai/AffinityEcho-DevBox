@@ -17,9 +17,10 @@ const log = (component: string, message: string, data?: any) => {
 interface Props {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  messageUnreadCount?: number;
 }
 
-export function BottomNavigation({ activeTab, setActiveTab }: Props) {
+export function BottomNavigation({ activeTab, setActiveTab, messageUnreadCount = 0 }: Props) {
   // Log component render
   React.useEffect(() => {
     log("BottomNavigation", "Component rendered", { activeTab });
@@ -66,17 +67,24 @@ export function BottomNavigation({ activeTab, setActiveTab }: Props) {
               type="button"
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex flex-col items-center gap-0.5 py-2.5 px-3 rounded-xl transition-all duration-300 active:scale-95 min-w-0 flex-1 ${
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 px-3 rounded-xl transition-all duration-300 active:scale-95 min-w-0 flex-1 ${
                 isActive
                   ? "text-purple-600 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 shadow-md border border-purple-200/50 scale-105"
                   : "text-gray-500 active:text-gray-700 active:bg-gray-50 border border-transparent"
               }`}
             >
-              <Icon
-                className={`w-6 h-6 ${
-                  isActive ? "scale-110 drop-shadow-sm" : ""
-                } transition-transform duration-300`}
-              />
+              <div className="relative">
+                <Icon
+                  className={`w-6 h-6 ${
+                    isActive ? "scale-110 drop-shadow-sm" : ""
+                  } transition-transform duration-300`}
+                />
+                {tab.id === "messages" && messageUnreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {messageUnreadCount > 9 ? "9+" : messageUnreadCount}
+                  </span>
+                )}
+              </div>
               <span
                 className={`text-[11px] font-semibold leading-tight ${
                   isActive ? "text-purple-600" : ""

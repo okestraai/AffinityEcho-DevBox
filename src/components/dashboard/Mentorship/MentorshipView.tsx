@@ -1,6 +1,7 @@
 // components/Views/Mentorship/MentorshipView.tsx
 import { useState, useEffect } from "react";
 import { resolveDisplayName } from "../../../utils/nameUtils";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { useNavigate } from "react-router-dom";
 import {
   Target,
@@ -544,8 +545,8 @@ export function MentorshipView() {
                       <p className="text-sm text-gray-600">
                         {mentorUser?.jobTitle || "Professional"}
                       </p>
-                      <p className="text-xs text-blue-600">
-                        {mentorUser?.company || "Company not specified"}
+                      <p className="text-xs text-blue-600 flex items-center gap-1">
+                        {mentorUser?.company || "Company not specified"}{mentorUser?.is_company_verified && <VerifiedBadge size={12} />}
                       </p>
                       {mentorUser?.careerLevel && (
                         <p className="text-xs text-gray-500 mt-0.5">
@@ -742,8 +743,8 @@ export function MentorshipView() {
                       <p className="text-sm text-gray-600">
                         {menteeUser?.jobTitle || "Professional"}
                       </p>
-                      <p className="text-xs text-blue-600">
-                        {menteeUser?.company || "Company not specified"}
+                      <p className="text-xs text-blue-600 flex items-center gap-1">
+                        {menteeUser?.company || "Company not specified"}{menteeUser?.is_company_verified && <VerifiedBadge size={12} />}
                       </p>
                       {menteeUser?.careerLevel && (
                         <p className="text-xs text-gray-500 mt-0.5">

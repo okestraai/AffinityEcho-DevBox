@@ -7,7 +7,7 @@ import { MentorshipModal } from '../components/Modals/MentorShipModals/Mentorshi
 import { DashboardHeader } from '../components/NavComponent/DashboardHeader';
 import { useAuth } from '../hooks/useAuth';
 import { GetUnreadCount } from '../../api/notificationApis';
-import { GetConnectableUsers } from '../../api/messaging';
+import { GetConnectableUsers, GetMessageUnreadCount } from '../../api/messaging';
 import { webSocketService } from '../services/websocket.service';
 import { TestLLMButton } from '../components/dashboard/TestLLMButton';
 
@@ -20,6 +20,7 @@ export function DashboardLayout() {
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messageUnreadCount, setMessageUnreadCount] = useState(0);
 
   // Mobile search state
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
@@ -106,12 +107,24 @@ export function DashboardLayout() {
     }
   }, [user?.id]);
 
-  // Fetch initial unread count on mount
+  const fetchMessageUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await GetMessageUnreadCount({ chat_type: 'all' });
+      const count = response?.unread_count ?? response?.count ?? (typeof response === 'number' ? response : 0);
+      setMessageUnreadCount(typeof count === 'number' ? count : Number(count) || 0);
+    } catch {
+      // Silent failure
+    }
+  }, [user?.id]);
+
+  // Fetch initial unread counts on mount
   useEffect(() => {
     if (user?.id) {
       fetchUnreadCount();
+      fetchMessageUnreadCount();
     }
-  }, [user?.id, fetchUnreadCount]);
+  }, [user?.id, fetchUnreadCount, fetchMessageUnreadCount]);
 
   // Listen for real-time notifications via WebSocket instead of polling
   useEffect(() => {
@@ -119,16 +132,28 @@ export function DashboardLayout() {
       setUnreadCount((prev) => prev + 1);
     };
 
+    const handleNewMessage = () => {
+      // Only increment if user is not currently on messages page
+      if (!location.pathname.includes('/messages')) {
+        setMessageUnreadCount((prev) => prev + 1);
+      }
+    };
+
     webSocketService.on("new_notification", handleNewNotification);
+    webSocketService.on("new_message", handleNewMessage);
 
     return () => {
       webSocketService.off("new_notification", handleNewNotification);
+      webSocketService.off("new_message", handleNewMessage);
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleTabChange = useCallback((tab: string) => {
     navigate(`/dashboard/${tab}`);
     clearMobileSearch();
+    if (tab === 'messages') {
+      setMessageUnreadCount(0);
+    }
   }, [navigate]);
 
   const closeMentorshipModal = useCallback(() => setShowMentorshipModal(false), []);
@@ -144,6 +169,7 @@ export function DashboardLayout() {
         setShowMobileMenu={setShowMobileMenu}
         onTabChange={handleTabChange}
         onUnreadCountChange={fetchUnreadCount}
+        messageUnreadCount={messageUnreadCount}
       />
 
       {/* Mobile search bar */}
@@ -212,7 +238,7 @@ export function DashboardLayout() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden flex-shrink-0">
-        <BottomNavigation activeTab={activeTab} setActiveTab={handleTabChange} />
+        <BottomNavigation activeTab={activeTab} setActiveTab={handleTabChange} messageUnreadCount={messageUnreadCount} />
       </div>
 
       <MentorshipModal

@@ -23,6 +23,7 @@ export const GetRecentDiscussions = async (
     timeFilter?: string;
     isGlobal?: boolean;
     category?: string;
+    hashtag?: string;
     page?: number;
     limit?: number;
   } = {}
@@ -38,6 +39,7 @@ export const GetRecentDiscussions = async (
   if (filters.isGlobal !== undefined)
     queryParams.append("isGlobal", filters.isGlobal.toString());
   if (filters.category) queryParams.append("category", filters.category);
+  if (filters.hashtag) queryParams.append("hashtag", filters.hashtag);
   if (filters.page) queryParams.append("page", filters.page.toString());
   if (filters.limit) queryParams.append("limit", filters.limit.toString());
 

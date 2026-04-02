@@ -267,6 +267,70 @@ export const ReactivateAccount = async () => {
   return unwrap(res);
 };
 
+// ============================================================================
+// 5. UNIFIED PROFILE EDITING ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /user/profile/edit — Returns full editable profile (decrypted plaintext)
+ */
+export const GetEditableProfile = async () => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(`${API_URL}/user/profile/edit`);
+  return unwrap(res);
+};
+
+/**
+ * PUT /user/profile/edit — Send only changed sections/fields
+ * Returns the full updated profile (same shape as GET)
+ */
+export const UpdateEditableProfile = async (payload: {
+  basic?: {
+    first_name?: string;
+    last_name?: string;
+    username?: string;
+    avatar?: string;
+    bio?: string;
+    job_title?: string;
+    location?: string;
+    years_experience?: number;
+    skills?: string[];
+  };
+  company?: { company_name?: string };
+  identity?: {
+    career_level?: string;
+    race?: string;
+    gender?: string;
+    affinity_tags?: string; // JSON-encoded array string
+  };
+  mentor?: {
+    mentor_bio?: string;
+    expertise?: string[];
+    industries?: string[];
+    availability?: string;
+    response_time?: string;
+    mentoring_style?: string;
+    languages?: string[];
+    hourly_rate?: number;
+  };
+  mentee?: {
+    mentee_bio?: string;
+    goals?: string;
+    interests?: string[];
+    industries?: string[];
+    availability?: string;
+    urgency?: string;
+    topic?: string;
+    mentored_style?: string;
+    languages?: string[];
+    communication_method?: string;
+  };
+}) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(`${API_URL}/user/profile/edit`, payload);
+  return unwrap(res);
+};
+
 /**
  * Delete account permanently
  */
@@ -532,5 +596,27 @@ export const CheckFollowingStatus = async (userId: string) => {
   const res = await authFetch.get(
     `${API_URL}/users/${userId}/following/status`
   );
+  return unwrap(res);
+};
+
+// ============================================================================
+// COMPANY VERIFICATION ENDPOINTS
+// ============================================================================
+
+/**
+ * Send company verification email
+ */
+export const SendCompanyVerificationEmail = async (email: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/user/verify-company-email`, { email });
+  return unwrap(res);
+};
+
+/**
+ * Get company verification status
+ */
+export const GetCompanyVerificationStatus = async () => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(`${API_URL}/user/company-verification-status`);
   return unwrap(res);
 };

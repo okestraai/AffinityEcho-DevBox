@@ -15,6 +15,11 @@ import {
   Send,
   Clock,
   X,
+  Pencil,
+  Trash2,
+  Copy,
+  Check,
+  MoreVertical,
 } from "lucide-react";
 
 import { useAuth } from "../../../hooks/useAuth";
@@ -31,9 +36,13 @@ import {
   SetTypingStatus,
   GetConnectableUsers,
   SendAMessage,
+  DeleteMessage,
+  EditMessage,
+  DeleteConversation,
 } from "../../../../api/messaging";
 import { MentionInput, MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
 import { MentorshipRequestModal } from "../../Modals/MentorShipModals/MentorshipRequestModal";
@@ -86,6 +95,8 @@ interface Message {
   file_url?: string;
   file_name?: string;
   is_read: boolean;
+  is_edited?: boolean;
+  edited_at?: string;
   created_at: string;
   sent_at?: string;
   sender?: UserProfile;
@@ -175,6 +186,7 @@ type ChatFilter = "all" | "mentorship" | "regular";
 interface ConversationListProps {
   conversations: Conversation[];
   onSelect: (conv: Conversation) => void;
+  onDelete: (convId: string) => void;
   getIdentityRevealStatus: (conv: Conversation) => boolean | null;
   getTimeAgo: (dateString: string) => string;
   chatFilter: ChatFilter;
@@ -188,6 +200,7 @@ interface ConversationListProps {
 function ConversationList({
   conversations,
   onSelect,
+  onDelete,
   getIdentityRevealStatus,
   getTimeAgo,
   chatFilter,
@@ -198,6 +211,8 @@ function ConversationList({
   loadingMore,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = conversations.filter((c) => {
     if (chatFilter === "all") return true;
@@ -232,8 +247,8 @@ function ConversationList({
       <div className="flex gap-2 mb-3">
         {([
           { key: "all" as ChatFilter, label: "All", count: conversations.length },
-          { key: "mentorship" as ChatFilter, label: "Mentorship", count: mentorshipCount },
           { key: "regular" as ChatFilter, label: "Regular", count: regularCount },
+          { key: "mentorship" as ChatFilter, label: "Mentorship", count: mentorshipCount },
         ]).map((f) => (
           <button
             key={f.key}
@@ -301,67 +316,119 @@ function ConversationList({
             conv.context_type === "mentorship" || conv.chat_type === "mentorship";
 
           return (
-            <button
-              key={conv.id}
-              type="button"
-              onClick={() => onSelect(conv)}
-              className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div
-                    className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-lg`}
+            <div key={conv.id} className="relative">
+              {/* Confirm delete overlay */}
+              {confirmDeleteId === conv.id && (
+                <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-xl border border-red-200 z-10 flex items-center justify-center gap-3 px-4">
+                  <p className="text-sm text-gray-700">Delete this conversation?</p>
+                  <button
+                    type="button"
+                    onClick={() => { onDelete(conv.id); setConfirmDeleteId(null); }}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    {conv.other_user?.avatar || "👤"}
-                  </div>
-                  {identityRevealed && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-                      <Eye className="w-2 h-2 text-white m-auto" />
-                    </div>
-                  )}
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </div>
+              )}
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-medium text-gray-900 truncate">
-                        {resolveDisplayName(conv.other_user?.display_name, conv.other_user?.username) || "Unknown User"}
-                      </span>
-                      {isMentorship && (
-                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
-                          Mentorship
-                        </span>
-                      )}
+              <button
+                type="button"
+                onClick={() => onSelect(conv)}
+                className="w-full text-left p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div
+                      className={`w-10 h-10 ${isMentorship ? "bg-orange-100" : "bg-blue-100"} rounded-full flex items-center justify-center text-lg`}
+                    >
+                      {conv.other_user?.avatar || "👤"}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {conv.last_activity_at && (
-                        <span className="text-xs text-gray-500">
-                          {getTimeAgo(conv.last_activity_at)}
-                        </span>
-                      )}
-                      {Number(conv.unread_count) > 0 && (
-                        <div
-                          className={`w-5 h-5 ${isMentorship ? "bg-orange-600" : "bg-blue-600"} rounded-full flex items-center justify-center`}
-                        >
-                          <span className="text-xs text-white">
-                            {conv.unread_count}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-gray-500 truncate flex-1">
-                      {conv.last_message?.content_preview || "No messages yet"}
-                    </p>
-                    {!identityRevealed && (
-                      <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                    {identityRevealed && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                        <Eye className="w-2 h-2 text-white m-auto" />
+                      </div>
                     )}
                   </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="font-medium text-gray-900 truncate">
+                          {resolveDisplayName(conv.other_user?.display_name, conv.other_user?.username) || "Unknown User"}
+                        </span>
+                        {isMentorship && (
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
+                            Mentorship
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {conv.last_activity_at && (
+                          <span className="text-xs text-gray-500">
+                            {getTimeAgo(conv.last_activity_at)}
+                          </span>
+                        )}
+                        {Number(conv.unread_count) > 0 && (
+                          <div
+                            className={`w-5 h-5 ${isMentorship ? "bg-orange-600" : "bg-blue-600"} rounded-full flex items-center justify-center`}
+                          >
+                            <span className="text-xs text-white">
+                              {conv.unread_count}
+                            </span>
+                          </div>
+                        )}
+                        {/* Three-dot menu */}
+                        <div className="relative">
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenId(menuOpenId === conv.id ? null : conv.id);
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </div>
+                          {menuOpenId === conv.id && (
+                            <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMenuOpenId(null);
+                                  setConfirmDeleteId(conv.id);
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete conversation
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-500 truncate flex-1">
+                        {conv.last_message?.content_preview || "No messages yet"}
+                      </p>
+                      {!identityRevealed && (
+                        <Shield className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            </div>
           );
         })}
 
@@ -391,6 +458,9 @@ interface MessageInputProps {
   onSendMessage: (content: string) => Promise<void>;
   disabled?: boolean;
   isMentorship?: boolean;
+  editingMessage?: { id: string; text: string } | null;
+  onCancelEdit?: () => void;
+  onSaveEdit?: (messageId: string, content: string) => Promise<void>;
 }
 
 function MessageInputComponent({
@@ -398,6 +468,9 @@ function MessageInputComponent({
   onSendMessage,
   disabled,
   isMentorship,
+  editingMessage,
+  onCancelEdit,
+  onSaveEdit,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -452,9 +525,16 @@ function MessageInputComponent({
     };
   }, [conversationId, sendTypingStatus]);
 
+  // Pre-fill input when editing starts
+  useEffect(() => {
+    if (editingMessage) {
+      setMessage(editingMessage.text);
+    }
+  }, [editingMessage]);
+
   const handleInputChange = (value: string) => {
     setMessage(value);
-    handleTyping();
+    if (!editingMessage) handleTyping();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -471,7 +551,11 @@ function MessageInputComponent({
     setIsSending(true);
 
     try {
-      await onSendMessage(message);
+      if (editingMessage && onSaveEdit) {
+        await onSaveEdit(editingMessage.id, message.trim());
+      } else {
+        await onSendMessage(message);
+      }
       setMessage("");
       lastTypingSentRef.current = 0;
     } catch {
@@ -482,6 +566,12 @@ function MessageInputComponent({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" && editingMessage && onCancelEdit) {
+      e.preventDefault();
+      onCancelEdit();
+      setMessage("");
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -490,6 +580,22 @@ function MessageInputComponent({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
+      {editingMessage && (
+        <div className="flex items-center justify-between px-3 py-2 mb-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <Pencil className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+            <span className="text-xs font-medium text-blue-700">Editing message</span>
+            <span className="text-xs text-blue-500 truncate">{editingMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { onCancelEdit?.(); setMessage(""); }}
+            className="p-1 text-blue-400 hover:text-blue-600 flex-shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <MentionTextarea
           value={message}
@@ -513,10 +619,12 @@ function MessageInputComponent({
         >
           {isSending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : editingMessage ? (
+            <Check className="w-4 h-4" />
           ) : (
             <Send className="w-4 h-4" />
           )}
-          Send
+          {editingMessage ? "Save" : "Send"}
         </button>
       </div>
     </form>
@@ -568,6 +676,8 @@ export function MessagesView() {
   const [mentorProfileData, setMentorProfileData] = useState<any>(null);
   const [showMentorProfileModal, setShowMentorProfileModal] = useState(false);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{ id: string; text: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1220,6 +1330,20 @@ export function MessagesView() {
       handleIdentityRevealResponse,
     );
 
+    // Edit message real-time listener
+    const handleMessageEdited = (payload: { success?: boolean; data?: { message_id: string; content_encrypted: string; is_edited: boolean; edited_at: string } }) => {
+      if (payload?.data) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === payload.data!.message_id
+              ? { ...m, content_encrypted: payload.data!.content_encrypted, is_edited: true, edited_at: payload.data!.edited_at }
+              : m
+          )
+        );
+      }
+    };
+    webSocketService.on("message_edited", handleMessageEdited);
+
     return () => {
       webSocketService.off("new_message", handleNewMessage);
       webSocketService.off("message_sent", handleMessageSent);
@@ -1234,6 +1358,7 @@ export function MessagesView() {
         "identity_reveal_response",
         handleIdentityRevealResponse,
       );
+      webSocketService.off("message_edited", handleMessageEdited);
     };
   }, [user?.id, selectedConversation, fetchConversations, fetchIdentityRevealStatus, fetchMessages]);
 
@@ -1443,6 +1568,50 @@ export function MessagesView() {
     );
   };
 
+  // ==================== MESSAGE ACTIONS (EDIT / DELETE / COPY) ====================
+  const handleCopyMessage = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showToast("Message copied", "success");
+  };
+
+  const handleDeleteMessage = async (messageId: string, conversationId: string) => {
+    try {
+      await DeleteMessage(messageId, conversationId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      showToast("Message deleted", "info");
+    } catch {
+      showToast("Failed to delete message", "error");
+    }
+  };
+
+  const handleStartEdit = (message: Message) => {
+    setEditingMessage({ id: message.id, text: message.content_encrypted });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+  };
+
+  const handleSaveEdit = async (messageId: string, content: string) => {
+    if (!content.trim() || !selectedConversation) return;
+    try {
+      await EditMessage(messageId, {
+        conversation_id: selectedConversation.id,
+        content_encrypted: content.trim(),
+      });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, content_encrypted: content.trim(), is_edited: true, edited_at: new Date().toISOString() }
+            : m
+        )
+      );
+      handleCancelEdit();
+    } catch {
+      showToast("Failed to edit message", "error");
+    }
+  };
+
   // ==================== RENDER CHAT VIEW ====================
   if (selectedConversation) {
     const otherUser = selectedConversation.other_user || {
@@ -1469,7 +1638,7 @@ export function MessagesView() {
               type="button"
               onClick={() => {
                 setSelectedConversation(null);
-                navigate("/dashboard/messages");
+                navigate("/dashboard/messages", { replace: true });
               }}
               className="text-gray-500 hover:text-gray-700"
               aria-label="Back to conversations"
@@ -1502,8 +1671,8 @@ export function MessagesView() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500">
-                {otherUser.company} • {otherUser.job_title}
+              <p className="text-xs text-gray-500 flex items-center gap-1">
+                {otherUser.company}{(otherUser as any).is_company_verified && <VerifiedBadge size={12} />} • {otherUser.job_title}
               </p>
             </div>
             {!identityRevealed && (() => {
@@ -1626,14 +1795,55 @@ export function MessagesView() {
           ) : (
             messages.map((message) => {
               const isOwn = message.sender_id === user?.id;
+              const isHovered = hoveredMessageId === message.id;
+              const canEdit = isOwn && message.content_type === "text";
+              const isBeingEdited = editingMessage?.id === message.id;
               return (
                 <div
                   key={message.id}
-                  className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                  className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}
+                  onMouseEnter={() => setHoveredMessageId(message.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
                 >
-                  <div className={`max-w-[85vw] sm:max-w-xs md:max-w-[40vw] ${isOwn ? "text-right" : ""}`}>
+                  <div className={`relative max-w-[85vw] sm:max-w-xs md:max-w-[40vw] ${isOwn ? "text-right" : ""}`}>
+                    {/* Hover toolbar */}
+                    {isHovered && !isBeingEdited && (
+                      <div className={`absolute ${isOwn ? "left-0 -translate-x-full" : "right-0 translate-x-full"} top-0 flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5 z-10`}>
+                        <button
+                          onClick={() => handleCopyMessage(message.content_encrypted)}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                          title="Copy"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleStartEdit(message)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-blue-600"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isOwn && (
+                          <button
+                            onClick={() => handleDeleteMessage(message.id, selectedConversation.id)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Message bubble */}
                     <div
                       className={`inline-block px-3 py-2 rounded-2xl ${
+                        isBeingEdited
+                          ? "ring-2 ring-blue-400 "
+                          : ""
+                      }${
                         isOwn
                           ? `${isMentorship ? "bg-orange-600" : "bg-blue-600"} text-white rounded-br-md`
                           : "bg-white border border-gray-200 rounded-bl-md"
@@ -1641,8 +1851,10 @@ export function MessagesView() {
                     >
                       <MentionText text={message.content_encrypted} className="text-sm block" />
                     </div>
+
                     <p className="text-xs text-gray-500 mt-1">
                       {getTimeAgo(message.sent_at || message.created_at)}
+                      {message.is_edited && <span className="ml-1 italic">(edited)</span>}
                     </p>
                   </div>
                 </div>
@@ -1666,6 +1878,9 @@ export function MessagesView() {
             onSendMessage={handleSendMessage}
             isMentorship={isMentorship}
             disabled={loading.messages}
+            editingMessage={editingMessage}
+            onCancelEdit={handleCancelEdit}
+            onSaveEdit={handleSaveEdit}
           />
         </div>
       </div>
@@ -1825,6 +2040,15 @@ export function MessagesView() {
               onSelect={(conv) => {
                 setSelectedConversation(conv);
                 fetchMessages(conv.id);
+              }}
+              onDelete={async (convId) => {
+                try {
+                  await DeleteConversation(convId);
+                  setConversations((prev) => prev.filter((c) => c.id !== convId));
+                  showToast("Conversation deleted", "info");
+                } catch {
+                  showToast("Failed to delete conversation", "error");
+                }
               }}
               getIdentityRevealStatus={getIdentityRevealStatus}
               getTimeAgo={getTimeAgo}

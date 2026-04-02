@@ -1,6 +1,7 @@
 // components/Views/Mentorship/FindMentorshipView.tsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { resolveDisplayName } from "../../../utils/nameUtils";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import {
   Search,
   Filter,
@@ -912,8 +913,8 @@ export function FindMentorshipView() {
                   <p className="text-sm text-gray-600 mb-1">
                     {profile.jobTitle || profile.job_title || ""}
                   </p>
-                  <p className="text-xs text-blue-600 mb-2">
-                    {profile.company}
+                  <p className="text-xs text-blue-600 mb-2 flex items-center gap-1">
+                    {profile.company}{profile.is_company_verified && <VerifiedBadge size={12} />}
                   </p>
 
                   <div className="flex items-center gap-3 text-xs text-gray-500">
