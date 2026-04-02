@@ -19,7 +19,6 @@ import {
   Key,
   Pause,
   Trash2,
-  Save,
   Loader2,
   Bookmark,
   FileText,
@@ -41,7 +40,6 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   GetUserStats,
   GetUserBadges,
-  UpdateUsername,
   GetPrivacySettings,
   UpdatePrivacySettings,
   GetNotificationSettings,
@@ -57,6 +55,7 @@ import { GetMyNooks, GetBookmarkedNooks } from '../../../../api/nookApis';
 import { GetMyActivity, GetMyBookmarks } from '../../../../api/profileApis';
 import { GetFollowers, GetFollowing, UnfollowUser } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
+import { EditProfilePanel } from './EditProfilePanel';
 import { ProfileSkeleton, ProfilePageSkeleton, FollowListSkeleton, SettingsSkeleton } from '../../../Helper/SkeletonLoader';
 import { DecryptData } from '../../../../api/EncrytionApis';
 import { resolveAuthorName } from '../../../utils/nameUtils';
@@ -89,8 +88,6 @@ export function ProfileView() {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [editingName, setEditingName] = useState(false);
-  const [newName, setNewName] = useState(user?.username || '');
 
   // API Data States
   const [stats, setStats] = useState({
@@ -128,10 +125,12 @@ export function ProfileView() {
   // Loading States
   const [statsLoading, setStatsLoading] = useState(true);
   const [badgesLoading, setBadgesLoading] = useState(true);
-  const [usernameUpdating, setUsernameUpdating] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [pausingAccount, setPausingAccount] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Edit profile panel
+  const [showEditProfilePanel, setShowEditProfilePanel] = useState(false);
 
   // Delete account confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -490,26 +489,6 @@ export function ProfileView() {
     if (activePage === 'profile') return <ProfilePageSkeleton />;
     return <ProfileSkeleton />;
   }
-
-  const handleSaveName = async () => {
-    if (newName.trim() && newName !== user.username) {
-      try {
-        setUsernameUpdating(true);
-        await UpdateUsername(newName.trim());
-        updateUser({ username: newName.trim() });
-      } catch {
-        showToast('Error updating username. Please try again.', 'error');
-      } finally {
-        setUsernameUpdating(false);
-      }
-    }
-    setEditingName(false);
-  };
-
-  const handleCancelEdit = () => {
-    setNewName(user.username);
-    setEditingName(false);
-  };
 
   // Privacy toggle handler
   const handlePrivacyToggle = async (key: keyof PrivacySettings, value: PrivacySettings[keyof PrivacySettings]) => {
@@ -1774,28 +1753,16 @@ export function ProfileView() {
                 <h3 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Account</h3>
                 <div className="space-y-2">
                   <div className="p-3 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs sm:text-sm font-medium text-gray-700">Display Name</span>
-                      {!editingName && (
-                        <button type="button" onClick={() => setEditingName(true)} className="text-blue-600 hover:text-blue-700 text-sm p-1 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Edit display name">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    {editingName ? (
-                      <div className="space-y-2">
-                        <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm min-h-[44px]" placeholder="Enter your display name" />
-                        <div className="flex gap-2">
-                          <button onClick={handleSaveName} disabled={usernameUpdating} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors disabled:opacity-50 min-h-[44px]">
-                            {usernameUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                            {usernameUpdating ? 'Saving...' : 'Save'}
-                          </button>
-                          <button onClick={handleCancelEdit} className="px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition-colors min-h-[44px]">Cancel</button>
-                        </div>
+                    <button
+                      onClick={() => setShowEditProfilePanel(true)}
+                      className="w-full flex items-center justify-between min-h-[44px] hover:bg-gray-50 rounded-lg transition-colors px-1"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Edit3 className="w-4 h-4 text-blue-600" />
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">Edit My Profile</span>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-900">{user.username}</p>
-                    )}
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
 
                   <button onClick={() => navigate('/change-password')} className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]">
@@ -1876,6 +1843,10 @@ export function ProfileView() {
         </div>
       )}
 
+      {/* Edit Profile Panel */}
+      {showEditProfilePanel && (
+        <EditProfilePanel onClose={() => setShowEditProfilePanel(false)} />
+      )}
     </div>
   );
 }
