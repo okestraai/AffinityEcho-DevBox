@@ -23,6 +23,8 @@ export const COMPANY_DOMAINS: Record<string, string[]> = {
   'PwC':                     ['pwc.com', 'pwcglobal.com'],
   'Tesla':                   ['tesla.com', 'teslamotors.com'],
   'Wells Fargo':             ['wellsfargo.com', 'wf.com'],
+  'Memorial University of Newfoundland': ['mun.ca'],
+  'Staples Canada':          ['staples.ca'],
 };
 
 /** Check if a company name is in our supported verification list */

@@ -70,6 +70,7 @@ const STATIC_COMPANIES = [
   'Boston Consulting Group', 'Deloitte', 'PwC',
   'Johnson & Johnson', 'Pfizer', 'Merck', 'Abbott',
   'Bristol Myers Squibb',
+  'Memorial University of Newfoundland', 'Staples Canada',
 ];
 
 // ── Sub-components ──────────────────────────────────────────────────────────

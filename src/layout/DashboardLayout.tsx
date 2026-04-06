@@ -128,14 +128,25 @@ export function DashboardLayout() {
 
   // Listen for real-time notifications via WebSocket instead of polling
   useEffect(() => {
+    // Play notification sound
+    const playNotificationSound = () => {
+      try {
+        const audio = new Audio('/sounds/notification.wav');
+        audio.volume = 0.5;
+        audio.play().catch(() => {}); // silent fail if browser blocks autoplay
+      } catch {}
+    };
+
     const handleNewNotification = () => {
       setUnreadCount((prev) => prev + 1);
+      playNotificationSound();
     };
 
     const handleNewMessage = () => {
       // Only increment if user is not currently on messages page
       if (!location.pathname.includes('/messages')) {
         setMessageUnreadCount((prev) => prev + 1);
+        playNotificationSound();
       }
     };
 

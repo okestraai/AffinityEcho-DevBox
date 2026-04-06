@@ -44,6 +44,8 @@ export function CompanyStep({ data, updateData, onNext }: Props) {
     "Merck",
     "Abbott",
     "Bristol Myers Squibb",
+    "Memorial University of Newfoundland",
+    "Staples Canada",
   ];
 
   const filteredCompanies = staticCompanies.filter((company) =>
