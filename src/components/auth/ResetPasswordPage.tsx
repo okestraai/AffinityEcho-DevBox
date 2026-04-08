@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { ResetPassword } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
+import { validatePassword } from '../../utils/passwordUtils';
+import PasswordStrengthIndicator from '../shared/PasswordStrengthIndicator';
 
 export function ResetPasswordPage() {
   const location = useLocation();
@@ -25,22 +27,6 @@ export function ResetPasswordPage() {
       navigate('/login');
     }
   }, [email, navigate]);
-
-  const validatePassword = (password: string): string | null => {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-    if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    return null;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,24 +73,6 @@ export function ResetPasswordPage() {
       setLoading(false);
     }
   };
-
-  const getPasswordStrength = (password: string) => {
-    if (!password) return { label: '', color: '', width: '0%' };
-
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    if (score <= 2) return { label: 'Weak', color: 'bg-red-500', width: '33%' };
-    if (score <= 4) return { label: 'Good', color: 'bg-yellow-500', width: '66%' };
-    return { label: 'Strong', color: 'bg-green-500', width: '100%' };
-  };
-
-  const strength = getPasswordStrength(newPassword);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
@@ -186,25 +154,7 @@ export function ResetPasswordPage() {
                 </button>
               </div>
 
-              {newPassword && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-600">Strength:</span>
-                    <span className={`font-bold ${
-                      strength.label === 'Weak' ? 'text-red-600' :
-                      strength.label === 'Good' ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {strength.label}
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`${strength.color} h-full rounded-full transition-all duration-300`}
-                      style={{ width: strength.width }}
-                    />
-                  </div>
-                </div>
-              )}
+              <PasswordStrengthIndicator password={newPassword} />
             </div>
 
             {/* Confirm Password */}

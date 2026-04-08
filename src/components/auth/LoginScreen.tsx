@@ -18,6 +18,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { validatePassword } from "../../utils/passwordUtils";
+import PasswordStrengthIndicator from "../shared/PasswordStrengthIndicator";
 
 export function LoginScreen() {
   const { login, signup, socialLogin, forgotPassword, actionLoading } = useAuth();
@@ -48,9 +50,12 @@ export function LoginScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
+    if (!isLogin) {
+      const pwError = validatePassword(password);
+      if (pwError) {
+        setError(pwError);
+        return;
+      }
     }
 
     try {
@@ -347,6 +352,7 @@ export function LoginScreen() {
                             )}
                           </button>
                         </div>
+                        {!isLogin && <PasswordStrengthIndicator password={password} />}
                       </div>
 
                       {!isLogin && (

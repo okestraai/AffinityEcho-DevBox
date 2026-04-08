@@ -4,6 +4,8 @@ import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield } from '
 import { useAuth } from '../../hooks/useAuth';
 import { ChangePassword } from '../../../api/profileApis';
 import { showToast } from '../../Helper/ShowToast';
+import { validatePassword } from '../../utils/passwordUtils';
+import PasswordStrengthIndicator from '../shared/PasswordStrengthIndicator';
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -18,22 +20,6 @@ export function ChangePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-
-  const validatePassword = (password: string): string | null => {
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters long';
-    }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-    if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    return null;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,24 +65,6 @@ export function ChangePasswordPage() {
       setLoading(false);
     }
   };
-
-  const getPasswordStrength = (password: string): { strength: string; color: string; width: string } => {
-    if (!password) return { strength: '', color: '', width: '0%' };
-
-    let score = 0;
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    if (score <= 2) return { strength: 'Weak', color: 'bg-red-500', width: '33%' };
-    if (score <= 4) return { strength: 'Medium', color: 'bg-yellow-500', width: '66%' };
-    return { strength: 'Strong', color: 'bg-green-500', width: '100%' };
-  };
-
-  const passwordStrength = getPasswordStrength(newPassword);
 
   if (!user) {
     navigate('/login');
@@ -189,44 +157,7 @@ export function ChangePasswordPage() {
                 </button>
               </div>
 
-              {newPassword && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Password strength:</span>
-                    <span className={`text-xs font-semibold ${
-                      passwordStrength.strength === 'Weak' ? 'text-red-600' :
-                      passwordStrength.strength === 'Medium' ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`}>
-                      {passwordStrength.strength}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`${passwordStrength.color} h-2 rounded-full transition-all duration-300`}
-                      style={{ width: passwordStrength.width }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-3 space-y-1">
-                <p className="text-xs text-gray-600">Password must contain:</p>
-                <ul className="text-xs text-gray-500 space-y-1 ml-4">
-                  <li className={newPassword.length >= 6 ? 'text-green-600' : ''}>
-                    • At least 6 characters
-                  </li>
-                  <li className={/[A-Z]/.test(newPassword) ? 'text-green-600' : ''}>
-                    • One uppercase letter
-                  </li>
-                  <li className={/[a-z]/.test(newPassword) ? 'text-green-600' : ''}>
-                    • One lowercase letter
-                  </li>
-                  <li className={/[0-9]/.test(newPassword) ? 'text-green-600' : ''}>
-                    • One number
-                  </li>
-                </ul>
-              </div>
+              <PasswordStrengthIndicator password={newPassword} />
             </div>
 
             <div>
