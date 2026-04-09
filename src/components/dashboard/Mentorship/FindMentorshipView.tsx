@@ -882,7 +882,7 @@ export function FindMentorshipView() {
           {filteredProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all"
+              className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all flex flex-col"
             >
               <div className="flex items-start gap-4 mb-4">
                 <button
@@ -932,11 +932,11 @@ export function FindMentorshipView() {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-700 mb-4 line-clamp-2 leading-relaxed">
+              <p className="text-sm text-gray-700 mb-4 line-clamp-2 leading-relaxed h-10">
                 {profile.bio}
               </p>
 
-              <div className="mb-4">
+              <div className="mb-4 h-8">
                 <div className="flex flex-wrap gap-1">
                   {(profile.expertise && Array.isArray(profile.expertise)
                     ? profile.expertise.slice(0, 3)
@@ -959,10 +959,10 @@ export function FindMentorshipView() {
                 </div>
               </div>
 
-              {profile.affinityTags &&
-                Array.isArray(profile.affinityTags) &&
-                profile.affinityTags.length > 0 && (
-                  <div className="mb-4">
+              <div className="mb-4 h-7">
+                {profile.affinityTags &&
+                  Array.isArray(profile.affinityTags) &&
+                  profile.affinityTags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {profile.affinityTags.slice(0, 2).map((tag) => (
                         <span
@@ -973,10 +973,10 @@ export function FindMentorshipView() {
                         </span>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+              </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-4 pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-4 pb-4 border-b border-gray-200 mt-auto">
                 <div className="flex items-center gap-1">
                   <Briefcase className="w-3 h-3" />
                   {profile.availability ||

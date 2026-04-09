@@ -267,11 +267,13 @@ export function FeedsView() {
         visibility: "global",
       });
 
+      showToast("Post created successfully!", "success");
       setPostContent("");
       setShowCreatePost(false);
       loadFeed(1);
     } catch (error) {
       console.error("Error creating post:", error);
+      showToast("Failed to create post", "error");
     } finally {
       setSubmitting(false);
     }

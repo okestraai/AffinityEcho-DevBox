@@ -176,7 +176,7 @@ export function ForumTopicsMode(props: any) {
               <button
                 key={forum.id}
                 onClick={() => handleForumSelect(forum.id)}
-                className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all group"
+                className="text-left bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all group flex flex-col"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-3xl">{forum.icon}</span>
@@ -184,11 +184,11 @@ export function ForumTopicsMode(props: any) {
                     {forum.name}
                   </h3>
                 </div>
-                <p className="text-gray-600 mb-4 leading-relaxed">
+                <p className="text-gray-600 mb-4 leading-relaxed line-clamp-2 h-12">
                   {forum.description}
                 </p>
 
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-3 gap-3 mb-4 mt-auto">
                   <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="text-lg font-bold text-blue-600">
                       {forum.topic_count || 0}

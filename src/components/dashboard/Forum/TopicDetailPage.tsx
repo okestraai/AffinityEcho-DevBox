@@ -628,11 +628,11 @@ export function TopicDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       <div className="max-w-4xl mx-auto px-4 py-6">
         <button
-          onClick={() => navigate("/dashboard/forums")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Forums
+          Back
         </button>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">

@@ -51,7 +51,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
   return (
     <div
       onClick={() => onClick(nook.id)}
-      className="group bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+      className="group bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 flex flex-col"
     >
       {/* Nook Header */}
       <div className={`bg-gradient-to-r ${getUrgencyColor(nook.urgency)} p-1`}>
@@ -61,7 +61,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
               <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 group-hover:text-purple-600 transition-colors truncate">
                 {nook.title}
               </h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed line-clamp-2">
+              <p className="text-gray-600 text-xs md:text-sm leading-relaxed line-clamp-2 h-8 md:h-10">
                 {nook.description}
               </p>
             </div>
@@ -70,7 +70,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
+          <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3 h-6 md:h-7 overflow-hidden">
             {nook.hashtags.map((tag) => (
               <span
                 key={tag}
@@ -84,7 +84,7 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
       </div>
 
       {/* Nook Stats */}
-      <div className="p-3 md:p-4">
+      <div className="p-3 md:p-4 mt-auto">
         <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3 md:mb-4">
           <div className="text-center">
             <div className="text-base md:text-lg font-bold text-purple-600">

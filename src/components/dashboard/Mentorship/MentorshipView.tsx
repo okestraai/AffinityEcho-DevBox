@@ -526,7 +526,7 @@ export function MentorshipView() {
               return (
                 <div
                   key={mentor.id || mentorUser?.id}
-                  className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all"
+                  className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all flex flex-col"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <button
@@ -573,35 +573,37 @@ export function MentorshipView() {
                     </div>
                   </div>
 
-                  {mentorUser?.mentorProfile?.expertise &&
-                    mentorUser.mentorProfile.expertise.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {mentorUser.mentorProfile.expertise
-                          .slice(0, 3)
-                          .map((skill: string, idx: number) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium break-words"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                      </div>
+                  <div className="h-8 mb-3">
+                    {mentorUser?.mentorProfile?.expertise &&
+                      mentorUser.mentorProfile.expertise.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {mentorUser.mentorProfile.expertise
+                            .slice(0, 3)
+                            .map((skill: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium break-words"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                  </div>
+
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-3 h-10">
+                    {mentorUser?.mentorProfile?.bio || mentorUser?.bio || ""}
+                  </p>
+
+                  <div className="h-5 mb-3">
+                    {mentor.message && (
+                      <p className="text-sm text-gray-500 italic truncate">
+                        "{mentor.message}"
+                      </p>
                     )}
+                  </div>
 
-                  {(mentorUser?.mentorProfile?.bio || mentorUser?.bio) && (
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                      {mentorUser.mentorProfile?.bio || mentorUser.bio}
-                    </p>
-                  )}
-
-                  {mentor.message && (
-                    <p className="text-sm text-gray-500 italic mb-3">
-                      "{mentor.message}"
-                    </p>
-                  )}
-
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-auto">
                     <button
                       onClick={() => handleStartChat(mentorUser?.id || "")}
                       className="flex-1 py-2 px-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center justify-center gap-2"
@@ -724,7 +726,7 @@ export function MentorshipView() {
               return (
                 <div
                   key={mentee.id || menteeUser?.id}
-                  className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all"
+                  className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-all flex flex-col"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <button
@@ -771,35 +773,37 @@ export function MentorshipView() {
                     </div>
                   </div>
 
-                  {(menteeUser?.menteeProfile?.interests || menteeUser?.mentorProfile?.expertise) &&
-                    (menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {(menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)
-                          .slice(0, 3)
-                          .map((skill: string, idx: number) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium break-words"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                      </div>
+                  <div className="h-8 mb-3">
+                    {(menteeUser?.menteeProfile?.interests || menteeUser?.mentorProfile?.expertise) &&
+                      (menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {(menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)
+                            .slice(0, 3)
+                            .map((skill: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium break-words"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                  </div>
+
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-3 h-10">
+                    {menteeUser?.menteeProfile?.bio || menteeUser?.mentorProfile?.bio || menteeUser?.bio || ""}
+                  </p>
+
+                  <div className="h-5 mb-3">
+                    {mentee.message && (
+                      <p className="text-sm text-gray-500 italic truncate">
+                        "{mentee.message}"
+                      </p>
                     )}
+                  </div>
 
-                  {(menteeUser?.menteeProfile?.bio || menteeUser?.mentorProfile?.bio || menteeUser?.bio) && (
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                      {menteeUser.menteeProfile?.bio || menteeUser.mentorProfile?.bio || menteeUser.bio}
-                    </p>
-                  )}
-
-                  {mentee.message && (
-                    <p className="text-sm text-gray-500 italic mb-3">
-                      "{mentee.message}"
-                    </p>
-                  )}
-
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-auto">
                     <button
                       onClick={() => handleStartChat(menteeUser?.id || "")}
                       className="flex-1 py-2 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center justify-center gap-2"
