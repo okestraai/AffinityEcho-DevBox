@@ -28,7 +28,6 @@ import {
   Globe,
   Building,
   UserPlus,
-  UserMinus,
   Star,
   BadgeCheck,
   Mail,
@@ -1511,64 +1510,42 @@ export function ProfileView() {
               ) : followSubTab === 'following' ? (
                 /* === FOLLOWING LIST === */
                 following.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {following.map((person) => {
                       const personId = person.followed_id || person.id || person.user_id;
                       const profile = person.followed_user || person.user || person;
                       const name = profile.display_name || profile.username || 'Anonymous';
                       const avatar = profile.avatar || name[0]?.toUpperCase() || '?';
-                      const jobTitle = profile.job_title || profile.jobTitle || '';
-                      const company = profile.company || profile.company_encrypted || '';
-                      const affinityTags: string[] = profile.affinity_tags || profile.affinityTags || [];
 
                       return (
                         <div
                           key={personId}
-                          className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-all"
+                          className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5 hover:bg-gray-100 transition-colors"
                         >
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
-                              {avatar.length > 2 ? avatar : avatar}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
-                                <div className="min-w-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => navigate(`/dashboard/profile/${personId}`)}
-                                    className="font-semibold text-gray-900 text-xs sm:text-sm hover:text-purple-600 hover:underline text-left"
-                                  >
-                                    {name}
-                                  </button>
-                                  {jobTitle && (
-                                    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{jobTitle}{company ? ` at ${company}` : ''}</p>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => handleUnfollow(personId)}
-                                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors min-h-[36px] sm:min-h-[44px] shrink-0"
-                                >
-                                  <UserMinus className="w-3 h-3" />
-                                  Unfollow
-                                </button>
-                              </div>
-                              {affinityTags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {affinityTags.slice(0, 3).map((tag: string) => (
-                                    <span key={tag} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                  {affinityTags.length > 3 && (
-                                    <span className="text-xs text-gray-400">+{affinityTags.length - 3}</span>
-                                  )}
-                                </div>
-                              )}
-                              {person.followed_at && (
-                                <p className="text-xs text-gray-400 mt-1.5">Following since {new Date(person.followed_at).toLocaleDateString()}</p>
-                              )}
-                            </div>
+                          <button
+                            onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                            className="w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center text-lg flex-shrink-0 hover:scale-105 transition-transform"
+                          >
+                            {avatar}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                              className="font-semibold text-gray-900 text-sm hover:text-purple-600 text-left truncate block"
+                            >
+                              {name}
+                            </button>
+                            <p className="text-xs text-gray-400">
+                              @{profile.username || name}{(person.followed_at || person.followedAt || person.created_at) ? ` · Followed ${new Date(person.followed_at || person.followedAt || person.created_at).toLocaleDateString()}` : ''}
+                            </p>
                           </div>
+                          <button
+                            onClick={() => handleUnfollow(personId)}
+                            className="px-3 py-1.5 text-xs font-semibold text-purple-600 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shrink-0"
+                          >
+                            Unfollow
+                          </button>
                         </div>
                       );
                     })}
@@ -1591,54 +1568,35 @@ export function ProfileView() {
               ) : (
                 /* === FOLLOWERS LIST === */
                 followers.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {followers.map((person) => {
                       const personId = person.follower_id || person.id || person.user_id;
                       const profile = person.follower_user || person.user || person;
                       const name = profile.display_name || profile.username || 'Anonymous';
                       const avatar = profile.avatar || name[0]?.toUpperCase() || '?';
-                      const jobTitle = profile.job_title || profile.jobTitle || '';
-                      const company = profile.company || profile.company_encrypted || '';
-                      const affinityTags: string[] = profile.affinity_tags || profile.affinityTags || [];
 
                       return (
                         <div
                           key={personId}
-                          className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-all"
+                          className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5 hover:bg-gray-100 transition-colors"
                         >
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
-                              {avatar.length > 2 ? avatar : avatar}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div>
-                                <button
-                                  type="button"
-                                  onClick={() => navigate(`/dashboard/profile/${personId}`)}
-                                  className="font-semibold text-gray-900 text-xs sm:text-sm hover:text-purple-600 hover:underline text-left"
-                                >
-                                  {name}
-                                </button>
-                                {jobTitle && (
-                                  <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{jobTitle}{company ? ` at ${company}` : ''}</p>
-                                )}
-                              </div>
-                              {affinityTags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {affinityTags.slice(0, 3).map((tag: string) => (
-                                    <span key={tag} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                  {affinityTags.length > 3 && (
-                                    <span className="text-xs text-gray-400">+{affinityTags.length - 3}</span>
-                                  )}
-                                </div>
-                              )}
-                              {person.followed_at && (
-                                <p className="text-xs text-gray-400 mt-1.5">Following you since {new Date(person.followed_at).toLocaleDateString()}</p>
-                              )}
-                            </div>
+                          <button
+                            onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                            className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center text-lg flex-shrink-0 hover:scale-105 transition-transform"
+                          >
+                            {avatar}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/dashboard/profile/${personId}`)}
+                              className="font-semibold text-gray-900 text-sm hover:text-purple-600 text-left truncate block"
+                            >
+                              {name}
+                            </button>
+                            <p className="text-xs text-gray-400">
+                              @{profile.username || name}{(person.followed_at || person.followedAt || person.created_at) ? ` · Followed ${new Date(person.followed_at || person.followedAt || person.created_at).toLocaleDateString()}` : ''}
+                            </p>
                           </div>
                         </div>
                       );
