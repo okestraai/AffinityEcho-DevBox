@@ -74,16 +74,13 @@ export function MentorshipProfileModal({
       setLoading(true);
       try {
         // Run independent calls in parallel
-        const [, , profileExists] = await Promise.all([
+        await Promise.all([
           fetchFilterOptions(),
-          loadUserData(),
           checkProfileStatusAndFetch(),
         ]);
 
-        // This depends on profileExists result
-        if (mode === "edit" || profileExists) {
-          await fetchMentorProfile();
-        }
+        // Always call fetchMentorProfile — it returns basicProfile even when no mentor profile exists yet
+        await fetchMentorProfile();
       } catch (error) {
 
         showToast("Error loading profile data", "error");
@@ -114,6 +111,8 @@ export function MentorshipProfileModal({
             jobTitle: bp.jobTitle || "",
             yearsExperience: bp.yearsExperience || 0,
             bio: bp.bio || "",
+            mentorBio: bp.bio || "",
+            expertise: Array.isArray(bp.skills) && bp.skills.length > 0 ? bp.skills : prev.expertise,
           }));
           return;
         }
@@ -277,6 +276,7 @@ export function MentorshipProfileModal({
 
         
 
+        const fallbackBio = getStringFromUser("bio", "");
         setFormData((prev) => ({
           ...prev,
           company: decryptedData.company || getStringFromUser("company", ""),
@@ -288,7 +288,8 @@ export function MentorshipProfileModal({
           location: decryptedData.location || getStringFromUser("location", ""),
           jobTitle: getStringFromUser("job_title", ""),
           yearsExperience: currentUser.years_experience || 0,
-          bio: getStringFromUser("bio", ""),
+          bio: fallbackBio,
+          mentorBio: fallbackBio,
         }));
       }
     } catch (err) {
@@ -306,19 +307,19 @@ export function MentorshipProfileModal({
      
 
       // Check if user has mentor profile in the new structure
-      const hasMentorProfile = profileData?.mentorProfile !== undefined;
-      const hasMenteeProfile = profileData?.menteeProfile !== undefined;
-      const isActiveMentor = profileData?.mentorProfile?.isActive || false;
-      const isActiveMentee = profileData?.menteeProfile?.isActive || false;
-      const mentoringAs = profileData?.status?.mentoringAs || "none";
+      const hasMentorProfile = profileData?.hasMentorProfile === true;
+      const hasMenteeProfile = profileData?.hasMenteeProfile === true;
+      const isActiveMentor = profileData?.isActiveMentor || false;
+      const isActiveMentee = profileData?.isActiveMentee || false;
+      const mentoringAs = profileData?.mentoringAs || "none";
 
       // Determine if user has a profile (mentor profile exists)
       const profileExists = hasMentorProfile;
 
       setHasProfile(!!profileExists);
 
-      if (profileExists && profileData.id) {
-        setProfileId(profileData.id);
+      if (profileExists && profileData.profileId) {
+        setProfileId(profileData.profileId);
       }
 
       return profileExists;

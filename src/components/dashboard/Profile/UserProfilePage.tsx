@@ -19,6 +19,7 @@ import { ToggleFeedReaction, ToggleBookmark } from '../../../../api/feedApis';
 import { ForumTopicsReactions, ToggleTopicBookmark } from '../../../../api/forumApis';
 import { useAuth } from '../../../hooks/useAuth';
 import { resolveDisplayName } from '../../../utils/nameUtils';
+import { VerifiedBadge } from '../../shared/VerifiedBadge';
 import { showToast } from '../../../Helper/ShowToast';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ interface ProfileData {
   isFollowedBy?: boolean;
   followersCount?: number;
   followingCount?: number;
+  is_company_verified?: boolean;
   affinityTags?: string[];
   stats?: {
     postsCreated?: number;
@@ -158,6 +160,7 @@ export function UserProfilePage() {
           followersCount: p.followersCount ?? p.followers_count ?? 0,
           followingCount: p.followingCount ?? p.following_count ?? 0,
           affinityTags: p.affinityTags || p.affinity_tags || [],
+          is_company_verified: p.is_company_verified ?? false,
           stats: p.stats,
         });
         setIsFollowing(p.isFollowing ?? false);
@@ -393,7 +396,7 @@ export function UserProfilePage() {
           </div>
 
           {/* Name + meta */}
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{displayName}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight inline-flex items-center gap-1.5">{displayName}{profile.is_company_verified && <VerifiedBadge size={22} />}</h1>
           <p className="text-sm text-gray-400 font-medium">@{profile.username}</p>
 
           {/* Info pills */}

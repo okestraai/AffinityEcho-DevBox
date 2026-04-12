@@ -41,6 +41,7 @@ import { showToast } from "../../../Helper/ShowToast";
 import { OkestraPanel } from "../OkestraPanel";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { resolveAuthorName } from "../../../utils/nameUtils";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 
@@ -535,6 +536,7 @@ export function TopicDetailPage() {
                 >
                   {resolveAuthorName(currentUser, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}{" "}
                   {comment.user_profile?.avatar || "👤"}
+                  {(comment.user_profile?.is_company_verified ?? comment.author?.is_company_verified) && <VerifiedBadge size={16} />}
                 </button>
                 {isAuthor && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -653,9 +655,10 @@ export function TopicDetailPage() {
                     onClick={() => handleUserClick(topic.user_id)}
                     onMouseEnter={() => handleUserHover(topic.user_id)}
                     onMouseLeave={handleUserHoverLeave}
-                    className="font-bold text-gray-900 hover:text-blue-600 transition-colors block"
+                    className="font-bold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                   >
                     {resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username)}
+                    {(topic.user_profile?.is_company_verified ?? topic.author?.is_company_verified) && <VerifiedBadge size={16} />}
                   </button>
 
                   <div className="flex items-center gap-2 text-sm text-gray-500">

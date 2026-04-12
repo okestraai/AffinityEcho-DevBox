@@ -26,6 +26,7 @@ import {
 } from "../../../../api/mentorshipApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 
 interface MentorshipRequestsViewProps {
   onBack: () => void;
@@ -34,6 +35,7 @@ interface MentorshipRequestsViewProps {
 interface DecryptedProfile {
   id: string;
   username: string;
+  display_name?: string;
   avatar: string;
   job_title: string;
   company: string;
@@ -42,6 +44,7 @@ interface DecryptedProfile {
   location: string;
   years_experience: number;
   career_level?: string;
+  is_company_verified?: boolean;
 }
 
 // Extended type to include requestContext from API response
@@ -278,6 +281,7 @@ export function MentorshipRequestsView({
             location: profile.location || "",
             years_experience: profile.years_experience || 0,
             career_level: decryptedCareerLevel,
+            is_company_verified: profile.is_company_verified ?? false,
           };
         } catch {
           newDecryptedProfiles[requestId] = {
@@ -291,6 +295,7 @@ export function MentorshipRequestsView({
             skills: profile.mentor_expertise || [],
             location: profile.location || "",
             years_experience: profile.years_experience || 0,
+            is_company_verified: profile.is_company_verified ?? false,
           };
         }
       }
@@ -667,8 +672,9 @@ export function MentorshipRequestsView({
                     <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2 sm:gap-4 mb-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900 text-base md:text-lg">
+                          <h3 className="font-semibold text-gray-900 text-base md:text-lg inline-flex items-center gap-1">
                             {resolveDisplayName(profile.display_name, profile.username)}
+                            {profile.is_company_verified && <VerifiedBadge size={16} />}
                           </h3>
                           {isUnread && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

@@ -11,6 +11,7 @@ import {
 import { ClapIcon } from "../../shared/ClapIcon";
 import { useState } from "react";
 import { resolveAuthorName } from "../../../utils/nameUtils";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { useAuth } from "../../../hooks/useAuth";
 import { MentionText } from "../../shared/MentionText";
 
@@ -29,6 +30,7 @@ interface NookMessageProps {
       avatar: string;
       username: string;
       display_name?: string;
+      is_company_verified?: boolean;
     } | null;
     replies?: any[];
   };
@@ -168,7 +170,7 @@ export function NookMessage({
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={() => !isAnonymous && onUserClick(message.user_id)}
-              className={`font-medium text-gray-900 truncate ${
+              className={`font-medium text-gray-900 truncate inline-flex items-center gap-1 ${
                 !isAnonymous
                   ? "hover:text-purple-600 cursor-pointer"
                   : "cursor-default"
@@ -176,6 +178,7 @@ export function NookMessage({
               disabled={isAnonymous}
             >
               {displayName}
+              {!isAnonymous && user?.is_company_verified && <VerifiedBadge size={16} />}
             </button>
             <span className="text-xs text-gray-400 flex-shrink-0">
               • {getTimeAgo(message.created_at)}

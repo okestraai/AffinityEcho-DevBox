@@ -360,8 +360,9 @@ function ConversationList({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="font-medium text-gray-900 truncate">
+                        <span className="font-medium text-gray-900 truncate inline-flex items-center gap-1">
                           {resolveDisplayName(conv.other_user?.display_name, conv.other_user?.username) || "Unknown User"}
+                          {conv.other_user?.is_company_verified && <VerifiedBadge size={13} />}
                         </span>
                         {isMentorship && (
                           <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
@@ -833,19 +834,28 @@ export function MessagesView() {
         setMessages(messagesArray);
 
         // Mark messages as read silently
-        if (messagesArray.length > 0) {
-          const lastMessage = messagesArray[messagesArray.length - 1];
-          if (
-            lastMessage &&
-            !lastMessage.is_read &&
-            lastMessage.sender_id !== user?.id
-          ) {
-            try {
-              await MarkMessagesAsRead(conversationId, lastMessage.id);
-              webSocketService.markAsRead(lastMessage.id, conversationId);
-            } catch {
-              // Silent failure
-            }
+        const unreadFromOther = messagesArray.filter(
+          (m) => !m.is_read && m.sender_id !== user?.id
+        );
+        if (unreadFromOther.length > 0) {
+          const lastUnread = unreadFromOther[unreadFromOther.length - 1];
+          try {
+            await MarkMessagesAsRead(conversationId, lastUnread.id);
+            webSocketService.markAsRead(lastUnread.id, conversationId);
+            // Update local message state
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.sender_id !== user?.id ? { ...m, is_read: true } : m
+              )
+            );
+            // Reset unread_count for this conversation
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === conversationId ? { ...c, unread_count: 0 } : c
+              )
+            );
+          } catch {
+            // Silent failure
           }
         }
       } catch {
@@ -1231,9 +1241,16 @@ export function MessagesView() {
         if (!messageData.is_read && messageData.id) {
           MarkMessagesAsRead(selectedConversation.id, messageData.id)
             .then(() => {
-              webSocketService.markAsRead(
-                messageData.id,
-                selectedConversation.id,
+              webSocketService.markAsRead(messageData.id, selectedConversation.id);
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.sender_id !== user?.id ? { ...m, is_read: true } : m
+                )
+              );
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.id === selectedConversation.id ? { ...c, unread_count: 0 } : c
+                )
               );
             })
             .catch(() => {});
@@ -1330,6 +1347,25 @@ export function MessagesView() {
       handleIdentityRevealResponse,
     );
 
+    // Handle read receipts from the other user
+    const handleMessagesRead = (payload: { conversationId: string; readBy: string; messageId: string }) => {
+      if (!payload?.conversationId || payload.readBy === user?.id) return;
+      // Only update messages state when the event is for the currently open conversation
+      if (selectedConversation?.id === payload.conversationId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.sender_id === user?.id ? { ...m, is_read: true } : m
+          )
+        );
+      }
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === payload.conversationId ? { ...c, unread_count: 0 } : c
+        )
+      );
+    };
+    webSocketService.on("messages_read", handleMessagesRead);
+
     // Edit message real-time listener
     const handleMessageEdited = (payload: { success?: boolean; data?: { message_id: string; content_encrypted: string; is_edited: boolean; edited_at: string } }) => {
       if (payload?.data) {
@@ -1359,6 +1395,7 @@ export function MessagesView() {
         handleIdentityRevealResponse,
       );
       webSocketService.off("message_edited", handleMessageEdited);
+      webSocketService.off("messages_read", handleMessagesRead);
     };
   }, [user?.id, selectedConversation, fetchConversations, fetchIdentityRevealStatus, fetchMessages]);
 
@@ -1542,10 +1579,6 @@ export function MessagesView() {
 
   // ==================== UTILITY FUNCTIONS ====================
 
-  const unreadCount = conversations.reduce(
-    (acc, conv) => acc + (conv.unread_count || 0),
-    0,
-  );
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -1630,7 +1663,7 @@ export function MessagesView() {
     );
     return (
       <>
-      <div className="flex flex-col bg-gray-50 -mx-3 sm:-mx-4 md:-mx-6 -my-4 md:-my-8 -mb-20 md:-mb-8 h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)]">
+      <div className="flex flex-col bg-gray-50 -mx-3 sm:-mx-4 md:-mx-6 -my-4 md:-my-8 -mb-20 md:-mb-8 h-[calc(100svh-9rem)] md:h-[calc(100svh-5rem)]">
         {/* Header */}
         <header className="bg-white px-4 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3 mb-3">
@@ -1660,10 +1693,11 @@ export function MessagesView() {
                 <button
                   type="button"
                   onClick={() => otherUser.id && navigate(`/dashboard/profile/${otherUser.id}`)}
-                  className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                  className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                   title="View profile"
                 >
                   {resolveDisplayName(otherUser.display_name, otherUser.username) || "User"}
+                  {(otherUser as any).is_company_verified && <VerifiedBadge size={16} />}
                 </button>
                 {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
@@ -1672,7 +1706,7 @@ export function MessagesView() {
                 )}
               </div>
               <p className="text-xs text-gray-500 flex items-center gap-1">
-                {otherUser.company}{(otherUser as any).is_company_verified && <VerifiedBadge size={12} />} • {otherUser.job_title}
+                {otherUser.company} • {otherUser.job_title}
               </p>
             </div>
             {!identityRevealed && (() => {

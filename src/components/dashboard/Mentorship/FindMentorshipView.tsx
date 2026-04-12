@@ -896,9 +896,9 @@ export function FindMentorshipView() {
                   <div className="flex items-center gap-2 mb-1">
                     <button
                       onClick={() => handleUserClick(profile.id)}
-                      className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer truncate"
+                      className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer truncate inline-flex items-center gap-1"
                     >
-                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
+                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}{profile.is_company_verified && <VerifiedBadge size={16} />}
                     </button>
                     {profile.matchScore && (
                       <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full flex-shrink-0">
@@ -913,8 +913,8 @@ export function FindMentorshipView() {
                   <p className="text-sm text-gray-600 mb-1">
                     {profile.jobTitle || profile.job_title || ""}
                   </p>
-                  <p className="text-xs text-blue-600 mb-2 flex items-center gap-1">
-                    {profile.company}{profile.is_company_verified && <VerifiedBadge size={12} />}
+                  <p className="text-xs text-blue-600 mb-2">
+                    {profile.company}
                   </p>
 
                   <div className="flex items-center gap-3 text-xs text-gray-500">

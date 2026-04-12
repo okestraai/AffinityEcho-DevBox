@@ -196,9 +196,7 @@ export const CheckUserProfileRequirement =
   };
 
 // Check if user has a mentorship profile
-export const CheckUserProfileExist = async (): Promise<{
-  data: ProfileExistsResponse;
-}> => {
+export const CheckUserProfileExist = async (): Promise<ProfileExistsResponse> => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/mentorship-profiles/check-exists`);
   return unwrap(res);
@@ -483,7 +481,7 @@ export const GetMentorsAndMenteesBySuggestionAI = async (
 };
 
 // Get filter options
-export const GetFilterOptions = async (): Promise<{ data: FilterOptions }> => {
+export const GetFilterOptions = async (): Promise<FilterOptions> => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(
     `${API_URL}/mentorship/discover/filters/options`

@@ -1,47 +1,18 @@
-import React from "react";
-import { Home, MessageCircle, Users, Zap, User, Target } from "lucide-react";
-
-// Logging utility for consistent formatting
-const log = (component: string, message: string, data?: any) => {
-  const timestamp = new Date().toISOString();
-  if (data !== undefined) {
-    console.log(
-      `[${timestamp}] [BottomNavigation.${component}] ${message}:`,
-      data
-    );
-  } else {
-    console.log(`[${timestamp}] [BottomNavigation.${component}] ${message}`);
-  }
-};
+import { Home, Users, Zap, Target, User } from "lucide-react";
 
 interface Props {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  messageUnreadCount?: number;
 }
 
-export function BottomNavigation({ activeTab, setActiveTab, messageUnreadCount = 0 }: Props) {
-  // Log component render
-  React.useEffect(() => {
-    log("BottomNavigation", "Component rendered", { activeTab });
-  }, [activeTab]);
-
+export function BottomNavigation({ activeTab, setActiveTab }: Props) {
   const tabs = [
     { id: "feeds", label: "Home", icon: Home },
     { id: "forums", label: "Forums", icon: Users },
     { id: "nooks", label: "Nooks", icon: Zap },
-    { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "mentorship", label: "Mentorship", icon: Target },
     { id: "profile", label: "Profile", icon: User },
   ];
-
-  const handleTabChange = (tabId: string) => {
-    log("handleTabChange", "Tab change requested", {
-      from: activeTab,
-      to: tabId,
-    });
-    setActiveTab(tabId);
-    log("handleTabChange", "Tab changed successfully", { newActiveTab: tabId });
-  };
 
   return (
     <nav
@@ -66,25 +37,16 @@ export function BottomNavigation({ activeTab, setActiveTab, messageUnreadCount =
             <button
               type="button"
               key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
+              onClick={() => setActiveTab(tab.id)}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 px-3 rounded-xl transition-all duration-300 active:scale-95 min-w-0 flex-1 ${
                 isActive
                   ? "text-purple-600 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 shadow-md border border-purple-200/50 scale-105"
                   : "text-gray-500 active:text-gray-700 active:bg-gray-50 border border-transparent"
               }`}
             >
-              <div className="relative">
-                <Icon
-                  className={`w-6 h-6 ${
-                    isActive ? "scale-110 drop-shadow-sm" : ""
-                  } transition-transform duration-300`}
-                />
-                {tab.id === "messages" && messageUnreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {messageUnreadCount > 9 ? "9+" : messageUnreadCount}
-                  </span>
-                )}
-              </div>
+              <Icon
+                className={`w-6 h-6 ${isActive ? "scale-110 drop-shadow-sm" : ""} transition-transform duration-300`}
+              />
               <span
                 className={`text-[11px] font-semibold leading-tight ${
                   isActive ? "text-purple-600" : ""

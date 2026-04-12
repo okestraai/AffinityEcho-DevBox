@@ -1,5 +1,6 @@
 import React from 'react';
 import { resolveAuthorName } from '../../../utils/nameUtils';
+import { VerifiedBadge } from '../../shared/VerifiedBadge';
 import { useAuth } from '../../../hooks/useAuth';
 import { Topic } from '../../../types/forum';
 
@@ -38,9 +39,10 @@ export function TopicDetailModal({ topic, isOpen, onClose, onUserClick }: TopicD
             Posted by{' '}
             <button
               onClick={() => onUserClick(topic.author.id)}
-              className="text-purple-600 hover:underline"
+              className="text-purple-600 hover:underline inline-flex items-center gap-1"
             >
               {resolveAuthorName(user, topic.author.id, topic.author.display_name, topic.author.username)}
+              {topic.author?.is_company_verified && <VerifiedBadge size={16} />}
             </button>
           </div>
           <button

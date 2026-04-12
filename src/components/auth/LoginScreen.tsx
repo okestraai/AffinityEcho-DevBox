@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { validatePassword } from "../../utils/passwordUtils";
 import PasswordStrengthIndicator from "../shared/PasswordStrengthIndicator";
+import { TrimInput } from "../shared/TrimInput";
 
 export function LoginScreen() {
   const { login, signup, socialLogin, forgotPassword, actionLoading } = useAuth();
@@ -261,10 +262,11 @@ export function LoginScreen() {
                         </label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <input
+                          <TrimInput
                             type="email"
                             value={resetEmail}
                             onChange={(e) => setResetEmail(e.target.value)}
+                            onTrim={(v) => setResetEmail(v)}
                             className="w-full pl-10 sm:pl-12 pr-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                             placeholder="your.email@company.com"
                             required
@@ -315,10 +317,11 @@ export function LoginScreen() {
                         </label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <input
+                          <TrimInput
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            onTrim={(v) => setEmail(v)}
                             className="w-full pl-10 sm:pl-12 pr-4 py-3.5 sm:py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-gray-50 focus:bg-white text-base"
                             placeholder="your.email@company.com"
                             required

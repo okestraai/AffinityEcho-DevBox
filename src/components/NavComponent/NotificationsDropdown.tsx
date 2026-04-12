@@ -106,11 +106,11 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     };
   }, [isOpen, onClose]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (silent = false) => {
     if (!user?.id) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await GetNotifications({ limit: 10 });
 
       const raw = response?.data?.items ?? response?.data ?? response ?? [];
@@ -119,9 +119,9 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
       setNotifications(allNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      setNotifications([]);
+      if (!silent) setNotifications([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -337,6 +337,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast('Mentorship request declined.', 'info');
+        fetchNotifications(true);
         return;
       }
 
@@ -348,6 +349,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast('Mentorship request accepted!', 'success');
+        fetchNotifications(true);
         navigate('/dashboard/messages', {
           state: { startChatWith: notification.actor_id, contextType: 'mentorship' },
         });
@@ -363,6 +365,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast('Identity reveal declined.', 'info');
+        fetchNotifications(true);
         return;
       }
 
@@ -374,6 +377,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast('Identity reveal accepted! You can now see each other\'s identities.', 'success');
+        fetchNotifications(true);
         if (notification.metadata?.conversation_id) {
           navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
         } else {
@@ -393,6 +397,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
       }
 
       markActionTaken(notification.id);
+      fetchNotifications(true);
     } catch (error) {
       console.error('Error handling action:', error);
       showToast('An error occurred. Please try again.', 'error');
@@ -444,6 +449,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
   const renderNotificationActions = (notification: Notification) => {
     switch (notification.type) {
       case 'mentorship_request':
+        if (notification.action_taken) return null;
         return (
           <div className="flex gap-2 mt-2">
             <button
@@ -468,6 +474,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         );
 
       case 'identity_reveal_request':
+        if (notification.action_taken) return null;
         return (
           <div className="flex gap-2 mt-2">
             <button

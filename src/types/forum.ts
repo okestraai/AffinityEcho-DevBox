@@ -23,6 +23,7 @@ export interface Topic {
     username: string;
     display_name?: string;
     avatar: string;
+    is_company_verified?: boolean;
   };
   forumId: string;
   companyId?: string;
@@ -61,6 +62,7 @@ export interface Comment {
     username: string;
     display_name?: string;
     avatar: string;
+    is_company_verified?: boolean;
   };
   topicId: string;
   reactions: {

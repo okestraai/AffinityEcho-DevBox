@@ -169,6 +169,7 @@ export function MentorshipView() {
       role: userType,
       status: connection.status,
       lastContact: connection.connectedSince,
+      is_company_verified: userData?.is_company_verified ?? false,
     };
 
     setSelectedProfile(profile);
@@ -538,15 +539,15 @@ export function MentorshipView() {
                     <div className="flex-1">
                       <button
                         onClick={() => handleViewProfile(mentor, "mentor")}
-                        className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer text-left"
+                        className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer text-left inline-flex items-center gap-1"
                       >
-                        {resolveDisplayName(mentorUser?.displayName, mentorUser?.display_name, mentorUser?.username) || "Unknown User"}
+                        {resolveDisplayName(mentorUser?.displayName, mentorUser?.display_name, mentorUser?.username) || "Unknown User"}{mentorUser?.is_company_verified && <VerifiedBadge size={16} />}
                       </button>
                       <p className="text-sm text-gray-600">
                         {mentorUser?.jobTitle || "Professional"}
                       </p>
-                      <p className="text-xs text-blue-600 flex items-center gap-1">
-                        {mentorUser?.company || "Company not specified"}{mentorUser?.is_company_verified && <VerifiedBadge size={12} />}
+                      <p className="text-xs text-blue-600">
+                        {mentorUser?.company || "Company not specified"}
                       </p>
                       {mentorUser?.careerLevel && (
                         <p className="text-xs text-gray-500 mt-0.5">
@@ -738,15 +739,15 @@ export function MentorshipView() {
                     <div className="flex-1">
                       <button
                         onClick={() => handleViewProfile(mentee, "mentee")}
-                        className="font-semibold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                        className="font-semibold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left inline-flex items-center gap-1"
                       >
-                        {resolveDisplayName(menteeUser?.displayName, menteeUser?.display_name, menteeUser?.username) || "Unknown User"}
+                        {resolveDisplayName(menteeUser?.displayName, menteeUser?.display_name, menteeUser?.username) || "Unknown User"}{menteeUser?.is_company_verified && <VerifiedBadge size={16} />}
                       </button>
                       <p className="text-sm text-gray-600">
                         {menteeUser?.jobTitle || "Professional"}
                       </p>
-                      <p className="text-xs text-blue-600 flex items-center gap-1">
-                        {menteeUser?.company || "Company not specified"}{menteeUser?.is_company_verified && <VerifiedBadge size={12} />}
+                      <p className="text-xs text-blue-600">
+                        {menteeUser?.company || "Company not specified"}
                       </p>
                       {menteeUser?.careerLevel && (
                         <p className="text-xs text-gray-500 mt-0.5">

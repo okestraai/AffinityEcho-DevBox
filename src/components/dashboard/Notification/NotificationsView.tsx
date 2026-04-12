@@ -102,11 +102,11 @@ export function NotificationsView() {
     };
   }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (silent = false) => {
     if (!user?.id) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       const params: { is_read?: boolean; type?: string; grouped?: boolean; page?: number; limit?: number } = { limit, grouped: true };
       if (filter === "unread") params.is_read = false;
@@ -145,10 +145,12 @@ export function NotificationsView() {
       setNotifications(filteredNotifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      setNotifications([]);
-      setHasMore(false);
+      if (!silent) {
+        setNotifications([]);
+        setHasMore(false);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -167,6 +169,7 @@ export function NotificationsView() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
       );
+      window.dispatchEvent(new CustomEvent("notifications:updated"));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -178,6 +181,7 @@ export function NotificationsView() {
     try {
       await MarkAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      window.dispatchEvent(new CustomEvent("notifications:updated"));
     } catch (error) {
       console.error("Error marking all as read:", error);
     }
@@ -407,6 +411,7 @@ export function NotificationsView() {
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast("Mentorship request declined.", "info");
+        fetchNotifications(true);
         return;
       }
 
@@ -418,6 +423,7 @@ export function NotificationsView() {
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast("Mentorship request accepted!", "success");
+        fetchNotifications(true);
         navigate("/dashboard/messages", {
           state: { startChatWith: notification.actor_id, contextType: "mentorship" },
         });
@@ -432,6 +438,7 @@ export function NotificationsView() {
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast("Identity reveal declined.", "info");
+        fetchNotifications(true);
         return;
       }
 
@@ -443,6 +450,7 @@ export function NotificationsView() {
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
         showToast("Identity reveal accepted! You can now see each other's identities.", "success");
+        fetchNotifications(true);
         if (notification.metadata?.conversation_id) {
           navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
         } else {
@@ -460,6 +468,7 @@ export function NotificationsView() {
       }
 
       markActionTaken(notification.id);
+      fetchNotifications(true);
     } catch (error) {
       console.error("Error handling action:", error);
       showToast("An error occurred. Please try again.", "error");
@@ -528,6 +537,7 @@ export function NotificationsView() {
   const renderNotificationActions = (notification: Notification) => {
     switch (notification.type) {
       case "mentorship_request":
+        if (notification.action_taken) return null;
         return (
           <div className="flex flex-wrap gap-2 mt-2 justify-end">
             <button
@@ -552,6 +562,7 @@ export function NotificationsView() {
         );
 
       case "identity_reveal_request":
+        if (notification.action_taken) return null;
         return (
           <div className="flex flex-wrap gap-2 mt-2 justify-end">
             <button

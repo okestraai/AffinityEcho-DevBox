@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetPostById,
@@ -42,10 +43,12 @@ interface PostComment {
     display_name?: string;
     username?: string;
     avatar?: string;
+    is_company_verified?: boolean;
   };
   author?: {
     display_name?: string;
     avatar?: string;
+    is_company_verified?: boolean;
   };
 }
 
@@ -266,9 +269,9 @@ export function SinglePostPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
-                className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
               >
-                {commentName}
+                {commentName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={13} />}
               </button>
               <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
             </div>
@@ -421,9 +424,9 @@ export function SinglePostPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => authorId && navigate(`/dashboard/profile/${authorId}`)}
-                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer"
+                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
-                  {authorName}
+                  {authorName}{(post.author?.is_company_verified ?? post.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}
                 </button>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
                   <FileText className="w-3.5 h-3.5" />

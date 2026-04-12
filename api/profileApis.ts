@@ -613,6 +613,16 @@ export const SendCompanyVerificationEmail = async (email: string) => {
 };
 
 /**
+ * Update pending verification email and resend (PUT)
+ * Use after a verification request is already in progress.
+ */
+export const UpdateCompanyVerificationEmail = async (email: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(`${API_URL}/user/company-verification-email`, { email });
+  return unwrap(res);
+};
+
+/**
  * Get company verification status
  */
 export const GetCompanyVerificationStatus = async () => {

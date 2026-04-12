@@ -1,6 +1,7 @@
 // src/components/Modals/CommentsModal.tsx
 import React, { useState, useEffect } from "react";
 import { resolveAuthorName } from "../../../utils/nameUtils";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import {
   X,
   MessageCircle,
@@ -203,9 +204,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
               <div className="flex items-center gap-2 mb-2">
                 <button
                   onClick={() => handleUserClick(comment.user_id)}
-                  className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
+                  className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
                   {resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}
+                  {(comment.user_profile?.is_company_verified ?? comment.author?.is_company_verified) && <VerifiedBadge size={16} />}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">

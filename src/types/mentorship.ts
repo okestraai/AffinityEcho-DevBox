@@ -75,6 +75,7 @@ export interface MentorshipUserProfile {
   role?: string;
   status?: string;
   lastContact?: string;
+  is_company_verified?: boolean;
   // Full profile data from API
   mentorProfile?: MentorProfileData | null;
   menteeProfile?: MenteeProfileData | null;

@@ -29,10 +29,8 @@ export function MentorshipRequestModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
-  const [profileId, setProfileId] = useState<string | null>(null);
   const [decryptedCompanyName, setDecryptedCompanyName] = useState("");
   const [decryptedCareerLevel, setDecryptedCareerLevel] = useState("");
-  const [decryptedLocation, setDecryptedLocation] = useState("");
   const [decryptedAffinityTags, setDecryptedAffinityTags] = useState<string[]>(
     [],
   );
@@ -82,12 +80,10 @@ export function MentorshipRequestModal({
         await loadUserData();
 
         // Check profile status
-        const profileExists = await checkProfileStatusAndFetch();
+        await checkProfileStatusAndFetch();
 
-        // If in edit mode or profile exists, fetch profile
-        if (mode === "edit" || profileExists) {
-          await fetchMenteeProfile();
-        }
+        // Always fetch profile — populates basic profile data even when no mentee profile exists yet
+        await fetchMenteeProfile();
       } catch (error) {
         console.error("Error initializing modal:", error);
         showToast("Error loading profile data", "error");
@@ -107,7 +103,6 @@ export function MentorshipRequestModal({
         if (bp) {
           setDecryptedCompanyName(bp.company || "");
           setDecryptedCareerLevel(bp.careerLevel || "");
-          setDecryptedLocation(bp.location || "");
           setDecryptedAffinityTags(bp.affinityTags || []);
           setFormData((prev) => ({
             ...prev,
@@ -118,6 +113,7 @@ export function MentorshipRequestModal({
             jobTitle: bp.jobTitle || "",
             yearsExperience: bp.yearsExperience || prev.yearsExperience,
             bio: bp.bio || prev.bio,
+            expertise: Array.isArray(bp.skills) && bp.skills.length > 0 ? bp.skills : prev.expertise,
           }));
         } else {
           // Fallback for older auth data
@@ -141,21 +137,10 @@ export function MentorshipRequestModal({
 
       const profileData = profileCheckResponse;
 
-      // Check if user has mentee profile in the new structure
-      const hasMenteeProfile = profileData?.menteeProfile !== undefined;
-      const hasMentorProfile = profileData?.mentorProfile !== undefined;
-      const isActiveMentee = profileData?.menteeProfile?.isActive || false;
-      const isActiveMentor = profileData?.mentorProfile?.isActive || false;
-      const mentoringAs = profileData?.status?.mentoringAs || "none";
-
       // Determine if user has a profile (mentee profile exists)
-      const profileExists = hasMenteeProfile;
+      const profileExists = profileData?.hasMenteeProfile === true;
 
       setHasProfile(!!profileExists);
-
-      if (profileExists && profileData.id) {
-        setProfileId(profileData.id);
-      }
 
       return profileExists;
     } catch (error) {

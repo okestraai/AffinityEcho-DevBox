@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
+import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetFeed,
@@ -52,6 +53,10 @@ interface FeedItem {
     username?: string;
     avatar?: string | null;
     bio?: string | null;
+    is_company_verified?: boolean;
+  };
+  user_profile?: {
+    is_company_verified?: boolean;
   };
   content: {
     title?: string;
@@ -97,10 +102,12 @@ interface FeedComment {
     display_name?: string;
     username?: string;
     avatar?: string;
+    is_company_verified?: boolean;
   };
   author?: {
     display_name?: string;
     avatar?: string;
+    is_company_verified?: boolean;
   };
 }
 
@@ -109,6 +116,7 @@ export function FeedsView() {
   const { user } = useAuth();
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -156,7 +164,9 @@ export function FeedsView() {
       username: item.author?.username,
       avatar: item.author?.avatar || item.author?.avatar_url || null,
       bio: item.author?.bio || null,
+      is_company_verified: item.author?.is_company_verified ?? false,
     },
+    user_profile: item.user_profile,
     engagement: {
       likes: item.engagement?.likes ?? item.likes_count ?? 0,
       comments: item.engagement?.comments ?? item.comments_count ?? 0,
@@ -195,7 +205,8 @@ export function FeedsView() {
     if (page > 1 && isLoadingRef.current) return;
     isLoadingRef.current = true;
     try {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
       const response = await GetFeed({ page, limit: 20 });
 
       const raw = Array.isArray(response) ? response : (response?.items ?? response?.posts ?? []);
@@ -221,7 +232,8 @@ export function FeedsView() {
       if (page === 1) setFeedItems([]);
     } finally {
       isLoadingRef.current = false;
-      setLoading(false);
+      if (page === 1) setLoading(false);
+      else setLoadingMore(false);
     }
   };
 
@@ -880,7 +892,7 @@ export function FeedsView() {
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                         >
                           {renderAvatar(item.author.avatar, resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username), "w-6 h-6", "text-sm")}
-                          <span>{resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}</span>
+                          <span className="inline-flex items-center gap-1">{resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}{(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}</span>
                         </button>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -994,9 +1006,9 @@ export function FeedsView() {
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => c.user_id && handleUserClick(c.user_id)}
-                                    className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                                    className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                                   >
-                                    {cName}
+                                    {cName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={13} />}
                                   </button>
                                   <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                                 </div>
@@ -1054,9 +1066,10 @@ export function FeedsView() {
                           ) : (
                             <button
                               onClick={() => handleUserClick(item.user_id)}
-                              className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                              className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                             >
                               {resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}
+                              {(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}
                             </button>
                           )}
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
@@ -1233,13 +1246,16 @@ export function FeedsView() {
         )}
       </div>
 
-      {/* Infinite scroll sentinel */}
-      <div ref={sentinelRef} className="h-10 mt-4 flex items-center justify-center">
-        {loading && feedItems.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
-            Loading more...
+      {/* Infinite scroll sentinel + load-more indicator */}
+      <div ref={sentinelRef} className="mt-4">
+        {loadingMore && (
+          <div className="flex items-center justify-center gap-2 py-5 text-sm text-gray-400">
+            <div className="w-4 h-4 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin flex-shrink-0" />
+            <span>Loading more...</span>
           </div>
+        )}
+        {!loadingMore && !hasMore && feedItems.length > 0 && (
+          <p className="text-center text-xs text-gray-400 py-4">You're all caught up</p>
         )}
       </div>
 
