@@ -178,7 +178,7 @@ export function NookMessage({
               disabled={isAnonymous}
             >
               {displayName}
-              {!isAnonymous && user?.is_company_verified && <VerifiedBadge size={16} />}
+              {!isAnonymous && user?.is_company_verified && <VerifiedBadge size={18} />}
             </button>
             <span className="text-xs text-gray-400 flex-shrink-0">
               • {getTimeAgo(message.created_at)}

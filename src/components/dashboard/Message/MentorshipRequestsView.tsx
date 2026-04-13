@@ -674,7 +674,7 @@ export function MentorshipRequestsView({
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-900 text-base md:text-lg inline-flex items-center gap-1">
                             {resolveDisplayName(profile.display_name, profile.username)}
-                            {profile.is_company_verified && <VerifiedBadge size={16} />}
+                            {profile.is_company_verified && <VerifiedBadge size={18} />}
                           </h3>
                           {isUnread && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

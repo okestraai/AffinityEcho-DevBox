@@ -164,7 +164,7 @@ export function FeedsView() {
       username: item.author?.username,
       avatar: item.author?.avatar || item.author?.avatar_url || null,
       bio: item.author?.bio || null,
-      is_company_verified: item.author?.is_company_verified ?? false,
+      is_company_verified: !!(item.author?.is_company_verified || item.user_profile?.is_company_verified),
     },
     user_profile: item.user_profile,
     engagement: {
@@ -892,7 +892,7 @@ export function FeedsView() {
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                         >
                           {renderAvatar(item.author.avatar, resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username), "w-6 h-6", "text-sm")}
-                          <span className="inline-flex items-center gap-1">{resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}{(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}</span>
+                          <span className="inline-flex items-center gap-1">{resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}{(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={18} />}</span>
                         </button>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
@@ -1008,7 +1008,7 @@ export function FeedsView() {
                                     onClick={() => c.user_id && handleUserClick(c.user_id)}
                                     className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                                   >
-                                    {cName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={13} />}
+                                    {cName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={16} />}
                                   </button>
                                   <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                                 </div>
@@ -1069,7 +1069,7 @@ export function FeedsView() {
                               className="font-semibold text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                             >
                               {resolveAuthorName(user, item.user_id, item.author.display_name, item.author.username)}
-                              {(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}
+                              {(item.author?.is_company_verified ?? item.user_profile?.is_company_verified) && <VerifiedBadge size={18} />}
                             </button>
                           )}
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
@@ -1214,9 +1214,9 @@ export function FeedsView() {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => c.user_id && handleUserClick(c.user_id)}
-                                  className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors"
+                                  className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
                                 >
-                                  {cName}
+                                  {cName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={18} />}
                                 </button>
                                 <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
                               </div>

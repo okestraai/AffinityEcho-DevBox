@@ -271,7 +271,7 @@ export function SinglePostPage() {
                 onClick={() => c.user_id && navigate(`/dashboard/profile/${c.user_id}`)}
                 className="text-xs font-semibold text-gray-800 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
               >
-                {commentName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={13} />}
+                {commentName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={18} />}
               </button>
               <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
             </div>
@@ -426,7 +426,7 @@ export function SinglePostPage() {
                   onClick={() => authorId && navigate(`/dashboard/profile/${authorId}`)}
                   className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
-                  {authorName}{(post.author?.is_company_verified ?? post.user_profile?.is_company_verified) && <VerifiedBadge size={16} />}
+                  {authorName}{(post.author?.is_company_verified ?? post.user_profile?.is_company_verified) && <VerifiedBadge size={18} />}
                 </button>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">
                   <FileText className="w-3.5 h-3.5" />

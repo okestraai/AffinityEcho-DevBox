@@ -326,7 +326,7 @@ export function ForumTopicsMode(props: any) {
                           className="text-xs text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-2.5 py-1 rounded-full border border-purple-200 hover:text-purple-800 transition-colors inline-flex items-center gap-1"
                         >
                           {resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username)}
-                          {(topic.user_profile?.is_company_verified ?? topic.author?.is_company_verified) && <VerifiedBadge size={13} />}
+                          {(topic.user_profile?.is_company_verified ?? topic.author?.is_company_verified) && <VerifiedBadge size={16} />}
                         </button>
                         {topic.is_pinned && (
                           <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">

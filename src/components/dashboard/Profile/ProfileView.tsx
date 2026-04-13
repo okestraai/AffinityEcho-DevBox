@@ -1156,7 +1156,7 @@ export function ProfileView() {
                   {displayName && (
                     <p className="text-sm sm:text-base text-gray-500 font-medium">{displayName}</p>
                   )}
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mt-1 inline-flex items-center gap-1.5">{user.username}{user.is_company_verified && <VerifiedBadge size={22} />}</h2>
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mt-1 inline-flex items-center gap-1.5">{user.username}{user.is_company_verified && <VerifiedBadge size={24} />}</h2>
                   {user.demographics?.careerLevel && (
                     <p className="text-xs sm:text-sm text-gray-600 mt-1">{user.demographics.careerLevel}</p>
                   )}
@@ -1298,7 +1298,7 @@ export function ProfileView() {
                         <p className="text-sm font-medium text-green-800">Company Verified</p>
                         <p className="text-xs text-green-600">Your {userCompany} affiliation has been verified</p>
                       </div>
-                      <VerifiedBadge size={22} className="ml-auto" />
+                      <VerifiedBadge size={24} className="ml-auto" />
                     </div>
                   ) : verificationStatus === 'pending' ? (
                     <div className="space-y-2">

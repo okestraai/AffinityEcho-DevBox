@@ -207,7 +207,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                   className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer inline-flex items-center gap-1"
                 >
                   {resolveAuthorName(user, comment.user_id, comment.user_profile?.display_name, comment.user_profile?.username)}
-                  {(comment.user_profile?.is_company_verified ?? comment.author?.is_company_verified) && <VerifiedBadge size={16} />}
+                  {(comment.user_profile?.is_company_verified ?? comment.author?.is_company_verified) && <VerifiedBadge size={18} />}
                 </button>
                 {isCurrentUser && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">

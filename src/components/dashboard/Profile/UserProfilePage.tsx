@@ -396,7 +396,7 @@ export function UserProfilePage() {
           </div>
 
           {/* Name + meta */}
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight inline-flex items-center gap-1.5">{displayName}{profile.is_company_verified && <VerifiedBadge size={22} />}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight inline-flex items-center gap-1.5">{displayName}{profile.is_company_verified && <VerifiedBadge size={24} />}</h1>
           <p className="text-sm text-gray-400 font-medium">@{profile.username}</p>
 
           {/* Info pills */}

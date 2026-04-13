@@ -362,7 +362,7 @@ function ConversationList({
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="font-medium text-gray-900 truncate inline-flex items-center gap-1">
                           {resolveDisplayName(conv.other_user?.display_name, conv.other_user?.username) || "Unknown User"}
-                          {conv.other_user?.is_company_verified && <VerifiedBadge size={13} />}
+                          {conv.other_user?.is_company_verified && <VerifiedBadge size={18} />}
                         </span>
                         {isMentorship && (
                           <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full flex-shrink-0">
@@ -1697,7 +1697,7 @@ export function MessagesView() {
                   title="View profile"
                 >
                   {resolveDisplayName(otherUser.display_name, otherUser.username) || "User"}
-                  {(otherUser as any).is_company_verified && <VerifiedBadge size={16} />}
+                  {(otherUser as any).is_company_verified && <VerifiedBadge size={18} />}
                 </button>
                 {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">

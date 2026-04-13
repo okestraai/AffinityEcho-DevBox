@@ -541,7 +541,7 @@ export function MentorshipView() {
                         onClick={() => handleViewProfile(mentor, "mentor")}
                         className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer text-left inline-flex items-center gap-1"
                       >
-                        {resolveDisplayName(mentorUser?.displayName, mentorUser?.display_name, mentorUser?.username) || "Unknown User"}{mentorUser?.is_company_verified && <VerifiedBadge size={16} />}
+                        {resolveDisplayName(mentorUser?.displayName, mentorUser?.display_name, mentorUser?.username) || "Unknown User"}{mentorUser?.is_company_verified && <VerifiedBadge size={18} />}
                       </button>
                       <p className="text-sm text-gray-600">
                         {mentorUser?.jobTitle || "Professional"}
@@ -741,7 +741,7 @@ export function MentorshipView() {
                         onClick={() => handleViewProfile(mentee, "mentee")}
                         className="font-semibold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left inline-flex items-center gap-1"
                       >
-                        {resolveDisplayName(menteeUser?.displayName, menteeUser?.display_name, menteeUser?.username) || "Unknown User"}{menteeUser?.is_company_verified && <VerifiedBadge size={16} />}
+                        {resolveDisplayName(menteeUser?.displayName, menteeUser?.display_name, menteeUser?.username) || "Unknown User"}{menteeUser?.is_company_verified && <VerifiedBadge size={18} />}
                       </button>
                       <p className="text-sm text-gray-600">
                         {menteeUser?.jobTitle || "Professional"}

@@ -458,7 +458,7 @@ export function MentorshipUserProfileModal({
                 <div>
                   <h3 className="font-bold text-gray-900 inline-flex items-center gap-1">
                     {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
-                    {profile.is_company_verified && <VerifiedBadge size={16} />}
+                    {profile.is_company_verified && <VerifiedBadge size={18} />}
                   </h3>
                   <p className="text-sm text-gray-600">
                     {profile.jobTitle} at {profile.company}
@@ -612,7 +612,7 @@ export function MentorshipUserProfileModal({
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="text-2xl font-bold text-gray-900 inline-flex items-center gap-1.5">
                       {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}
-                      {profile.is_company_verified && <VerifiedBadge size={22} />}
+                      {profile.is_company_verified && <VerifiedBadge size={24} />}
                     </h3>
                     {profile.matchScore && (
                       <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full">

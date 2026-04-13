@@ -42,7 +42,7 @@ export function TopicDetailModal({ topic, isOpen, onClose, onUserClick }: TopicD
               className="text-purple-600 hover:underline inline-flex items-center gap-1"
             >
               {resolveAuthorName(user, topic.author.id, topic.author.display_name, topic.author.username)}
-              {topic.author?.is_company_verified && <VerifiedBadge size={16} />}
+              {topic.author?.is_company_verified && <VerifiedBadge size={18} />}
             </button>
           </div>
           <button

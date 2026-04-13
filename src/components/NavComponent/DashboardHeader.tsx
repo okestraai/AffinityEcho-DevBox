@@ -179,7 +179,7 @@ export function DashboardHeader({
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate inline-flex items-center gap-1">
                   {user.display_name || user.username}
-                  {user.is_company_verified && <VerifiedBadge size={13} />}
+                  {user.is_company_verified && <VerifiedBadge size={16} />}
                 </p>
                 <p className="text-xs text-gray-500 truncate">@{user.username}</p>
               </div>

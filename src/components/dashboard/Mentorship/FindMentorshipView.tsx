@@ -898,7 +898,7 @@ export function FindMentorshipView() {
                       onClick={() => handleUserClick(profile.id)}
                       className="font-semibold text-gray-900 hover:text-purple-600 transition-colors cursor-pointer truncate inline-flex items-center gap-1"
                     >
-                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}{profile.is_company_verified && <VerifiedBadge size={16} />}
+                      {resolveDisplayName(profile.displayName, profile.display_name, profile.username)}{profile.is_company_verified && <VerifiedBadge size={18} />}
                     </button>
                     {profile.matchScore && (
                       <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full flex-shrink-0">
