@@ -276,11 +276,12 @@ export function ForumTopicsMode(props: any) {
         </div>
       </div>
 
-      {/* Two-column layout — fixed height so sidebar never moves */}
-      <div className="flex gap-6 h-[calc(100svh-10rem)]">
+      {/* Two-column layout — grid + h-fit is the reliable sticky sidebar pattern */}
+      <div className="h-[calc(100svh-10rem)] overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6">
 
-        {/* ── Topics column: scrolls inside its own container ── */}
-        <div className="flex-1 min-w-0 overflow-y-auto pr-1">
+        {/* ── Topics column ── */}
+        <div className="min-w-0">
 
           {/* Search + New Topic */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -418,7 +419,8 @@ export function ForumTopicsMode(props: any) {
         </div>
 
         {/* ── Scope sidebar (sticky, desktop only) ── */}
-        <aside className="hidden lg:flex flex-col gap-4 w-72 flex-shrink-0 sticky top-0">
+        <aside className="hidden lg:block sticky top-0 h-fit">
+          <div className="flex flex-col gap-4">
           {/* Forum info */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -508,7 +510,9 @@ export function ForumTopicsMode(props: any) {
               <span>Last active {formatLastActivity(forum.lastActivity || forum.last_activity)}</span>
             </div>
           </div>
+          </div>
         </aside>
+        </div>
       </div>
 
       <CreateTopicModal
