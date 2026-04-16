@@ -1,5 +1,5 @@
 import { toast, type ToastOptions } from 'react-toastify';
-import { CheckCircle2, XCircle, AlertTriangle, Info, Bell, X } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
 import type { ReactNode } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -18,45 +18,45 @@ interface ToastTheme {
 const themes: Record<ToastType, ToastTheme> = {
   success: {
     accent: '#22c55e',
-    iconBg: 'bg-green-50',
+    iconBg: 'bg-green-100',
     iconColor: 'text-green-500',
-    shadow: 'rgba(34,197,94,0.12)',
+    shadow: 'rgba(34,197,94,0.18)',
     icon: <CheckCircle2 size={18} strokeWidth={2.5} />,
     progressClass: 'toast-progress--success',
     label: 'Success',
   },
   error: {
     accent: '#ef4444',
-    iconBg: 'bg-red-50',
+    iconBg: 'bg-red-100',
     iconColor: 'text-red-500',
-    shadow: 'rgba(239,68,68,0.12)',
+    shadow: 'rgba(239,68,68,0.18)',
     icon: <XCircle size={18} strokeWidth={2.5} />,
     progressClass: 'toast-progress--error',
     label: 'Error',
   },
   warning: {
     accent: '#f59e0b',
-    iconBg: 'bg-amber-50',
+    iconBg: 'bg-amber-100',
     iconColor: 'text-amber-500',
-    shadow: 'rgba(245,158,11,0.12)',
+    shadow: 'rgba(245,158,11,0.18)',
     icon: <AlertTriangle size={18} strokeWidth={2.5} />,
     progressClass: 'toast-progress--warning',
     label: 'Warning',
   },
   info: {
     accent: '#8b5cf6',
-    iconBg: 'bg-violet-50',
+    iconBg: 'bg-violet-100',
     iconColor: 'text-violet-500',
-    shadow: 'rgba(139,92,246,0.12)',
+    shadow: 'rgba(139,92,246,0.18)',
     icon: <Info size={18} strokeWidth={2.5} />,
     progressClass: 'toast-progress--info',
     label: 'Info',
   },
   default: {
     accent: '#6366f1',
-    iconBg: 'bg-indigo-50',
+    iconBg: 'bg-indigo-100',
     iconColor: 'text-indigo-500',
-    shadow: 'rgba(99,102,241,0.12)',
+    shadow: 'rgba(99,102,241,0.18)',
     icon: <Bell size={18} strokeWidth={2.5} />,
     progressClass: 'toast-progress--default',
     label: 'Notice',
@@ -72,27 +72,14 @@ function ToastBody({ message, theme }: { message: ReactNode; theme: ToastTheme }
         {theme.icon}
       </div>
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[11px] font-semibold uppercase tracking-wider opacity-50">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
           {theme.label}
         </span>
-        <span className="text-[13px] font-medium leading-snug text-gray-800 break-words">
+        <span className="text-sm font-semibold leading-snug text-gray-950 break-words">
           {message}
         </span>
       </div>
     </div>
-  );
-}
-
-function CloseBtn({ closeToast }: { closeToast?: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-label="Close notification"
-      onClick={closeToast}
-      className="flex items-center justify-center w-6 h-6 rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all duration-200 self-start mt-0.5"
-    >
-      <X size={14} strokeWidth={2.5} />
-    </button>
   );
 }
 
@@ -113,10 +100,8 @@ function buildConfig(theme: ToastTheme): ToastOptions {
       borderRadius: 14,
       borderLeft: `3px solid ${theme.accent}`,
       boxShadow: `0 8px 32px -4px ${theme.shadow}, 0 4px 12px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)`,
-      padding: '14px 16px',
       minHeight: 'auto',
     },
-    closeButton: CloseBtn,
   };
 }
 
