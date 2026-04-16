@@ -26,6 +26,7 @@ import {
 } from "../../../../api/mentorshipApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 
 interface MentorshipRequestsViewProps {
@@ -130,7 +131,7 @@ export function MentorshipRequestsView({
         showToast(`Marked ${count} requests as read`, "success");
       }
     } catch {
-      showToast("Failed to mark requests as read", "error");
+      showToast(MSG.MENTORSHIP.MARK_READ_FAILED, "error");
     } finally {
       setMarkingAsRead(false);
     }
@@ -204,7 +205,7 @@ export function MentorshipRequestsView({
         await decryptProfiles(requests, "all");
       }
     } catch {
-      showToast("Failed to load requests", "error");
+      showToast(MSG.MENTORSHIP.REQUESTS_FAILED, "error");
       
       // Reset appropriate state based on active tab
       if (activeTab === "received") {
@@ -320,9 +321,9 @@ export function MentorshipRequestsView({
         delete newProfiles[requestId];
         return newProfiles;
       });
-      showToast("Mentorship request accepted!", "success");
+      showToast(MSG.MENTORSHIP.REQUEST_ACCEPTED, "success");
     } catch {
-      showToast("Failed to accept request. Please try again.", "error");
+      showToast(MSG.MENTORSHIP.ACCEPT_FAILED, "error");
     } finally {
       setProcessingId(null);
     }
@@ -344,9 +345,9 @@ export function MentorshipRequestsView({
         delete newProfiles[requestId];
         return newProfiles;
       });
-      showToast("Request declined", "success");
+      showToast(MSG.MENTORSHIP.REQUEST_DECLINED, "success");
     } catch {
-      showToast("Failed to decline request. Please try again.", "error");
+      showToast(MSG.MENTORSHIP.DECLINE_FAILED, "error");
     } finally {
       setProcessingId(null);
     }
@@ -368,9 +369,9 @@ export function MentorshipRequestsView({
         delete newProfiles[requestId];
         return newProfiles;
       });
-      showToast("Request cancelled", "success");
+      showToast(MSG.MENTORSHIP.REQUEST_CANCELLED, "success");
     } catch {
-      showToast("Failed to cancel request. Please try again.", "error");
+      showToast(MSG.MENTORSHIP.CANCEL_FAILED, "error");
     } finally {
       setProcessingId(null);
     }
@@ -412,7 +413,7 @@ export function MentorshipRequestsView({
 
       setHasUnreadRequests(false);
     } catch {
-      showToast("Failed to mark requests as read", "error");
+      showToast(MSG.MENTORSHIP.MARK_READ_FAILED, "error");
     } finally {
       setMarkingAsRead(false);
     }

@@ -21,6 +21,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { resolveDisplayName } from '../../../utils/nameUtils';
 import { VerifiedBadge } from '../../shared/VerifiedBadge';
 import { showToast } from '../../../Helper/ShowToast';
+import { MSG } from '../../../constants/messages';
 
 // ---------------------------------------------------------------------------
 // Types (matching the updated full profile API response)
@@ -193,7 +194,7 @@ export function UserProfilePage() {
         }
       }
     } catch {
-      showToast('Could not load profile', 'error');
+      showToast(MSG.USER.PROFILE_FAILED, 'error');
     } finally {
       setLoading(false);
     }
@@ -213,7 +214,7 @@ export function UserProfilePage() {
         setProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 0) + 1 } : p);
       }
     } catch {
-      showToast('Failed to update follow status', 'error');
+      showToast(MSG.USER.FOLLOW_STATUS_FAILED, 'error');
     } finally {
       setFollowLoading(false);
     }
@@ -257,12 +258,12 @@ export function UserProfilePage() {
     try {
       await ToggleBookmark('post', postId);
       const post = posts.find((p) => p.id === postId);
-      showToast(post && !post.user_bookmarked ? "Bookmark removed" : "Post bookmarked", "success");
+      showToast(post && !post.user_bookmarked ? MSG.FEED.BOOKMARK_REMOVED : MSG.FEED.BOOKMARKED, "success");
     } catch {
       setPosts((prev) => prev.map((p) =>
         p.id === postId ? { ...p, user_bookmarked: !p.user_bookmarked } : p
       ));
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
   }, []);
 
@@ -299,12 +300,12 @@ export function UserProfilePage() {
     try {
       await ToggleTopicBookmark(topicId);
       const topic = topics.find((t) => t.id === topicId);
-      showToast(topic && !topic.user_bookmarked ? "Bookmark removed" : "Topic bookmarked", "success");
+      showToast(topic && !topic.user_bookmarked ? MSG.FORUM.BOOKMARK_REMOVED : MSG.FORUM.BOOKMARKED, "success");
     } catch {
       setTopics((prev) => prev.map((t) =>
         t.id === topicId ? { ...t, user_bookmarked: !t.user_bookmarked } : t
       ));
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
   }, []);
 

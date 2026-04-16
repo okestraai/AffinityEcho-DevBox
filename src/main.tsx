@@ -10,6 +10,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
     <ToastContainer
       style={{ zIndex: 99999 }}
+      limit={3}
+      newestOnTop
     />
   </StrictMode>
 );

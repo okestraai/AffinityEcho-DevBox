@@ -33,6 +33,7 @@ import {
   ExportContent,
 } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
+import { MSG } from "../../constants/messages";
 import { TableRowSkeleton, MobileCardSkeleton, CompactStatCardSkeleton, SortDropdown, ExportSuccessModal } from "../components";
 import { getApiError } from "../utils/apiError";
 import { useExport } from "../hooks/useExport";
@@ -947,7 +948,7 @@ export function ContentModerationPage(): JSX.Element {
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
       showToast(
-        getApiError(err, "Failed to load content"),
+        getApiError(err, MSG.ADMIN.CONTENT_LOAD_FAILED),
         "error",
       );
     } finally {
@@ -993,21 +994,21 @@ export function ContentModerationPage(): JSX.Element {
         await HideContent(item.content_type, item.content_id ?? item.id, {
           reason,
         });
-        showToast("Content hidden", "success");
+        showToast(MSG.ADMIN.CONTENT_HIDDEN, "success");
       } else if (type === "restore") {
         await RestoreContent(item.content_type, item.content_id ?? item.id, {
           reason,
         });
-        showToast("Content restored", "success");
+        showToast(MSG.ADMIN.CONTENT_RESTORED, "success");
       } else {
         await RemoveContent(item.content_type, item.content_id ?? item.id, {
           reason,
         });
-        showToast("Content removed permanently", "success");
+        showToast(MSG.ADMIN.CONTENT_REMOVED, "success");
       }
       fetchContent();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     } finally {
       setActioningId(null);
       setActionModal({ isOpen: false, item: null, type: "hide" });

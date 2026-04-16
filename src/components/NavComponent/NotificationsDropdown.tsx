@@ -28,6 +28,7 @@ import { RespondToIdentityReveal } from '../../../api/messaging';
 import { RespondToDirectMentorshipRequest } from '../../../api/mentorshipApis';
 import { webSocketService } from '../../services/websocket.service';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 
 interface Notification {
   id: string;
@@ -336,7 +337,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast('Mentorship request declined.', 'info');
+        showToast(MSG.MENTORSHIP.REQUEST_DECLINED, 'info');
         fetchNotifications(true);
         return;
       }
@@ -348,7 +349,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast('Mentorship request accepted!', 'success');
+        showToast(MSG.MENTORSHIP.REQUEST_ACCEPTED, 'success');
         fetchNotifications(true);
         navigate('/dashboard/messages', {
           state: { startChatWith: notification.actor_id, contextType: 'mentorship' },
@@ -364,7 +365,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast('Identity reveal declined.', 'info');
+        showToast(MSG.NOTIFICATION.IDENTITY_DECLINED, 'info');
         fetchNotifications(true);
         return;
       }
@@ -376,7 +377,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast('Identity reveal accepted! You can now see each other\'s identities.', 'success');
+        showToast(MSG.NOTIFICATION.IDENTITY_ACCEPTED, 'success');
         fetchNotifications(true);
         if (notification.metadata?.conversation_id) {
           navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
@@ -400,7 +401,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
       fetchNotifications(true);
     } catch (error) {
       console.error('Error handling action:', error);
-      showToast('An error occurred. Please try again.', 'error');
+      showToast(MSG.NOTIFICATION.ACTION_FAILED, 'error');
     }
   };
 

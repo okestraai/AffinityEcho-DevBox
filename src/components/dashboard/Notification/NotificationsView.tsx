@@ -33,6 +33,7 @@ import { RespondToIdentityReveal } from "../../../../api/messaging";
 import { RespondToDirectMentorshipRequest } from "../../../../api/mentorshipApis";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { NotificationsSkeleton } from "../../../Helper/SkeletonLoader";
 
 interface Notification {
@@ -202,10 +203,10 @@ export function NotificationsView() {
     try {
       await ClearAllNotifications();
       setNotifications([]);
-      showToast("All notifications cleared.", "success");
+      showToast(MSG.NOTIFICATION.CLEARED, "success");
     } catch (error) {
       console.error("Error clearing notifications:", error);
-      showToast("Failed to clear notifications.", "error");
+      showToast(MSG.NOTIFICATION.CLEAR_FAILED, "error");
     }
   };
 
@@ -410,7 +411,7 @@ export function NotificationsView() {
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast("Mentorship request declined.", "info");
+        showToast(MSG.MENTORSHIP.REQUEST_DECLINED, "info");
         fetchNotifications(true);
         return;
       }
@@ -422,7 +423,7 @@ export function NotificationsView() {
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast("Mentorship request accepted!", "success");
+        showToast(MSG.MENTORSHIP.REQUEST_ACCEPTED, "success");
         fetchNotifications(true);
         navigate("/dashboard/messages", {
           state: { startChatWith: notification.actor_id, contextType: "mentorship" },
@@ -437,7 +438,7 @@ export function NotificationsView() {
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast("Identity reveal declined.", "info");
+        showToast(MSG.NOTIFICATION.IDENTITY_DECLINED, "info");
         fetchNotifications(true);
         return;
       }
@@ -449,7 +450,7 @@ export function NotificationsView() {
         }
         await UpdateNotification(notification.id, { action_taken: true });
         markActionTaken(notification.id);
-        showToast("Identity reveal accepted! You can now see each other's identities.", "success");
+        showToast(MSG.NOTIFICATION.IDENTITY_ACCEPTED, "success");
         fetchNotifications(true);
         if (notification.metadata?.conversation_id) {
           navigate(`/dashboard/messages?conversation=${notification.metadata.conversation_id}`);
@@ -471,7 +472,7 @@ export function NotificationsView() {
       fetchNotifications(true);
     } catch (error) {
       console.error("Error handling action:", error);
-      showToast("An error occurred. Please try again.", "error");
+      showToast(MSG.NOTIFICATION.ACTION_FAILED, "error");
     }
   };
 

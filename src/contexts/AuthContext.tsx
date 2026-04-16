@@ -16,6 +16,7 @@ import {
 } from "../../api/authApis";
 import { ReactivateAccount } from "../../api/profileApis";
 import { showToast } from "../Helper/ShowToast";
+import { MSG } from "../constants/messages";
 import { TokenUtils } from "../utils/tokenUtils";
 
 export interface User {
@@ -324,15 +325,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         if (shouldReactivate) {
           try {
             await ReactivateAccount();
-            showToast("Account reactivated! Welcome back!", "success");
+            showToast(MSG.USER.ACCOUNT_REACTIVATED, "success");
           } catch {
-            showToast("Failed to reactivate. Please try again.", "error");
+            showToast(MSG.USER.REACTIVATE_FAILED, "error");
             clearAuth();
             return;
           }
         } else {
           clearAuth();
-          showToast("Login cancelled. Your account remains paused.", "info");
+          showToast(MSG.AUTH.LOGIN_CANCELLED, "info");
           return;
         }
       }
@@ -355,7 +356,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     
       setUser(userData);
 
-      showToast("Welcome back!", "success");
+      showToast(MSG.AUTH.LOGIN_SUCCESS, "success");
 
       // Determine redirect path based on role and onboarding
       let redirectPath = "/dashboard"; // default
@@ -383,7 +384,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         err.response?.data?.message ||
         err.response?.data?.data?.message ||
         err.message ||
-        "Login failed";
+        MSG.AUTH.INVALID_CREDENTIALS;
       showToast(message, "error");
     } finally {
       setActionLoading(false);
@@ -396,10 +397,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const username = generateUsername();
       const avatar = generateAvatar();
       await registerUser({ email, password, username, avatar });
-      showToast("Check your email for the code!", "success");
+      showToast(MSG.AUTH.OTP_SENT, "success");
       navigate("/verify-otp", { state: { email }, replace: true });
     } catch (err: any) {
-      showToast(err.response?.data?.message || "Signup failed", "error");
+      showToast(err.response?.data?.message || MSG.AUTH.SIGNUP_FAILED, "error");
     } finally {
       setActionLoading(false);
     }
@@ -426,7 +427,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
       window.location.href = socialData.url;
     } catch (error) {
-      showToast("Social login failed", "error");
+      showToast(MSG.AUTH.SOCIAL_FAILED, "error");
       setActionLoading(false);
     }
   };
@@ -435,13 +436,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setActionLoading(true);
     try {
       await ForgotPassword(email);
-      showToast("Check your email", "success");
+      showToast(MSG.AUTH.OTP_SENT, "success");
       navigate("/verify-otp", {
         state: { email, type: "password-reset" },
         replace: true,
       });
     } catch (error) {
-      showToast("If email exists, code sent", "info");
+      showToast(MSG.AUTH.OTP_SENT, "info");
     } finally {
       setActionLoading(false);
     }
@@ -453,7 +454,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = () => {
     clearAuth();
-    showToast("Logged out", "info");
+    showToast(MSG.AUTH.LOGGED_OUT, "info");
     navigate("/login", { replace: true });
   };
 
@@ -466,7 +467,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Then refresh user to get updated has_completed_onboarding = true
       await loadUser();
 
-      showToast("Welcome to Affinity Echo! Your profile is complete. Let's get started!", "success");
+      showToast(MSG.AUTH.ONBOARDING_COMPLETE, "success");
 
       // After onboarding, redirect based on role
       if (user?.role === "admin" || user?.role === "super_admin") {
@@ -475,7 +476,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         navigate("/dashboard", { replace: true });
       }
     } catch (error) {
-      showToast("Something went wrong. Please refresh.", "error");
+      showToast(MSG.AUTH.ONBOARDING_FAILED, "error");
     } finally {
       setActionLoading(false);
     }

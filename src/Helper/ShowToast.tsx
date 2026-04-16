@@ -1,122 +1,169 @@
-// src/utils/toast.ts
-import { toast, ToastContent } from 'react-toastify';
+import { toast, type ToastOptions } from 'react-toastify';
+import { CheckCircle2, XCircle, AlertTriangle, Info, Bell, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Shared base styling
-const baseOptions = {
-  position: 'top-center' as const,
-  autoClose: 5000,
-  hideProgressBar: false,
-  closeOnClick: true,
-  pauseOnHover: true,
-  draggable: true,
-  theme: 'light' as const,
-  style: {
-    background: '#004aba',
-    color: '#ffffff',
-    borderRadius: '12px',
-    fontWeight: '600',
+type ToastType = 'success' | 'error' | 'info' | 'warning' | 'default';
+
+interface ToastTheme {
+  accent: string;
+  iconBg: string;
+  iconColor: string;
+  shadow: string;
+  icon: ReactNode;
+  progressClass: string;
+  label: string;
+}
+
+const themes: Record<ToastType, ToastTheme> = {
+  success: {
+    accent: '#22c55e',
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-500',
+    shadow: 'rgba(34,197,94,0.12)',
+    icon: <CheckCircle2 size={18} strokeWidth={2.5} />,
+    progressClass: 'toast-progress--success',
+    label: 'Success',
   },
-  progressStyle: {
-    background: '#ffffff',
+  error: {
+    accent: '#ef4444',
+    iconBg: 'bg-red-50',
+    iconColor: 'text-red-500',
+    shadow: 'rgba(239,68,68,0.12)',
+    icon: <XCircle size={18} strokeWidth={2.5} />,
+    progressClass: 'toast-progress--error',
+    label: 'Error',
+  },
+  warning: {
+    accent: '#f59e0b',
+    iconBg: 'bg-amber-50',
+    iconColor: 'text-amber-500',
+    shadow: 'rgba(245,158,11,0.12)',
+    icon: <AlertTriangle size={18} strokeWidth={2.5} />,
+    progressClass: 'toast-progress--warning',
+    label: 'Warning',
+  },
+  info: {
+    accent: '#8b5cf6',
+    iconBg: 'bg-violet-50',
+    iconColor: 'text-violet-500',
+    shadow: 'rgba(139,92,246,0.12)',
+    icon: <Info size={18} strokeWidth={2.5} />,
+    progressClass: 'toast-progress--info',
+    label: 'Info',
+  },
+  default: {
+    accent: '#6366f1',
+    iconBg: 'bg-indigo-50',
+    iconColor: 'text-indigo-500',
+    shadow: 'rgba(99,102,241,0.12)',
+    icon: <Bell size={18} strokeWidth={2.5} />,
+    progressClass: 'toast-progress--default',
+    label: 'Notice',
   },
 };
 
-// Custom success icon
-const SuccessIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#28a745" />
-    <path d="M7 12.5L10.5 16L17 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+function ToastBody({ message, theme }: { message: ReactNode; theme: ToastTheme }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex items-center justify-center w-8 h-8 min-w-[2rem] rounded-lg ${theme.iconBg} ${theme.iconColor}`}
+      >
+        {theme.icon}
+      </div>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider opacity-50">
+          {theme.label}
+        </span>
+        <span className="text-[13px] font-medium leading-snug text-gray-800 break-words">
+          {message}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-// Custom error icon
-const ErrorIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#dc3545" />
-    <path d="M8 8L16 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-    <path d="M16 8L8 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-  </svg>
-);
+function CloseBtn({ closeToast }: { closeToast?: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Close notification"
+      onClick={closeToast}
+      className="flex items-center justify-center w-6 h-6 rounded-md text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all duration-200 self-start mt-0.5"
+    >
+      <X size={14} strokeWidth={2.5} />
+    </button>
+  );
+}
 
-// Custom warning icon
-const WarningIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#ffc107" />
-    <path d="M12 8V12" stroke="#004aba" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="12" cy="16" r="1" fill="#004aba" />
-  </svg>
-);
+function buildConfig(theme: ToastTheme): ToastOptions {
+  return {
+    position: 'top-center',
+    autoClose: 4000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    icon: false,
+    progressClassName: theme.progressClass,
+    style: {
+      background: 'rgba(255,255,255,0.95)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderRadius: 14,
+      borderLeft: `3px solid ${theme.accent}`,
+      boxShadow: `0 8px 32px -4px ${theme.shadow}, 0 4px 12px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)`,
+      padding: '14px 16px',
+      minHeight: 'auto',
+    },
+    closeButton: CloseBtn,
+  };
+}
 
-// Custom info icon
-const InfoIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#17a2b8" />
-    <path d="M12 8V12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="12" cy="16" r="1" fill="white" />
-  </svg>
-);
-
-// Default icon
-const DefaultIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="12" fill="#ffffff" />
-    <circle cx="12" cy="12" r="6" fill="#004aba" />
-  </svg>
-);
-
-// Type-safe toast function
-type ToastType = 'success' | 'error' | 'info' | 'warning' | 'default';
-
+// Overloads
 export function showToast(
-  message: ToastContent,
-  type: ToastType = 'default'
+  message: ReactNode,
+  type?: ToastType
 ): void;
 
 export function showToast(
-  options: { message: ToastContent; type?: ToastType }
+  options: { message: ReactNode; type?: ToastType }
 ): void;
 
 export function showToast(
-  messageOrOptions: ToastContent | { message: ToastContent; type?: ToastType },
+  messageOrOptions: ReactNode | { message: ReactNode; type?: ToastType },
   type: ToastType = 'default'
 ): void {
-  let message: ToastContent = '';
+  let message: ReactNode = '';
   let toastType: ToastType = 'default';
 
   if (typeof messageOrOptions === 'object' && messageOrOptions !== null && 'message' in messageOrOptions) {
-    message = messageOrOptions.message;
-    toastType = messageOrOptions.type ?? 'default';
+    message = (messageOrOptions as { message: ReactNode; type?: ToastType }).message;
+    toastType = (messageOrOptions as { message: ReactNode; type?: ToastType }).type ?? 'default';
   } else {
-    message = messageOrOptions as ToastContent;
+    message = messageOrOptions as ReactNode;
     toastType = type;
   }
 
-  const config = {
-    ...baseOptions,
-    icon:
-      toastType === 'success' ? <SuccessIcon /> :
-      toastType === 'error' ? <ErrorIcon /> :
-      toastType === 'warning' ? <WarningIcon /> :
-      toastType === 'info' ? <InfoIcon /> :
-      <DefaultIcon />,
-  };
+  const theme = themes[toastType];
+  const config = buildConfig(theme);
+  const body = <ToastBody message={message} theme={theme} />;
 
   switch (toastType) {
     case 'success':
-      toast.success(message, config);
+      toast.success(body, config);
       break;
     case 'error':
-      toast.error(message, config);
+      toast.error(body, config);
       break;
     case 'warning':
-      toast.warn(message, config);
+      toast.warn(body, config);
       break;
     case 'info':
-      toast.info(message, config);
+      toast.info(body, config);
       break;
     default:
-      toast(message, config);
+      toast(body, config);
       break;
   }
 }

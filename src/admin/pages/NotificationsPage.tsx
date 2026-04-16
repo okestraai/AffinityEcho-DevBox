@@ -9,6 +9,7 @@ import {
   SendAdminNotification, DeleteAdminNotification, ExportNotifications,
 } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { ExportModal, ExportSuccessModal, ConfirmModal } from '../components';
 import { getApiError } from '../utils/apiError';
 import { useExport } from '../hooks/useExport';
@@ -67,9 +68,9 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit() {
-    if (!title.trim()) { showToast('Title is required', 'error'); return; }
-    if (!message.trim()) { showToast('Message is required', 'error'); return; }
-    if (action === 'schedule' && !scheduledAt) { showToast('Scheduled time is required', 'error'); return; }
+    if (!title.trim()) { showToast(MSG.ADMIN.TITLE_REQUIRED, 'error'); return; }
+    if (!message.trim()) { showToast(MSG.ADMIN.MESSAGE_REQUIRED, 'error'); return; }
+    if (action === 'schedule' && !scheduledAt) { showToast(MSG.ADMIN.SCHEDULE_REQUIRED, 'error'); return; }
     setSaving(true);
     try {
       await CreateAdminNotification({
@@ -77,10 +78,10 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         action_url: actionUrl || null,
         scheduled_at: action === 'schedule' ? scheduledAt : null,
       });
-      showToast(action === 'send' ? 'Notification sent!' : action === 'schedule' ? 'Notification scheduled' : 'Saved as draft', 'success');
+      showToast(action === 'send' ? MSG.ADMIN.NOTIFICATION_CREATED : action === 'schedule' ? MSG.ADMIN.NOTIFICATION_SCHEDULED : MSG.ADMIN.DRAFT_SAVED, 'success');
       onCreated();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to create notification'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOTIFICATION_CREATE_FAILED), 'error');
     } finally { setSaving(false); }
   }
 
@@ -187,7 +188,7 @@ export function NotificationsPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to load notifications'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOTIFICATIONS_LOAD_FAILED), 'error');
     } finally { setLoading(false); }
   }, [page, statusFilter, audienceFilter, typeFilter]);
 
@@ -198,10 +199,10 @@ export function NotificationsPage() {
     setSending(notif.id);
     try {
       await SendAdminNotification(notif.id);
-      showToast('Notification sent!', 'success');
+      showToast(MSG.ADMIN.NOTIFICATION_CREATED, 'success');
       fetchNotifications();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to send'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOTIFICATION_SEND_FAILED), 'error');
     } finally { setSending(null); }
   }
 
@@ -209,10 +210,10 @@ export function NotificationsPage() {
     setDeleting(notif.id);
     try {
       await DeleteAdminNotification(notif.id);
-      showToast('Notification deleted', 'success');
+      showToast(MSG.ADMIN.NOTIFICATION_DELETED, 'success');
       fetchNotifications();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to delete'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOTIFICATION_DELETE_FAILED), 'error');
     } finally { setDeleting(null); setConfirmDelete(null); }
   }
 

@@ -33,6 +33,7 @@ import {
 } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
 import { getApiError } from "../utils/apiError";
+import { MSG } from "../../constants/messages";
 
 type UserRole = "user" | "super_admin" | "admin";
 type UserStatus = "active" | "suspended" | "deactivated" | "deleted";
@@ -277,7 +278,7 @@ export function UserDetailPage() {
         setSelectedRole((res.user?.role as UserRole) ?? "user");
       })
       .catch((err: unknown) => {
-        showToast(getApiError(err, "Failed to load user"), "error");
+        showToast(getApiError(err, MSG.ADMIN.USER_LOAD_FAILED), "error");
       })
       .finally(() => setLoading(false));
   }
@@ -294,13 +295,13 @@ export function UserDetailPage() {
         reason: suspendReason,
         expires_at: suspendExpiry || null,
       });
-      showToast("User suspended", "success");
+      showToast(MSG.ADMIN.USER_SUSPENDED, "success");
       setShowSuspendForm(false);
       setSuspendReason("");
       setSuspendExpiry("");
       loadUser();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to suspend"), "error");
+      showToast(getApiError(err, MSG.ADMIN.SUSPEND_FAILED), "error");
     } finally {
       setSaving(false);
     }
@@ -311,10 +312,10 @@ export function UserDetailPage() {
     setSaving(true);
     try {
       await UnsuspendUser(user.id);
-      showToast("Suspension lifted", "success");
+      showToast(MSG.ADMIN.SUSPENSION_LIFTED, "success");
       loadUser();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     } finally {
       setSaving(false);
     }
@@ -325,10 +326,10 @@ export function UserDetailPage() {
     setSaving(true);
     try {
       await ChangeUserRole(user.id, selectedRole);
-      showToast("Role updated", "success");
+      showToast(MSG.ADMIN.ROLE_UPDATED, "success");
       loadUser();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     } finally {
       setSaving(false);
     }
@@ -343,12 +344,12 @@ export function UserDetailPage() {
         message: notifMessage,
         type: "system",
       });
-      showToast("Notification sent", "success");
+      showToast(MSG.ADMIN.NOTIFICATION_SENT, "success");
       setShowNotifForm(false);
       setNotifTitle("");
       setNotifMessage("");
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     } finally {
       setSaving(false);
     }
@@ -359,10 +360,10 @@ export function UserDetailPage() {
     setSaving(true);
     try {
       await DeleteAdminUser(user.id, "Deleted by admin");
-      showToast("Account deleted", "success");
+      showToast(MSG.ADMIN.ACCOUNT_DELETED, "success");
       navigate("/admin/users");
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     } finally {
       setSaving(false);
     }

@@ -25,6 +25,7 @@ import {
   RemoveContent,
 } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
+import { MSG } from '../../constants/messages';
 
 type ContentType =
   | "feed_post"
@@ -190,7 +191,7 @@ export function ContentDetailPage() {
       setHistory(d.moderation_history ?? []);
       setReports(d.reports ?? []);
     } catch {
-      showToast("Failed to load content details", "error");
+      showToast(MSG.ADMIN.CONTENT_DETAIL_FAILED, "error");
     } finally {
       setLoading(false);
     }
@@ -211,17 +212,17 @@ export function ContentDetailPage() {
       else await RemoveContent(contentType, contentId, { reason });
       showToast(
         actionModal === "hide"
-          ? "Content hidden"
+          ? MSG.ADMIN.CONTENT_HIDDEN
           : actionModal === "restore"
-            ? "Content restored"
-            : "Content removed",
+            ? MSG.ADMIN.CONTENT_RESTORED
+            : MSG.ADMIN.CONTENT_REMOVED,
         "success",
       );
       setActionModal(null);
       fetchDetail();
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Action failed";
+        err instanceof Error ? err.message : MSG.ADMIN.ACTION_FAILED;
       showToast(msg, "error");
     } finally {
       setActing(false);

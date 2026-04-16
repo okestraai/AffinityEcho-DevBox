@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { ResetPassword } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { validatePassword } from '../../utils/passwordUtils';
 import PasswordStrengthIndicator from '../shared/PasswordStrengthIndicator';
 
@@ -23,7 +24,7 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     if (!email) {
-      showToast('No email provided', 'error');
+      showToast(MSG.AUTH.NO_EMAIL, 'error');
       navigate('/login');
     }
   }, [email, navigate]);
@@ -60,13 +61,13 @@ export function ResetPasswordPage() {
       await ResetPassword(email, newPassword, otp);
 
       setMessage('Password reset successfully! Redirecting to login...');
-      showToast('Your password has been changed.', 'success');
+      showToast(MSG.AUTH.PASSWORD_RESET, 'success');
 
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Invalid or expired code. Please request a new one.';
+      const msg = err?.response?.data?.message || err?.message || MSG.AUTH.INVALID_OTP;
       setError(msg);
       showToast(msg, 'error');
     } finally {

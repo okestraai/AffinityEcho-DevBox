@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Database, FileText, MessageCircle, Users, Calendar, CheckCircle, Shield, Info } from 'lucide-react';
 import { ExportUserData } from '../../../../api/profileApis';
 import { showToast } from '../../../Helper/ShowToast';
+import { MSG } from '../../../constants/messages';
 
 export function ExportDataPage() {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ export function ExportDataPage() {
 
       setExportComplete(true);
     } catch {
-      showToast('Failed to export data. Please try again.', 'error');
+      showToast(MSG.USER.EXPORT_FAILED, 'error');
     } finally {
       setIsExporting(false);
     }

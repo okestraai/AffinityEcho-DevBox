@@ -11,6 +11,7 @@ import {
 } from "../../../../api/mentorshipApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 
 interface MentorshipProfileModalProps {
   isOpen: boolean;
@@ -83,7 +84,7 @@ export function MentorshipProfileModal({
         await fetchMentorProfile();
       } catch (error) {
 
-        showToast("Error loading profile data", "error");
+        showToast(MSG.MENTORSHIP.PROFILE_LOAD_FAILED, "error");
       } finally {
         setLoading(false);
       }
@@ -294,7 +295,7 @@ export function MentorshipProfileModal({
       }
     } catch (err) {
 
-      showToast("Error loading user data", "error");
+      showToast(MSG.MENTORSHIP.USER_LOAD_FAILED, "error");
     }
   };
 
@@ -390,7 +391,7 @@ export function MentorshipProfileModal({
       }));
     } catch (error) {
       console.error("Error fetching mentor profile:", error);
-      showToast("Could not load profile data", "error");
+      showToast(MSG.MENTORSHIP.PROFILE_LOAD_FAILED, "error");
     }
   };
 
@@ -444,9 +445,7 @@ export function MentorshipProfileModal({
       }
 
       showToast(
-        `Mentor profile ${
-          hasProfile || mode === "edit" ? "updated" : "created"
-        } successfully!`,
+        hasProfile || mode === "edit" ? MSG.MENTORSHIP.MENTOR_UPDATED : MSG.MENTORSHIP.MENTOR_CREATED,
         "success",
       );
 
@@ -460,7 +459,7 @@ export function MentorshipProfileModal({
       console.error("Error saving mentor profile:", error);
       showToast(
         error.response?.data?.message ||
-          "Error saving mentor profile. Please try again.",
+          MSG.MENTORSHIP.SAVE_FAILED,
         "error",
       );
     } finally {

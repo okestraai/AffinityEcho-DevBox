@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { GetAdminDashboard, GetAdminLogs } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
+import { MSG } from '../../constants/messages';
 import { getApiError } from "../utils/apiError";
 import { StatCardSkeleton, BarChartSkeleton, QuickActionsSkeleton, ActivitySkeleton } from "../components";
 
@@ -207,7 +208,7 @@ export function DashboardPage() {
         setRecentLogs(logsEnv?.data ?? []);
       })
       .catch((err: unknown) => {
-        showToast(getApiError(err, "Failed to load dashboard"), "error");
+        showToast(getApiError(err, MSG.ADMIN.DASHBOARD_LOAD_FAILED), "error");
       })
       .finally(() => setLoading(false));
   }, []);

@@ -26,6 +26,7 @@ import {
   GetMyMentees,
 } from "../../../../api/mentorshipApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { MentorshipUserProfile } from "../../../types/mentorship";
 
@@ -115,7 +116,7 @@ export function MentorshipView() {
       ]);
     } catch (error) {
       console.error("Error initializing data:", error);
-      showToast("Error loading mentorship data", "error");
+      showToast(MSG.MENTORSHIP.LOAD_FAILED, "error");
     } finally {
       setLoading(false);
     }
@@ -129,10 +130,10 @@ export function MentorshipView() {
       } else if (activeView === "mentees") {
         await fetchMentorshipConnections();
       }
-      showToast("Data refreshed", "success");
+      showToast(MSG.MENTORSHIP.REFRESH_SUCCESS, "success");
     } catch (error) {
       console.error("Error refreshing data:", error);
-      showToast("Error refreshing data", "error");
+      showToast(MSG.MENTORSHIP.REFRESH_FAILED, "error");
     } finally {
       setRefreshing(false);
     }
@@ -406,7 +407,7 @@ export function MentorshipView() {
       setShowMentorshipRequest(true);
     } else if (!profileCheck?.isActiveMentee) {
       // Show activation modal or message
-      showToast("Please activate your mentee profile first", "warning");
+      showToast(MSG.MENTORSHIP.ACTIVATE_MENTEE_FIRST, "warning");
       setShowMentorshipRequest(true); // Still open modal for activation
     } else {
       setShowMentorshipRequest(true);
@@ -418,7 +419,7 @@ export function MentorshipView() {
     if (!profileCheck?.hasMentorProfile) {
       setShowMentorProfile(true);
     } else if (!profileCheck?.isActiveMentor) {
-      showToast("Please activate your mentor profile first", "warning");
+      showToast(MSG.MENTORSHIP.ACTIVATE_MENTOR_FIRST, "warning");
       setShowMentorProfile(true);
     } else {
       setShowMentorProfile(true);

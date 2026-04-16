@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { VerifyOTP, ResendOTP } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function OTPVerificationPage() {
@@ -23,7 +24,7 @@ export function OTPVerificationPage() {
 
   useEffect(() => {
     if (!email) {
-      showToast('No email provided', 'error');
+      showToast(MSG.AUTH.NO_EMAIL, 'error');
       navigate('/login', { replace: true });
     } else {
       setMessage('A verification code has been sent to your email.');
@@ -37,7 +38,7 @@ export function OTPVerificationPage() {
     if (pasted.length === 6) {
       setOtp(pasted.split(''));
       inputRefs.current[5]?.focus();
-      showToast('OTP pasted!', 'success');
+      showToast(MSG.AUTH.OTP_PASTED, 'success');
     }
   };
 
@@ -72,7 +73,7 @@ export function OTPVerificationPage() {
       const response = await VerifyOTP(email, code);
 
       if (type === 'password-reset') {
-        showToast('Code verified!', 'success');
+        showToast(MSG.AUTH.OTP_VERIFIED, 'success');
         navigate('/reset-password', { state: { email, token: code }, replace: true });
         return;
       }
@@ -85,13 +86,13 @@ export function OTPVerificationPage() {
       // THIS MAKES isAuthenticated = true
       await loadUser();
 
-      showToast('Welcome! Let’s complete your profile', 'success');
+      showToast(MSG.AUTH.WELCOME_SETUP, 'success');
 
       // ALWAYS GO TO ONBOARDING — NEW USER!
       navigate('/onboarding');
 
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid or expired code';
+      const msg = err.response?.data?.message || MSG.AUTH.INVALID_OTP;
       setError(msg);
       showToast(msg, 'error');
     } finally {
@@ -104,11 +105,11 @@ export function OTPVerificationPage() {
     try {
       await ResendOTP(email);
       setMessage('New code sent! Check your inbox.');
-      showToast('Code resent!', 'success');
+      showToast(MSG.AUTH.OTP_SENT, 'success');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to resend';
+      const msg = err.response?.data?.message || MSG.AUTH.OTP_SENT;
       setError(msg);
       showToast(msg, 'error');
     } finally {

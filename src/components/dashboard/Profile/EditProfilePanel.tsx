@@ -17,6 +17,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { GetEditableProfile, UpdateEditableProfile } from '../../../../api/profileApis';
 import { GetFilterOptions } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
+import { MSG } from '../../../constants/messages';
 
 // ── Option constants (matching onboarding) ──────────────────────────────────
 
@@ -309,7 +310,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
         setCommMethod(data.mentee.communication_method || '');
       }
     } catch {
-      showToast('Failed to load profile', 'error');
+      showToast(MSG.USER.PROFILE_LOAD_FAILED, 'error');
     } finally {
       setLoading(false);
     }
@@ -388,7 +389,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
 
       // If company changed, log out so fresh state loads on next login
       if (payload.company?.company_name) {
-        showToast('Company updated! Logging out...', 'success');
+        showToast(MSG.USER.COMPANY_CHANGED, 'success');
         setTimeout(() => logout(), 1000);
         return;
       }
@@ -402,10 +403,10 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
         if (Object.keys(u).length) updateUser(u);
       }
 
-      showToast('Profile updated!', 'success');
+      showToast(MSG.USER.PROFILE_UPDATED, 'success');
       onClose();
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to update profile', 'error');
+      showToast(err?.response?.data?.message || MSG.AUTH.PROFILE_UPDATE_FAILED, 'error');
     } finally {
       setSaving(false);
     }
@@ -413,7 +414,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
 
   const handleSave = async () => {
     const payload = buildPayload();
-    if (!Object.keys(payload).length) { showToast('No changes to save', 'info'); return; }
+    if (!Object.keys(payload).length) { showToast(MSG.USER.NO_CHANGES, 'info'); return; }
 
     if (payload.company?.company_name) {
       pendingPayloadRef.current = payload;

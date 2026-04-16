@@ -22,6 +22,7 @@ import {
 
 import { NookMessageSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { OkestraPanel } from '../OkestraPanel';
 import { Topic, Comment } from '../../../types/forum';
 
@@ -157,7 +158,7 @@ export function NookDetail({
       }, 100);
     } catch (err: any) {
       console.error("Send message error:", err);
-      showToast(err.response?.data?.error?.message || "Failed to send message", "error");
+      showToast(err.response?.data?.error?.message || MSG.NOOK.POST_FAILED, "error");
       setLocalMessageCount((prev) => prev - 1);
     }
   };
@@ -191,7 +192,7 @@ export function NookDetail({
       await toggleMessageReaction(messageId, { reaction_type: reactionType });
     } catch (err: any) {
       console.error("Reaction error:", err);
-      showToast(err.response?.data?.error?.message || "Failed to update reaction", "error");
+      showToast(err.response?.data?.error?.message || MSG.NOOK.REACTION_FAILED, "error");
 
       // Revert on error
       await fetchMessages();
@@ -229,7 +230,7 @@ export function NookDetail({
         )
       );
     } catch (err: any) {
-      showToast(err.response?.data?.error?.message || "Failed to edit message", "error");
+      showToast(err.response?.data?.error?.message || MSG.NOOK.EDIT_MSG_FAILED, "error");
       throw err;
     }
   };

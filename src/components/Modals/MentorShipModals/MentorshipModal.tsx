@@ -10,6 +10,7 @@ import {
   Bookmark,
 } from "lucide-react";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 
 interface MentorshipModalProps {
   isOpen: boolean;
@@ -156,7 +157,7 @@ export function MentorshipModal({
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      showToast("Mentorship request sent!", "success");
+                      showToast(MSG.MENTORSHIP.REQUEST_SENT, "success");
                       onClose();
                     }}
                     className="flex-1 py-2 px-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -168,7 +169,7 @@ export function MentorshipModal({
                   </button>
 
                   <button
-                    onClick={() => showToast("Bookmarked!", "success")}
+                    onClick={() => showToast(MSG.MENTORSHIP.BOOKMARK_CREATED, "success")}
                     className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <Bookmark className="w-4 h-4 text-gray-500" />

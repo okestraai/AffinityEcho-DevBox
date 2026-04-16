@@ -4,6 +4,7 @@ import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield } from '
 import { useAuth } from '../../hooks/useAuth';
 import { ChangePassword } from '../../../api/profileApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { validatePassword } from '../../utils/passwordUtils';
 import PasswordStrengthIndicator from '../shared/PasswordStrengthIndicator';
 
@@ -50,7 +51,7 @@ export function ChangePasswordPage() {
       await ChangePassword({ currentPassword, newPassword });
 
       setMessage('Password changed successfully! Redirecting...');
-      showToast('Password changed successfully!', 'success');
+      showToast(MSG.AUTH.PASSWORD_CHANGED, 'success');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

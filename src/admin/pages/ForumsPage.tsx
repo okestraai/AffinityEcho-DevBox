@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { GetAdminForums, CreateForum, UpdateForum, DeleteForum, ExportForums } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { ExportModal, ExportSuccessModal, SortDropdown, ConfirmModal, TableRowSkeleton } from '../components';
 import { getApiError } from '../utils/apiError';
 import { useExport } from '../hooks/useExport';
@@ -54,20 +55,20 @@ function ForumModal({ forum, onClose, onSaved }: { forum?: Forum; onClose: () =>
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
-    if (!name.trim()) { showToast('Forum name is required', 'error'); return; }
+    if (!name.trim()) { showToast(MSG.ADMIN.FORUM_NAME_REQUIRED, 'error'); return; }
     setSaving(true);
     try {
       const rules = rulesInput.split('\n').map(r => r.trim()).filter(Boolean);
       if (editing) {
         await UpdateForum(forum!.id, { name, description, icon, category, rules, is_locked: isLocked, is_hidden: isHidden });
-        showToast('Forum updated', 'success');
+        showToast(MSG.ADMIN.FORUM_UPDATED, 'success');
       } else {
         await CreateForum({ name, description, icon, category, scope, company_name: scope === 'company' ? companyName || null : null, rules });
-        showToast('Forum created', 'success');
+        showToast(MSG.ADMIN.FORUM_CREATED, 'success');
       }
       onSaved();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to save forum'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.FORUM_SAVE_FAILED), 'error');
     } finally { setSaving(false); }
   }
 
@@ -172,7 +173,7 @@ export function ForumsPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to load forums'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.FORUMS_LOAD_FAILED), 'error');
     } finally { setLoading(false); }
   }, [page, search, typeFilter, sortField, sortOrder]);
 
@@ -191,10 +192,10 @@ export function ForumsPage() {
     setToggling(forum.id + field);
     try {
       await UpdateForum(forum.id, { [field]: !forum[field] });
-      showToast(field === 'is_locked' ? (forum.is_locked ? 'Forum unlocked' : 'Forum locked') : (forum.is_hidden ? 'Forum visible' : 'Forum hidden'), 'success');
+      showToast(field === 'is_locked' ? (forum.is_locked ? MSG.ADMIN.FORUM_UNLOCKED : MSG.ADMIN.FORUM_LOCKED) : (forum.is_hidden ? MSG.ADMIN.FORUM_VISIBLE : MSG.ADMIN.FORUM_HIDDEN), 'success');
       fetchForums();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Action failed'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.FORUM_TOGGLE_FAILED), 'error');
     } finally { setToggling(null); }
   }
 
@@ -202,10 +203,10 @@ export function ForumsPage() {
     setDeleting(forum.id);
     try {
       await DeleteForum(forum.id, 'Deleted by admin');
-      showToast('Forum deleted', 'success');
+      showToast(MSG.ADMIN.FORUM_DELETED, 'success');
       fetchForums();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to delete forum'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.FORUM_DELETE_FAILED), 'error');
     } finally { setDeleting(null); setConfirmDelete(null); }
   }
 

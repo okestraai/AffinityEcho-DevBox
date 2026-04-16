@@ -40,6 +40,7 @@ import {
 } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
 import { getApiError } from "../utils/apiError";
+import { MSG } from "../../constants/messages";
 
 type ReportStatus = "submitted" | "under_review" | "resolved" | "declined";
 type Priority = "low" | "medium" | "high" | "critical";
@@ -784,10 +785,10 @@ function DetailPanel({
         resolution_action: action || null,
         admin_notes: notes,
       });
-      showToast("Report updated", "success");
+      showToast(MSG.ADMIN.REPORT_UPDATED, "success");
       onSaved();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to update report"), "error");
+      showToast(getApiError(err, MSG.ADMIN.REPORT_UPDATE_FAILED), "error");
     } finally {
       setSaving(false);
     }
@@ -797,10 +798,10 @@ function DetailPanel({
     setAssigning(true);
     try {
       await AssignReport(report.id);
-      showToast("Report assigned to you", "success");
+      showToast(MSG.ADMIN.REPORT_ASSIGNED, "success");
       onSaved();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to assign report"), "error");
+      showToast(getApiError(err, MSG.ADMIN.REPORT_ASSIGN_FAILED), "error");
     } finally {
       setAssigning(false);
     }
@@ -1047,7 +1048,7 @@ export function ReportsPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to load reports"), "error");
+      showToast(getApiError(err, MSG.ADMIN.REPORTS_LOAD_FAILED), "error");
     } finally {
       setLoading(false);
     }

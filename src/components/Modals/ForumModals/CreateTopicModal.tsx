@@ -20,6 +20,7 @@ import {
 } from "../../../../api/forumApis";
 import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { useNavigate } from "react-router-dom";
 
 interface Props {
@@ -183,7 +184,7 @@ export function CreateTopicModal({
       setHashtagInput("");
       setSelectedForumId("");
 
-      showToast("Topic created successfully!", "success");
+      showToast(MSG.FORUM.TOPIC_CREATED, "success");
 
       onClose();
 
@@ -195,7 +196,7 @@ export function CreateTopicModal({
       console.error("Error creating topic:", error);
       showToast(
         error.response?.data?.message ||
-          "Failed to create topic. Please try again.",
+          MSG.FORUM.CREATE_TOPIC_FAILED,
         "error",
       );
     } finally {

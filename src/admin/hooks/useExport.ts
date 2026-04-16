@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { ExportFormat } from '../types';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 
 type ExportFn = (format: ExportFormat) => Promise<{ data: BlobPart }>;
 
@@ -30,7 +31,7 @@ export function useExport(exportFn: ExportFn) {
       setShowSuccess(true);
       showToast(`${format.toUpperCase()} export ready`, 'success');
     } catch {
-      showToast('Export failed', 'error');
+      showToast(MSG.ADMIN.EXPORT_FAILED, 'error');
     } finally {
       setExporting(false);
     }

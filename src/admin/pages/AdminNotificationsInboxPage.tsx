@@ -12,6 +12,7 @@ import {
   ClearAllNotifications,
 } from '../../../api/notificationApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { getApiError } from '../utils/apiError';
 
 interface Notification {
@@ -81,7 +82,7 @@ export function AdminNotificationsInboxPage() {
       setHasMore(items.length === PAGE_SIZE);
       setPage(pg);
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to load notifications'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.INBOX_LOAD_FAILED), 'error');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -95,7 +96,7 @@ export function AdminNotificationsInboxPage() {
       await MarkNotificationAsRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to mark as read'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.MARK_READ_FAILED), 'error');
     }
     setActiveMenu(null);
   }
@@ -104,9 +105,9 @@ export function AdminNotificationsInboxPage() {
     try {
       await DeleteNotification(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
-      showToast('Notification deleted', 'success');
+      showToast(MSG.ADMIN.NOTIFICATION_DELETED, 'success');
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to delete'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.INBOX_DELETE_FAILED), 'error');
     }
     setActiveMenu(null);
   }
@@ -116,9 +117,9 @@ export function AdminNotificationsInboxPage() {
     try {
       await MarkAllNotificationsAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      showToast('All marked as read', 'success');
+      showToast(MSG.ADMIN.ALL_MARKED_READ, 'success');
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to mark all as read'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.MARK_ALL_READ_FAILED), 'error');
     } finally { setMarkingAll(false); }
   }
 
@@ -127,9 +128,9 @@ export function AdminNotificationsInboxPage() {
     try {
       await ClearAllNotifications();
       setNotifications([]);
-      showToast('All notifications cleared', 'success');
+      showToast(MSG.ADMIN.ALL_CLEARED, 'success');
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to clear notifications'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.CLEAR_FAILED), 'error');
     } finally { setClearing(false); }
   }
 

@@ -8,6 +8,7 @@ import {
   GetAdminNooks, CreateNook, UpdateNook, DeleteNook, ExportNooks,
 } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { ExportModal, ExportSuccessModal, SortDropdown, ConfirmModal, TableRowSkeleton } from '../components';
 import { getApiError } from '../utils/apiError';
 import { useExport } from '../hooks/useExport';
@@ -49,19 +50,19 @@ function NookModal({ nook, onClose, onSaved }: { nook?: Nook; onClose: () => voi
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
-    if (!name.trim()) { showToast('Nook name is required', 'error'); return; }
+    if (!name.trim()) { showToast(MSG.ADMIN.NOOK_NAME_REQUIRED, 'error'); return; }
     setSaving(true);
     try {
       if (editing) {
         await UpdateNook(nook!.id, { name, description, scope, is_locked: isLocked, is_hidden: isHidden });
-        showToast('Nook updated', 'success');
+        showToast(MSG.ADMIN.NOOK_UPDATED, 'success');
       } else {
         await CreateNook({ name, description, scope, company_id: null });
-        showToast('Nook created', 'success');
+        showToast(MSG.ADMIN.NOOK_CREATED, 'success');
       }
       onSaved();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to save nook'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOOK_SAVE_FAILED), 'error');
     } finally { setSaving(false); }
   }
 
@@ -149,7 +150,7 @@ export function NooksPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to load nooks'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOOKS_LOAD_FAILED), 'error');
     } finally { setLoading(false); }
   }, [page, search, scopeFilter, lockedFilter]);
 
@@ -169,11 +170,11 @@ export function NooksPage() {
     try {
       await UpdateNook(nook.id, { [field]: !nook[field] });
       showToast(field === 'is_locked'
-        ? (nook.is_locked ? 'Nook unlocked' : 'Nook locked')
-        : (nook.is_hidden ? 'Nook visible' : 'Nook hidden'), 'success');
+        ? (nook.is_locked ? MSG.ADMIN.NOOK_UNLOCKED : MSG.ADMIN.NOOK_LOCKED)
+        : (nook.is_hidden ? MSG.ADMIN.NOOK_VISIBLE : MSG.ADMIN.NOOK_HIDDEN), 'success');
       fetchNooks();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Action failed'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOOK_TOGGLE_FAILED), 'error');
     } finally { setToggling(null); }
   }
 
@@ -181,10 +182,10 @@ export function NooksPage() {
     setDeleting(nook.id);
     try {
       await DeleteNook(nook.id, 'Deleted by admin');
-      showToast('Nook deleted', 'success');
+      showToast(MSG.ADMIN.NOOK_DELETED, 'success');
       fetchNooks();
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to delete nook'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.NOOK_DELETE_FAILED), 'error');
     } finally { setDeleting(null); setConfirmDelete(null); }
   }
 

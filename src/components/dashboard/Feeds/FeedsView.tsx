@@ -35,6 +35,7 @@ import {
 import { GetAllCommentsForATopic, CreateForumTopicsComments } from "../../../../api/forumApis";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { shareContent } from "../../../utils/shareUtils";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
@@ -279,13 +280,13 @@ export function FeedsView() {
         visibility: "global",
       });
 
-      showToast("Post created successfully!", "success");
+      showToast(MSG.FEED.POST_CREATED, "success");
       setPostContent("");
       setShowCreatePost(false);
       loadFeed(1);
     } catch (error) {
       console.error("Error creating post:", error);
-      showToast("Failed to create post", "error");
+      showToast(MSG.FEED.CREATE_FAILED, "error");
     } finally {
       setSubmitting(false);
     }
@@ -392,13 +393,13 @@ export function FeedsView() {
     try {
       const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
       await ToggleBookmark(contentType as "post" | "topic" | "nook_message", item.content_id);
-      showToast(!item.user_has_bookmarked ? "Bookmarked" : "Bookmark removed", "success");
+      showToast(!item.user_has_bookmarked ? MSG.FEED.BOOKMARKED : MSG.FEED.BOOKMARK_REMOVED, "success");
     } catch {
       // Revert on failure
       setFeedItems((prev) =>
         prev.map((i) => (i.id === itemId ? item : i))
       );
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
   };
 

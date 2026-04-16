@@ -1,5 +1,6 @@
 import { ShareItem } from "../../api/feedApis";
 import { showToast } from "../Helper/ShowToast";
+import { MSG } from "../constants/messages";
 
 type ShareContentType = "post" | "topic" | "nook_message";
 
@@ -57,7 +58,7 @@ export async function shareContent({ contentType, contentId, title }: ShareOptio
     }
   } else {
     await navigator.clipboard.writeText(shareUrl);
-    showToast("Link copied to clipboard!", "success");
+    showToast(MSG.GENERIC.LINK_COPIED, "success");
     return true;
   }
 }

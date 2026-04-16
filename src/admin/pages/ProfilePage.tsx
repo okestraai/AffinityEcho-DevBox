@@ -15,6 +15,7 @@ import {
   Key,
 } from 'lucide-react';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { GetAdminProfile, UpdateAdminProfile } from '../../../api/adminApis';
 import { secureEncryptionService } from '../../services/secure-encryption.service';
 
@@ -112,7 +113,7 @@ export function ProfilePage() {
       setIsEditing(false);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch {
-      showToast('Failed to save profile', 'error');
+      showToast(MSG.ADMIN.PROFILE_SAVE_FAILED, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -120,25 +121,25 @@ export function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!passwordData.current_password) {
-      showToast('Please enter your current password', 'error');
+      showToast(MSG.ADMIN.PASSWORD_REQUIRED, 'error');
       return;
     }
     if (passwordData.new_password.length < 8) {
-      showToast('New password must be at least 8 characters', 'error');
+      showToast(MSG.ADMIN.PASSWORD_TOO_SHORT, 'error');
       return;
     }
     if (passwordData.new_password !== passwordData.confirm_password) {
-      showToast('New passwords do not match', 'error');
+      showToast(MSG.ADMIN.PASSWORDS_MISMATCH, 'error');
       return;
     }
     setIsSavingPassword(true);
     try {
       // TODO: wire to POST /auth/change-password endpoint
       await new Promise(resolve => setTimeout(resolve, 800));
-      showToast('Password changed successfully', 'success');
+      showToast(MSG.ADMIN.PASSWORD_CHANGED, 'success');
       setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
     } catch {
-      showToast('Failed to change password', 'error');
+      showToast(MSG.ADMIN.PASSWORD_CHANGE_FAILED, 'error');
     } finally {
       setIsSavingPassword(false);
     }

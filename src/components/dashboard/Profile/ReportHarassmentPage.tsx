@@ -4,6 +4,7 @@ import { ArrowLeft, Shield, AlertTriangle, Lock, CheckCircle, FileText, User, Ca
 import { SubmitHarassmentReport } from '../../../../api/profileApis';
 import { GetConnectableUsers } from '../../../../api/messaging';
 import { showToast } from '../../../Helper/ShowToast';
+import { MSG } from '../../../constants/messages';
 
 interface ReportedUser { id: string; username: string; display_name?: string; avatar?: string; }
 
@@ -120,7 +121,7 @@ export function ReportHarassmentPage() {
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting report:', error);
-      showToast('Failed to submit report. Please try again.', 'error');
+      showToast(MSG.REPORT.SUBMIT_FAILED, 'error');
     } finally {
       setIsSubmitting(false);
     }

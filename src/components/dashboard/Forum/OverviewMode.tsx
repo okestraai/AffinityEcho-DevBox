@@ -38,6 +38,7 @@ import { Topic } from "../../../types/forum";
 import { useState, useRef } from "react";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
@@ -116,10 +117,10 @@ export function OverviewMode(props: any) {
     setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
-      showToast(!currentState ? "Topic bookmarked" : "Bookmark removed", "success");
+      showToast(!currentState ? MSG.FORUM.BOOKMARKED : MSG.FORUM.BOOKMARK_REMOVED, "success");
     } catch {
       setBookmarkOverrides((prev) => ({ ...prev, [topicId]: currentState }));
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FORUM.BOOKMARK_FAILED, "error");
     }
   };
 

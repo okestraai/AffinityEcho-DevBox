@@ -27,6 +27,7 @@ import {
   ToggleBookmark,
 } from "../../../../api/feedApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { shareContent } from "../../../utils/shareUtils";
 import { MentionText } from "../../shared/MentionText";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
@@ -177,10 +178,10 @@ export function SinglePostPage() {
 
     try {
       await ToggleBookmark("post", contentId);
-      showToast(!was ? "Post bookmarked" : "Bookmark removed", "success");
+      showToast(!was ? MSG.FEED.BOOKMARKED : MSG.FEED.BOOKMARK_REMOVED, "success");
     } catch {
       setPost((prev: any) => ({ ...prev, user_has_bookmarked: was, user_bookmarked: was }));
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
   };
 
@@ -209,7 +210,7 @@ export function SinglePostPage() {
       }));
       await fetchComments();
     } catch {
-      showToast("Failed to post comment.", "error");
+      showToast(MSG.FEED.COMMENT_FAILED, "error");
     }
   };
 

@@ -15,6 +15,7 @@ import { AffinityStep } from "./AffinityStep";
 import { CreateOnboardingProfile } from "../../../api/authApis"; // REMOVED CreateFoundationForums
 import { formatCompanyName } from "../../utils/CompanyFormatter";
 import { showToast } from "../../Helper/ShowToast";
+import { MSG } from "../../constants/messages";
 
 export function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -108,7 +109,7 @@ export function OnboardingFlow() {
       console.error("Error during onboarding completion:", error);
       const message =
         error?.response?.data?.message ||
-        "Failed to complete setup. Please try again.";
+        MSG.AUTH.ONBOARDING_FAILED;
       showToast(message, "error");
     } finally {
       setIsSubmitting(false);

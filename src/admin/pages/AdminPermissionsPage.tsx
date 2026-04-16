@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { GetAdminUsers, GetAdminPermissions, UpdateAdminPermissions } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { getApiError } from '../utils/apiError';
 import {
   PERMISSION_GROUPS,
@@ -171,7 +172,7 @@ export function AdminPermissionsPage() {
         setAdmins(items);
       })
       .catch((err: unknown) => {
-        showToast(getApiError(err, 'Failed to load admins'), 'error');
+        showToast(getApiError(err, MSG.ADMIN.ADMINS_LOAD_FAILED), 'error');
       })
       .finally(() => setLoadingAdmins(false));
   }, []);
@@ -187,7 +188,7 @@ export function AdminPermissionsPage() {
       setPermissions(new Set(perms));
       setSavedPermissions(new Set(perms));
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to load permissions'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.PERMISSIONS_LOAD_FAILED), 'error');
     } finally {
       setLoadingPerms(false);
     }
@@ -236,7 +237,7 @@ export function AdminPermissionsPage() {
       setSavedPermissions(new Set(permissions));
       showToast(`Permissions updated for ${selectedAdmin.username}`, 'success');
     } catch (err: unknown) {
-      showToast(getApiError(err, 'Failed to save permissions'), 'error');
+      showToast(getApiError(err, MSG.ADMIN.PERMISSIONS_SAVE_FAILED), 'error');
     } finally {
       setSaving(false);
     }

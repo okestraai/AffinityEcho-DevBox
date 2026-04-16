@@ -27,6 +27,7 @@ import {
   Heart,
 } from "lucide-react";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import {
   FollowUser,
   UnfollowUser,
@@ -268,16 +269,16 @@ export function MentorshipUserProfileModal({
       if (isFollowing) {
         await UnfollowUser(profile.id);
         setIsFollowing(false);
-        showToast("Successfully unfollowed", "success");
+        showToast(MSG.FOLLOW.UNFOLLOWED, "success");
       } else {
         await FollowUser(profile.id);
         setIsFollowing(true);
-        showToast("Successfully followed", "success");
+        showToast(MSG.FOLLOW.FOLLOWED, "success");
       }
     } catch (error: any) {
       console.error("Error toggling follow:", error);
       showToast(
-        error.response?.data?.message || "Failed to update follow status",
+        error.response?.data?.message || MSG.USER.FOLLOW_STATUS_FAILED,
         "error"
       );
     } finally {
@@ -289,7 +290,7 @@ export function MentorshipUserProfileModal({
     if (!profile?.id) return;
 
     if (hasExistingRequest()) {
-      showToast("A mentorship request already exists with this user", "warning");
+      showToast(MSG.MENTORSHIP.ALREADY_REQUESTED, "warning");
       return;
     }
 
@@ -315,7 +316,7 @@ export function MentorshipUserProfileModal({
     if (!profile?.id || isLoadingRequest || !requestMessage.trim()) return;
 
     if (hasExistingRequest()) {
-      showToast("A mentorship request already exists with this user", "warning");
+      showToast(MSG.MENTORSHIP.ALREADY_REQUESTED, "warning");
       return;
     }
 
@@ -333,7 +334,7 @@ export function MentorshipUserProfileModal({
       await CreateDirectMentorShipRequest(payload);
 
       setShowRequestForm(false);
-      showToast("Mentorship request sent successfully!", "success");
+      showToast(MSG.MENTORSHIP.REQUEST_SENT, "success");
       setRequestStatus({
         hasSentRequest: true,
         hasReceivedRequest: false,
@@ -347,7 +348,7 @@ export function MentorshipUserProfileModal({
       console.error("Error sending mentorship request:", error);
       showToast(
         error.response?.data?.message ||
-          "An error occurred while sending the request",
+          MSG.MENTORSHIP.REQUEST_FAILED,
         "error"
       );
     } finally {

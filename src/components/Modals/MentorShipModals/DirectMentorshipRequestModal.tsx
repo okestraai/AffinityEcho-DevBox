@@ -8,6 +8,7 @@ import {
   CheckUserProfileRequirement,
 } from "../../../../api/mentorshipApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 
 interface DirectMentorshipRequestModalProps {
   isOpen: boolean;
@@ -199,20 +200,17 @@ export function DirectMentorshipRequestModal({
     e.preventDefault();
 
     if (!message.trim()) {
-      showToast("Please add a message to your request", "warning");
+      showToast(MSG.MENTORSHIP.MESSAGE_REQUIRED, "warning");
       return;
     }
 
     if (alreadySentRequest) {
-      showToast(
-        "You have already sent a request to this user. You cannot send another one.",
-        "warning"
-      );
+      showToast(MSG.MENTORSHIP.DUPLICATE_REQUEST, "warning");
       return;
     }
 
     if (!profileCheck.canCreateRequest) {
-      showToast("Please complete your profile before sending requests", "warning");
+      showToast(MSG.MENTORSHIP.INCOMPLETE_PROFILE, "warning");
       return;
     }
 
@@ -227,14 +225,14 @@ export function DirectMentorshipRequestModal({
 
       await CreateDirectMentorShipRequest(payload);
 
-      showToast(`Request sent to ${resolveDisplayName(profile.display_name, profile.username)}!`, "success");
+      showToast(MSG.MENTORSHIP.REQUEST_SENT, "success");
       setMessage("");
       onClose();
     } catch (error: any) {
       console.error("Error sending request:", error);
       showToast(
         error.response?.data?.message ||
-          "Failed to send request. Please try again.",
+          MSG.MENTORSHIP.REQUEST_FAILED,
         "error"
       );
     } finally {

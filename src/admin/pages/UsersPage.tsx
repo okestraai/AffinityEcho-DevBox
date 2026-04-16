@@ -37,6 +37,7 @@ import {
 import { showToast } from "../../Helper/ShowToast";
 import { ConfirmModal } from "../components";
 import { getApiError } from "../utils/apiError";
+import { MSG } from "../../constants/messages";
 
 type UserRole = "user" | "super_admin" | "admin";
 type UserStatus = "active" | "suspended" | "deactivated" | "deleted";
@@ -940,7 +941,7 @@ export function UsersPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to load users"), "error");
+      showToast(getApiError(err, MSG.ADMIN.USERS_LOAD_FAILED), "error");
     } finally {
       setLoading(false);
     }
@@ -1002,34 +1003,34 @@ export function UsersPage() {
     try {
       if (status === "suspended") {
         await UnsuspendUser(user.id);
-        showToast("Suspension lifted", "success");
+        showToast(MSG.ADMIN.SUSPENSION_LIFTED, "success");
       } else {
         await SuspendUser(user.id, { reason: "Suspended by admin" });
-        showToast("User suspended", "success");
+        showToast(MSG.ADMIN.USER_SUSPENDED, "success");
       }
       fetchUsers();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Action failed"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
     }
   }
 
   async function handleRoleChange(userId: string, role: UserRole) {
     try {
       await ChangeUserRole(userId, role);
-      showToast("Role updated", "success");
+      showToast(MSG.ADMIN.ROLE_UPDATED, "success");
       fetchUsers();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to change role"), "error");
+      showToast(getApiError(err, MSG.ADMIN.ROLE_CHANGE_FAILED), "error");
     }
   }
 
   async function handleDelete(userId: string) {
     try {
       await DeleteAdminUser(userId, "Deleted by admin");
-      showToast("Account deleted", "success");
+      showToast(MSG.ADMIN.ACCOUNT_DELETED, "success");
       fetchUsers();
     } catch (err: unknown) {
-      showToast(getApiError(err, "Failed to delete account"), "error");
+      showToast(getApiError(err, MSG.ADMIN.DELETE_ACCOUNT_FAILED), "error");
     } finally {
       setConfirmDeleteId(null);
     }

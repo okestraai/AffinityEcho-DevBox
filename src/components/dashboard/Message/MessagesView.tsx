@@ -45,6 +45,7 @@ import { MentionText } from "../../shared/MentionText";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { webSocketService } from "../../../services/websocket.service";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { MentorshipRequestModal } from "../../Modals/MentorShipModals/MentorshipRequestModal";
 import { MentorshipUserProfileModal } from "../../Modals/MentorShipModals/MentorshipUserProfileModal";
 import { MentorshipRequestsView } from "./MentorshipRequestsView";
@@ -929,7 +930,7 @@ export function MessagesView() {
         webSocketService.reconnect();
       }
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Failed to send message";
+      const msg = error?.response?.data?.message || MSG.MESSAGING.SEND_FAILED;
       showToast(msg, "error");
       throw error;
     }
@@ -940,7 +941,7 @@ export function MessagesView() {
 
     try {
       await RequestIdentityReveal(selectedConversation.id);
-      showToast("Identity reveal request sent", "success");
+      showToast(MSG.MESSAGING.REVEAL_SENT, "success");
       fetchIdentityRevealStatus(selectedConversation.id);
     } catch (error) {
       const errorMessage =
@@ -948,7 +949,7 @@ export function MessagesView() {
           error !== null &&
           "response" in error &&
           (error as any).response?.data?.message) ||
-        "Failed to send request";
+        MSG.MENTORSHIP.REQUEST_FAILED;
       showToast(errorMessage, "error");
     }
   };
@@ -958,7 +959,7 @@ export function MessagesView() {
     if (!revealId || !selectedConversation) return;
     try {
       await CancelIdentityReveal(revealId);
-      showToast("Identity reveal request cancelled", "success");
+      showToast(MSG.MESSAGING.REVEAL_CANCELLED, "success");
       fetchIdentityRevealStatus(selectedConversation.id);
     } catch (error) {
       const errorMessage =
@@ -966,7 +967,7 @@ export function MessagesView() {
           error !== null &&
           "response" in error &&
           (error as any).response?.data?.message) ||
-        "Failed to cancel request";
+        MSG.MENTORSHIP.CANCEL_FAILED;
       showToast(errorMessage, "error");
     }
   };
@@ -1062,7 +1063,7 @@ export function MessagesView() {
     if (mentorProfileData) {
       setShowMentorProfileModal(true);
     } else {
-      showToast("Mentor profile is still loading...", "info");
+      showToast(MSG.MESSAGING.PROFILE_LOADING, "info");
     }
   };
 
@@ -1130,7 +1131,7 @@ export function MessagesView() {
         await fetchMessages(conversationId);
         navigate(`/dashboard/messages?conversation=${conversationId}`);
       } catch {
-        showToast("Failed to start conversation", "error");
+        showToast(MSG.MESSAGING.START_FAILED, "error");
       }
     }
   };
@@ -1281,7 +1282,7 @@ export function MessagesView() {
 
     const handleMessageError = (data: any) => {
       const errorData = data?.data || data;
-      showToast(errorData?.message || "Message failed to send", "error");
+      showToast(errorData?.message || MSG.MESSAGING.WS_SEND_FAILED, "error");
     };
 
     const handleTypingStart = (data: any) => {
@@ -1516,7 +1517,7 @@ export function MessagesView() {
           navigate(`/dashboard/messages?conversation=${convId}`, { replace: true });
         })
         .catch((err) => {
-          const msg = err?.response?.data?.message || "Failed to start conversation";
+          const msg = err?.response?.data?.message || MSG.MESSAGING.START_FAILED;
           showToast(msg, "error");
         });
     }
@@ -1566,7 +1567,7 @@ export function MessagesView() {
           navigate(`/dashboard/messages?conversation=${convId}`, { replace: true });
         })
         .catch((err) => {
-          const msg = err?.response?.data?.message || "Failed to start conversation";
+          const msg = err?.response?.data?.message || MSG.MESSAGING.START_FAILED;
           showToast(msg, "error");
         });
     }
@@ -1604,16 +1605,16 @@ export function MessagesView() {
   // ==================== MESSAGE ACTIONS (EDIT / DELETE / COPY) ====================
   const handleCopyMessage = (text: string) => {
     navigator.clipboard.writeText(text);
-    showToast("Message copied", "success");
+    showToast(MSG.MESSAGING.MESSAGE_COPIED, "success");
   };
 
   const handleDeleteMessage = async (messageId: string, conversationId: string) => {
     try {
       await DeleteMessage(messageId, conversationId);
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      showToast("Message deleted", "info");
+      showToast(MSG.MESSAGING.MESSAGE_DELETED, "info");
     } catch {
-      showToast("Failed to delete message", "error");
+      showToast(MSG.MESSAGING.MSG_DELETE_FAILED, "error");
     }
   };
 
@@ -1641,7 +1642,7 @@ export function MessagesView() {
       );
       handleCancelEdit();
     } catch {
-      showToast("Failed to edit message", "error");
+      showToast(MSG.MESSAGING.MSG_EDIT_FAILED, "error");
     }
   };
 
@@ -2079,9 +2080,9 @@ export function MessagesView() {
                 try {
                   await DeleteConversation(convId);
                   setConversations((prev) => prev.filter((c) => c.id !== convId));
-                  showToast("Conversation deleted", "info");
+                  showToast(MSG.MESSAGING.CONVERSATION_DELETED, "info");
                 } catch {
-                  showToast("Failed to delete conversation", "error");
+                  showToast(MSG.MESSAGING.DELETE_FAILED, "error");
                 }
               }}
               getIdentityRevealStatus={getIdentityRevealStatus}

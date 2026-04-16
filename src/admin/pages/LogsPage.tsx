@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { GetAdminLogs, ExportLogs } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
+import { MSG } from '../../constants/messages';
 import { ExportModal, ExportSuccessModal, TableRowSkeleton } from '../components';
 import { useExport } from '../hooks/useExport';
 
@@ -78,7 +79,7 @@ export function LogsPage() {
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch {
-      showToast('Failed to load logs', 'error');
+      showToast(MSG.ADMIN.LOGS_LOAD_FAILED, 'error');
     } finally { setLoading(false); }
   }, [page, search, targetFilter]);
 

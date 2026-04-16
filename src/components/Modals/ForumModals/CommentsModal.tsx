@@ -21,6 +21,7 @@ import {
 } from "../../../../api/forumApis";
 import { getTimeAgo } from "../../../utils/forumUtils";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 import { UserProfileModal } from "../UserProfileModal";
@@ -97,7 +98,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setNewComment("");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
-      showToast(error.response?.data?.message || "Failed to post comment", "error");
+      showToast(error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
     } finally {
       setSubmitting(false);
     }
@@ -124,7 +125,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setReplyingTo(null);
     } catch (error: any) {
       console.error("Error submitting reply:", error);
-      showToast(error.response?.data?.message || "Failed to post reply", "error");
+      showToast(error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +157,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setComments(flattenComments(result.data || []));
     } catch (error: any) {
       console.error("Error deleting comment:", error);
-      showToast(error.response?.data?.message || "Failed to delete comment", "error");
+      showToast(error.response?.data?.message || MSG.FORUM.COMMENT_DELETE_FAILED, "error");
     }
   };
 

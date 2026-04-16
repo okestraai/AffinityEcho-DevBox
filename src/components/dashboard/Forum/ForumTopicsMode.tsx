@@ -22,6 +22,7 @@ import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
 import { ToggleTopicBookmark } from "../../../../api/forumApis";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 
@@ -110,10 +111,10 @@ export function ForumTopicsMode(props: any) {
     setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
-      showToast(!currentState ? "Topic bookmarked" : "Bookmark removed", "success");
+      showToast(!currentState ? MSG.FORUM.BOOKMARKED : MSG.FORUM.BOOKMARK_REMOVED, "success");
     } catch {
       setBookmarkOverrides((prev) => ({ ...prev, [topicId]: currentState }));
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FORUM.BOOKMARK_FAILED, "error");
     }
   };
 

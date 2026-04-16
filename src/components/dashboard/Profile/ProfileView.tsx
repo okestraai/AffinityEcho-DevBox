@@ -55,6 +55,7 @@ import { GetMyNooks, GetBookmarkedNooks } from '../../../../api/nookApis';
 import { GetMyActivity, GetMyBookmarks } from '../../../../api/profileApis';
 import { GetFollowers, GetFollowing, UnfollowUser } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
+import { MSG } from '../../../constants/messages';
 import { EditProfilePanel } from './EditProfilePanel';
 import { ProfileSkeleton, ProfilePageSkeleton, FollowListSkeleton, SettingsSkeleton } from '../../../Helper/SkeletonLoader';
 import { DecryptData } from '../../../../api/EncrytionApis';
@@ -310,9 +311,9 @@ export function ProfileView() {
       await UnfollowUser(userId);
       setFollowing(prev => prev.filter(f => (f.followed_id || f.id || f.user_id) !== userId));
       setFollowingTotal(prev => Math.max(0, prev - 1));
-      showToast('Unfollowed successfully', 'success');
+      showToast(MSG.FOLLOW.UNFOLLOWED, 'success');
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to unfollow', 'error');
+      showToast(err?.response?.data?.message || MSG.FOLLOW.UNFOLLOW_FAILED, 'error');
     }
   };
 
@@ -535,7 +536,7 @@ export function ProfileView() {
     try {
       await SendCompanyVerificationEmail(verificationEmail.trim());
       setVerificationStatus('pending');
-      showToast('Verification email sent! Check your inbox.', 'success');
+      showToast(MSG.COMPANY.VERIFICATION_SENT, 'success');
     } catch (error: any) {
       setVerificationError(error?.response?.data?.message || 'Failed to send verification email');
     } finally {
@@ -549,7 +550,7 @@ export function ProfileView() {
     setVerificationError('');
     try {
       await UpdateCompanyVerificationEmail(verificationEmail);
-      showToast('Verification email resent! Check your inbox.', 'success');
+      showToast(MSG.COMPANY.VERIFICATION_RESENT, 'success');
     } catch (error: any) {
       setVerificationError(error?.response?.data?.message || 'Failed to resend verification email');
     } finally {
@@ -576,7 +577,7 @@ export function ProfileView() {
       setVerificationEmail(trimmed);
       setNewVerificationEmail('');
       setShowChangeEmail(false);
-      showToast('Email updated and verification resent!', 'success');
+      showToast(MSG.COMPANY.VERIFICATION_UPDATED, 'success');
     } catch (error: any) {
       setVerificationError(error?.response?.data?.message || 'Failed to update verification email');
     } finally {
@@ -589,7 +590,7 @@ export function ProfileView() {
     try {
       setPausingAccount(true);
       await DeactivateAccount({ reason: pauseReason || undefined });
-      showToast('Your account has been paused. Log in again to reactivate.', 'success');
+      showToast(MSG.USER.ACCOUNT_DEACTIVATED, 'success');
       logout();
     } catch (error: unknown) {
       const errMsg = (error as { response?: { data?: { message?: string; code?: string } } })?.response?.data?.message;
@@ -597,10 +598,10 @@ export function ProfileView() {
       const status = (error as { response?: { status?: number } })?.response?.status;
 
       if (errCode === 'ALREADY_DEACTIVATED' || status === 409 || errMsg?.toLowerCase().includes('already deactivated')) {
-        showToast('Your account is already paused. Log in again to reactivate it.', 'info');
+        showToast(MSG.USER.ALREADY_PAUSED, 'info');
         logout();
       } else {
-        showToast(errMsg || 'Failed to pause account. Please try again.', 'error');
+        showToast(errMsg || MSG.USER.DEACTIVATE_FAILED, 'error');
       }
     } finally {
       setPausingAccount(false);
@@ -617,11 +618,11 @@ export function ProfileView() {
         confirmDeletion: true,
         reason: deleteReason || undefined
       });
-      showToast('Your account has been permanently deleted.', 'success');
+      showToast(MSG.USER.ACCOUNT_DELETED, 'success');
       logout();
     } catch (error: unknown) {
       const errMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      showToast(errMsg || 'Failed to delete account. Please try again.', 'error');
+      showToast(errMsg || MSG.USER.DELETE_FAILED, 'error');
     } finally {
       setDeletingAccount(false);
       setShowDeleteConfirm(false);

@@ -21,6 +21,7 @@ import { CompanyMode } from "./CompanyMode";
 import { ForumTopicsMode } from "./ForumTopicsMode";
 import { ForumViewSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 
 export function ForumsView() {
   const { user: currentUser } = useAuth();
@@ -293,7 +294,7 @@ export function ForumsView() {
       });
     } catch (error) {
       console.error("Error adding reaction:", error);
-      showToast("Failed to update reaction", "error");
+      showToast(MSG.FORUM.REACTION_FAILED, "error");
 
       // Revert optimistic update on error
       setRecentDiscussions((prev) =>
@@ -400,7 +401,7 @@ export function ForumsView() {
   const handleCommentSubmit = async (topicId: string, comment: string) => {
     try {
       if (!comment.trim()) {
-        showToast("Comment cannot be empty", "error");
+        showToast(MSG.FEED.COMMENT_EMPTY, "error");
         return;
       }
 
@@ -430,11 +431,11 @@ export function ForumsView() {
         isAnonymous: true,
       });
 
-      showToast("Comment posted successfully!", "success");
+      showToast(MSG.FORUM.COMMENT_POSTED, "success");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
       showToast(
-        error.response?.data?.message || "Failed to post comment",
+        error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED,
         "error"
       );
 

@@ -38,6 +38,7 @@ import { formatLastActivity, getTimeAgo } from "../../../utils/forumUtils";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { OkestraPanel } from "../OkestraPanel";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { resolveAuthorName } from "../../../utils/nameUtils";
@@ -101,10 +102,10 @@ export function TopicDetailPage() {
     setIsBookmarked(!prev);
     try {
       await ToggleTopicBookmark(topicId!);
-      showToast(!prev ? "Topic bookmarked" : "Bookmark removed", "success");
+      showToast(!prev ? MSG.FORUM.BOOKMARKED : MSG.FORUM.BOOKMARK_REMOVED, "success");
     } catch {
       setIsBookmarked(prev);
-      showToast("Failed to update bookmark", "error");
+      showToast(MSG.FORUM.BOOKMARK_FAILED, "error");
     }
   };
 
@@ -296,7 +297,7 @@ export function TopicDetailPage() {
       });
     } catch (error) {
       console.error("Error adding reaction:", error);
-      showToast("Failed to update reaction", "error");
+      showToast(MSG.FORUM.REACTION_FAILED, "error");
 
       // Revert on error
       setTopic((prevTopic: any) => {
@@ -361,11 +362,11 @@ export function TopicDetailPage() {
         setExpandedComments((prev) => new Set([...prev, replyToComment]));
       }
 
-      showToast("Comment posted successfully!", "success");
+      showToast(MSG.FORUM.COMMENT_POSTED, "success");
     } catch (error: any) {
       console.error("Error submitting comment:", error);
       showToast(
-        error.response?.data?.message || "Failed to post comment",
+        error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED,
         "error",
       );
     } finally {
@@ -412,7 +413,7 @@ export function TopicDetailPage() {
       });
     } catch (error) {
       console.error("Error reacting to comment:", error);
-      showToast("Failed to update reaction", "error");
+      showToast(MSG.FORUM.REACTION_FAILED, "error");
 
       // Revert on error
       const revertComments = (commentsList: any[]): any[] => {
@@ -475,11 +476,11 @@ export function TopicDetailPage() {
       // Make API call in background
       await DeleteTopicsComments(commentId);
 
-      showToast("Comment deleted successfully", "success");
+      showToast(MSG.FORUM.COMMENT_DELETED, "success");
     } catch (error: any) {
       console.error("Error deleting comment:", error);
       showToast(
-        error.response?.data?.message || "Failed to delete comment",
+        error.response?.data?.message || MSG.FORUM.COMMENT_DELETE_FAILED,
         "error",
       );
 

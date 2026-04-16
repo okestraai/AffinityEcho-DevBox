@@ -30,6 +30,7 @@ import {
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { ForumCardSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
+import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
 interface Props {
@@ -188,10 +189,10 @@ export function ForumDetailView({
       // Make API call
       if (wasJoined) {
         await UserLeaveForum(initialForum.id);
-        showToast("Left forum successfully", "success");
+        showToast(MSG.FORUM.LEFT, "success");
       } else {
         await UserJoinForum(initialForum.id);
-        showToast("Joined forum successfully", "success");
+        showToast(MSG.FORUM.JOINED, "success");
       }
 
       // Small delay to ensure server has processed the request
@@ -204,7 +205,7 @@ export function ForumDetailView({
     } catch (error: any) {
       console.error("Error toggling join status:", error);
       showToast(
-        error.response?.data?.message || "Failed to update forum membership",
+        error.response?.data?.message || MSG.FORUM.JOIN_FAILED,
         "error"
       );
 
