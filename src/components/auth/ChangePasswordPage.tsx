@@ -28,7 +28,7 @@ export function ChangePasswordPage() {
     setError('');
     setMessage('');
 
-    if (newPassword !== confirmPassword) {
+    if (newPassword.trim() !== confirmPassword.trim()) {
       setError('New passwords do not match');
       setLoading(false);
       return;
@@ -48,7 +48,7 @@ export function ChangePasswordPage() {
     }
 
     try {
-      await ChangePassword({ currentPassword, newPassword });
+      await ChangePassword({ currentPassword: currentPassword.trim(), newPassword: newPassword.trim() });
 
       setMessage('Password changed successfully! Redirecting...');
       showToast(MSG.AUTH.PASSWORD_CHANGED, 'success');

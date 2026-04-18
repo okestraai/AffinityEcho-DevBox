@@ -58,7 +58,7 @@ export function ResetPasswordPage() {
     }
 
     try {
-      await ResetPassword(email, newPassword, otp);
+      await ResetPassword(email, newPassword.trim(), otp);
 
       setMessage('Password reset successfully! Redirecting to login...');
       showToast(MSG.AUTH.PASSWORD_RESET, 'success');

@@ -279,7 +279,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setActionLoading(true);
     try {
 
-      const response = await loginUser({ email, password });
+      const response = await loginUser({ email, password: password.trim() });
 
 
       // Handle the response structure
@@ -396,7 +396,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const username = generateUsername();
       const avatar = generateAvatar();
-      await registerUser({ email, password, username, avatar });
+      await registerUser({ email, password: password.trim(), username, avatar });
       showToast(MSG.AUTH.OTP_SENT, "success");
       navigate("/verify-otp", { state: { email }, replace: true });
     } catch (err: any) {
