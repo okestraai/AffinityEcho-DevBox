@@ -90,7 +90,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-900">Broadcast Notification</h2>
-          <button type="button" onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="Close modal" className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
@@ -247,7 +247,7 @@ export function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setShowExportModal(true)} disabled={exporting} className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50">
+          <button type="button" onClick={() => setShowExportModal(true)} disabled={exporting} aria-label="Export notifications" className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             <span className="hidden sm:inline">Export</span>
           </button>
@@ -345,7 +345,7 @@ export function NotificationsPage() {
                     {sending === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />} Send
                   </button>
                 )}
-                <button type="button" onClick={() => setConfirmDelete(notif)} disabled={deleting === notif.id} title="Delete" className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors disabled:opacity-40">
+                <button type="button" onClick={() => setConfirmDelete(notif)} disabled={deleting === notif.id} title="Delete" aria-label="Delete notification" className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors disabled:opacity-40">
                   {deleting === notif.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
               </div>

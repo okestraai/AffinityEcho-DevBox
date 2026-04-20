@@ -365,6 +365,7 @@ export function OverviewMode(props: any) {
                                 ? "text-green-600 bg-green-50"
                                 : "text-gray-500 hover:text-green-600"
                             }`}
+                            aria-label="Seen"
                           >
                             <Eye className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
@@ -378,6 +379,7 @@ export function OverviewMode(props: any) {
                                 ? "text-red-500 bg-red-50"
                                 : "text-gray-500 hover:text-red-500"
                             }`}
+                            aria-label="Heard"
                           >
                             <HeartIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
@@ -393,6 +395,7 @@ export function OverviewMode(props: any) {
                                 ? "text-blue-600 bg-blue-50"
                                 : "text-gray-500 hover:text-blue-600"
                             }`}
+                            aria-label="Validated"
                           >
                             <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
@@ -408,6 +411,7 @@ export function OverviewMode(props: any) {
                                 ? "text-yellow-500 bg-yellow-50"
                                 : "text-gray-500 hover:text-yellow-500"
                             }`}
+                            aria-label="Inspired"
                           >
                             <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
@@ -423,6 +427,7 @@ export function OverviewMode(props: any) {
                                 ? "text-purple-600 bg-purple-50"
                                 : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
                             }`}
+                            aria-label="Comments"
                           >
                             <MessageCircle className="w-4 h-4" />
                             <span className="text-sm">
@@ -433,6 +438,7 @@ export function OverviewMode(props: any) {
                             onClick={(e) => handleOkestraClick(topic as Topic, e)}
                             className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
                             title="AI Insights"
+                            aria-label="AI Insights"
                           >
                             <Sparkles className="w-4 h-4" />
                             <span className="text-sm hidden md:inline">AI Insights</span>
@@ -445,6 +451,7 @@ export function OverviewMode(props: any) {
                                 : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
                             }`}
                             title="Bookmark"
+                            aria-label="Bookmark"
                           >
                             <Bookmark className={`w-4 h-4 transition-transform duration-200 ${isTopicBookmarked(topic) ? "fill-amber-500 animate-reaction-pop" : ""}`} />
                           </button>

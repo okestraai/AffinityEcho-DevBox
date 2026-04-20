@@ -254,6 +254,7 @@ export function DirectMentorshipRequestModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg"
             disabled={isSubmitting}
           >

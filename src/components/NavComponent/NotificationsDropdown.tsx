@@ -628,6 +628,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
               onClick={fetchNotifications}
               className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Refresh"
+              aria-label="Refresh notifications"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -636,6 +637,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
                 onClick={markAllAsRead}
                 className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Mark all as read"
+                aria-label="Mark all as read"
               >
                 <Check className="w-4 h-4" />
               </button>
@@ -644,6 +646,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
               onClick={onClose}
               className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Close"
+              aria-label="Close notifications"
             >
               <X className="w-4 h-4" />
             </button>
@@ -701,6 +704,7 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
                             e.stopPropagation();
                             setShowMenu(showMenu === notification.id ? null : notification.id);
                           }}
+                          aria-label="Notification options"
                           className="p-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                         >
                           <MoreVertical className="w-3.5 h-3.5" />

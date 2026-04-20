@@ -369,6 +369,7 @@ function ExportModal({
           <h3 className="text-lg font-semibold text-gray-900">Export Users</h3>
           <button
             onClick={onClose}
+            aria-label="Close export modal"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -557,6 +558,7 @@ function ActionsMenu({
           setOpen((o) => !o);
           setShowRoleMenu(false);
         }}
+        aria-label="User actions"
         className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all duration-200"
       >
         <MoreVertical className="w-4 h-4" />
@@ -751,6 +753,7 @@ function FilterModal({
           <h3 className="text-lg font-semibold text-gray-900">Filter Users</h3>
           <button
             onClick={onClose}
+            aria-label="Close filter modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -836,6 +839,7 @@ function SortModal({
           <h3 className="text-lg font-semibold text-gray-900">Sort Users</h3>
           <button
             onClick={onClose}
+            aria-label="Close sort modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />

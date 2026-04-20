@@ -195,6 +195,7 @@ export function NookMessage({
               <button
                 onClick={() => { setEditContent(message.content); setIsEditing(true); }}
                 className="ml-auto p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                aria-label="Edit message"
                 title="Edit message"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -250,6 +251,7 @@ export function NookMessage({
                     ? "text-red-500 bg-red-50"
                     : "text-gray-500 hover:text-red-500 hover:bg-red-50"
                 }`}
+                aria-label="Heard"
                 title="Heard"
               >
                 <Heart className={`w-4 h-4 transition-transform duration-200 ${hasReacted("heard") ? "fill-red-500 animate-reaction-pop" : ""}`} />
@@ -265,6 +267,7 @@ export function NookMessage({
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                 }`}
+                aria-label="Validated"
                 title="Validated"
               >
                 <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${hasReacted("validated") ? "animate-reaction-pop" : ""}`} />
@@ -280,6 +283,7 @@ export function NookMessage({
                     ? "text-green-600 bg-green-50"
                     : "text-gray-500 hover:text-green-600 hover:bg-green-50"
                 }`}
+                aria-label="Helpful"
                 title="Helpful"
               >
                 <Star className={`w-4 h-4 transition-transform duration-200 ${hasReacted("helpful") ? "fill-green-600 animate-reaction-pop" : ""}`} />

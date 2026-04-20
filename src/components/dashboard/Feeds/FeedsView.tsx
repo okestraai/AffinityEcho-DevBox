@@ -663,6 +663,7 @@ export function FeedsView() {
               <button
                 onClick={() => setShowCreatePost(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
               >
                 <X className="w-5 h-5 text-gray-600" />
               </button>
@@ -916,6 +917,7 @@ export function FeedsView() {
                             )
                           }
                           className="flex items-center gap-2 text-sm hover:text-green-600 transition-colors text-gray-600"
+                          aria-label="Viewers"
                         >
                           <Eye className="w-4 h-4" />
                           <span>{formatNumber(item.engagement.seen ?? 0)}</span>
@@ -926,6 +928,7 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.heard ? "text-red-500 font-semibold" : "text-gray-600 hover:text-red-500"
                         }`}
+                        aria-label="Heard"
                       >
                         <Heart className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.heard)}</span>
@@ -935,6 +938,7 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.validated ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-600"
                         }`}
+                        aria-label="Validated"
                       >
                         <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.validated ? "animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.validated)}</span>
@@ -944,6 +948,7 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.inspired ? "text-yellow-500 font-semibold" : "text-gray-600 hover:text-yellow-500"
                         }`}
+                        aria-label="Inspired"
                       >
                         <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.inspired)}</span>
@@ -955,6 +960,7 @@ export function FeedsView() {
                             ? "text-blue-600 font-semibold"
                             : "text-gray-600 hover:text-blue-600"
                         }`}
+                        aria-label="Comments"
                       >
                         <MessageSquare className="w-4 h-4" />
                         <span>
@@ -1083,7 +1089,7 @@ export function FeedsView() {
                         </div>
                       </div>
                     </div>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0">
+                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0" aria-label="More options">
                       <MoreHorizontal className="w-5 h-5 text-gray-600" />
                     </button>
                   </div>
@@ -1139,6 +1145,7 @@ export function FeedsView() {
                         item.user_reactions.heard ? "text-red-500 bg-red-50" : "text-gray-500"
                       }`}
                       title="Heard"
+                      aria-label="Heard"
                     >
                       <Heart className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                     </button>
@@ -1148,6 +1155,7 @@ export function FeedsView() {
                         item.user_reactions.validated ? "text-blue-600 bg-blue-50" : "text-gray-500"
                       }`}
                       title="Validated"
+                      aria-label="Validated"
                     >
                       <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.validated ? "animate-reaction-pop" : ""}`} />
                     </button>
@@ -1157,6 +1165,7 @@ export function FeedsView() {
                         item.user_reactions.inspired ? "text-yellow-500 bg-yellow-50" : "text-gray-500"
                       }`}
                       title="Inspired"
+                      aria-label="Inspired"
                     >
                       <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                     </button>
@@ -1167,6 +1176,7 @@ export function FeedsView() {
                         activeCommentId === item.id ? "text-blue-600 bg-blue-50" : "text-gray-500"
                       }`}
                       title="Comment"
+                      aria-label="Comment"
                     >
                       <MessageSquare className="w-5 h-5" />
                     </button>
@@ -1174,6 +1184,7 @@ export function FeedsView() {
                       onClick={(e) => handleShare(item.id, e)}
                       className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                       title="Share"
+                      aria-label="Share"
                     >
                       <Share2 className="w-5 h-5" />
                     </button>
@@ -1183,6 +1194,7 @@ export function FeedsView() {
                         item.user_has_bookmarked ? "text-amber-600 bg-amber-50" : "text-gray-500"
                       }`}
                       title={item.user_has_bookmarked ? "Saved" : "Save"}
+                      aria-label={item.user_has_bookmarked ? "Remove bookmark" : "Bookmark"}
                     >
                       <Bookmark className={`w-5 h-5 transition-transform duration-200 ${item.user_has_bookmarked ? "fill-amber-600 animate-reaction-pop" : ""}`} />
                     </button>

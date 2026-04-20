@@ -592,6 +592,7 @@ function MessageInputComponent({
           <button
             type="button"
             onClick={() => { onCancelEdit?.(); setMessage(""); }}
+            aria-label="Cancel editing"
             className="p-1 text-blue-400 hover:text-blue-600 flex-shrink-0"
           >
             <X className="w-3.5 h-3.5" />
@@ -1751,6 +1752,7 @@ export function MessagesView() {
                     onClick={handleRequestIdentityReveal}
                     disabled={loading.identityStatus}
                     className={`p-2 ${isMentorship ? "text-orange-600 hover:bg-orange-50" : "text-blue-600 hover:bg-blue-50"} rounded-lg transition-colors disabled:opacity-50 animate-pulse`}
+                    aria-label="Accept identity reveal request"
                     title="They requested to reveal identities — click to accept"
                   >
                     {loading.identityStatus ? (
@@ -1769,6 +1771,7 @@ export function MessagesView() {
                     onClick={handleRequestIdentityReveal}
                     disabled={loading.identityStatus}
                     className={`p-2 ${isMentorship ? "text-orange-600 hover:bg-orange-50" : "text-blue-600 hover:bg-blue-50"} rounded-lg transition-colors disabled:opacity-50`}
+                    aria-label="Request identity reveal"
                     title="Request Identity Reveal"
                   >
                     {loading.identityStatus ? (

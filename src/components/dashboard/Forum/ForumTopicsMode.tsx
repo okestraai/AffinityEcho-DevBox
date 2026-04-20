@@ -137,6 +137,7 @@ export function ForumTopicsMode(props: any) {
             <button
               onClick={handleBackToOverview}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
+              aria-label="Go back"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -261,6 +262,7 @@ export function ForumTopicsMode(props: any) {
         <button
           onClick={isGlobalForum ? handleBackToOverview : handleBackToCompany}
           className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all flex-shrink-0"
+          aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -367,17 +369,18 @@ export function ForumTopicsMode(props: any) {
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-1 flex-wrap">
                       {[
-                        { key: "seen", Icon: Eye, active: "text-green-600 bg-green-50", hover: "hover:text-green-600 hover:bg-green-50" },
-                        { key: "heard", Icon: HeartIcon, active: "text-red-500 bg-red-50", hover: "hover:text-red-500 hover:bg-red-50" },
-                        { key: "validated", Icon: ClapIcon, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50" },
-                        { key: "inspired", Icon: Lightbulb, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50" },
-                      ].map(({ key, Icon, active, hover }) => (
+                        { key: "seen", Icon: Eye, active: "text-green-600 bg-green-50", hover: "hover:text-green-600 hover:bg-green-50", label: "Seen" },
+                        { key: "heard", Icon: HeartIcon, active: "text-red-500 bg-red-50", hover: "hover:text-red-500 hover:bg-red-50", label: "Heard" },
+                        { key: "validated", Icon: ClapIcon, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50", label: "Validated" },
+                        { key: "inspired", Icon: Lightbulb, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50", label: "Inspired" },
+                      ].map(({ key, Icon, active, hover, label }) => (
                         <button
                           key={key}
                           onClick={(e) => handleReaction(topic.id, key, e)}
                           className={`flex items-center gap-1 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-2 py-1.5 rounded-lg text-xs ${
                             topic.userReactions?.[key] ? active : `text-gray-500 ${hover}`
                           }`}
+                          aria-label={label}
                         >
                           <Icon className={`w-3.5 h-3.5 ${topic.userReactions?.[key] ? "fill-current" : ""}`} />
                           <span>{topic.reactions?.[key] || topic[`reaction_${key}_count`] || 0}</span>
@@ -386,6 +389,7 @@ export function ForumTopicsMode(props: any) {
                       <button
                         onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 px-2 py-1.5 rounded-lg transition-all text-xs"
+                        aria-label="Comments"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>{topic.commentCount || topic.comments_count || 0}</span>
@@ -395,6 +399,7 @@ export function ForumTopicsMode(props: any) {
                         className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 rounded-lg text-xs ${
                           isTopicBookmarked(topic) ? "text-amber-500 bg-amber-50" : "text-gray-500 hover:text-amber-500 hover:bg-amber-50"
                         }`}
+                        aria-label="Bookmark"
                       >
                         <Bookmark className={`w-3.5 h-3.5 ${isTopicBookmarked(topic) ? "fill-current" : ""}`} />
                       </button>

@@ -332,6 +332,7 @@ export function MentorshipRequestModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={saving}
           >
@@ -455,6 +456,7 @@ export function MentorshipRequestModal({
                 <button
                   type="button"
                   onClick={() => addItem("expertise", "newExpertise")}
+                  aria-label="Add expertise"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -470,6 +472,7 @@ export function MentorshipRequestModal({
                     <button
                       type="button"
                       onClick={() => removeItem("expertise", exp)}
+                      aria-label={`Remove ${exp}`}
                       className="text-blue-500 hover:text-blue-700 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -505,6 +508,7 @@ export function MentorshipRequestModal({
                 <button
                   type="button"
                   onClick={() => addItem("industries", "newIndustry")}
+                  aria-label="Add industry"
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -520,6 +524,7 @@ export function MentorshipRequestModal({
                     <button
                       type="button"
                       onClick={() => removeItem("industries", ind)}
+                      aria-label={`Remove ${ind}`}
                       className="text-indigo-500 hover:text-indigo-700 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -648,6 +653,7 @@ export function MentorshipRequestModal({
                 <button
                   type="button"
                   onClick={() => addItem("languages", "newLanguage")}
+                  aria-label="Add language"
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -663,6 +669,7 @@ export function MentorshipRequestModal({
                     <button
                       type="button"
                       onClick={() => removeItem("languages", lang)}
+                      aria-label={`Remove ${lang}`}
                       className="text-purple-500 hover:text-purple-700 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />

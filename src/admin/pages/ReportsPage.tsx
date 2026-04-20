@@ -337,6 +337,7 @@ function ExportModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close export modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -522,6 +523,7 @@ function FilterModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close filter modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -626,6 +628,7 @@ function SortModal({
           <h3 className="text-lg font-semibold text-gray-900">Sort Reports</h3>
           <button
             onClick={onClose}
+            aria-label="Close sort modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -827,6 +830,7 @@ function DetailPanel({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close report details"
             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 text-lg leading-none"
           >
             ×

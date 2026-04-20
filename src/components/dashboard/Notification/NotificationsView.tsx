@@ -778,6 +778,7 @@ export function NotificationsView() {
               type="button"
               onClick={fetchNotifications}
               className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Refresh notifications"
               title="Refresh"
             >
               <RefreshCw className="w-5 h-5" />
@@ -908,6 +909,7 @@ export function NotificationsView() {
                                   : notification.id
                               );
                             }}
+                            aria-label="Notification options"
                             className="p-1.5 sm:p-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                           >
                             <MoreVertical className="w-4 h-4" />

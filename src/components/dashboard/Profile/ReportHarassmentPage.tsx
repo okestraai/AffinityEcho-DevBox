@@ -286,7 +286,7 @@ export function ReportHarassmentPage() {
                           <p className="text-sm font-medium text-gray-900">{selectedReportedUser.display_name || selectedReportedUser.username}</p>
                           <p className="text-xs text-gray-500">@{selectedReportedUser.username}</p>
                         </div>
-                        <button type="button" onClick={clearReportedUser} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <button type="button" onClick={clearReportedUser} aria-label="Clear reported user" className="text-gray-400 hover:text-red-500 transition-colors">
                           <X className="w-4 h-4" />
                         </button>
                       </div>

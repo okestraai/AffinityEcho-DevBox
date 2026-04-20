@@ -267,6 +267,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
                     onClick={() => handleDeleteComment(comment.id)}
                     className="flex items-center text-xs text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete comment"
+                    aria-label="Delete comment"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -346,6 +347,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
             </div>
             <button
               onClick={onClose}
+              aria-label="Close comments"
               className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />

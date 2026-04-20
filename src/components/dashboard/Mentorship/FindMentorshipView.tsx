@@ -586,6 +586,7 @@ export function FindMentorshipView() {
                 )}
                 <button
                   onClick={() => setShowFilters(false)}
+                  aria-label="Close filters"
                   className="text-sm text-gray-600 hover:text-gray-800"
                 >
                   <X className="w-4 h-4" />
@@ -719,6 +720,7 @@ export function FindMentorshipView() {
                         type="button"
                         onClick={() => setFilters((prev) => ({ ...prev, matchScoreRange: null }))}
                         className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                        aria-label="Clear match score filter"
                         title="Clear"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -887,6 +889,7 @@ export function FindMentorshipView() {
               <div className="flex items-start gap-4 mb-4">
                 <button
                   onClick={() => handleUserClick(profile.id)}
+                  aria-label="View profile"
                   className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center text-3xl hover:scale-105 transition-transform cursor-pointer"
                 >
                   {profile.avatar || "👤"}

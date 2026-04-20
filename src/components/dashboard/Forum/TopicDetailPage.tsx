@@ -564,6 +564,7 @@ export function TopicDetailPage() {
                       ? "text-red-500"
                       : "text-gray-500 hover:text-red-500"
                   }`}
+                  aria-label="Helpful"
                 >
                   <Heart className="w-4 h-4" />
                   <span>{comment.helpful_count || 0}</span>
@@ -604,6 +605,7 @@ export function TopicDetailPage() {
                     onClick={() => handleDeleteComment(comment.id)}
                     className="flex items-center text-sm text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete comment"
+                    aria-label="Delete comment"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -673,6 +675,7 @@ export function TopicDetailPage() {
                 <button
                   onClick={() => setShowOptions(!showOptions)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="More options"
                 >
                   <MoreVertical className="w-5 h-5 text-gray-600" />
                 </button>
@@ -728,6 +731,7 @@ export function TopicDetailPage() {
                       ? "text-red-500 bg-red-50"
                       : "text-gray-500 hover:text-red-500"
                   }`}
+                  aria-label="Heard"
                 >
                   <Heart className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_heard_count || topic.reactions?.heard || 0}</span>
@@ -739,6 +743,7 @@ export function TopicDetailPage() {
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-500 hover:text-blue-600"
                   }`}
+                  aria-label="Validated"
                 >
                   <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_validated_count || topic.reactions?.validated || 0}</span>
@@ -750,6 +755,7 @@ export function TopicDetailPage() {
                       ? "text-yellow-500 bg-yellow-50"
                       : "text-gray-500 hover:text-yellow-500"
                   }`}
+                  aria-label="Inspired"
                 >
                   <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_inspired_count || topic.reactions?.inspired || 0}</span>
@@ -781,6 +787,7 @@ export function TopicDetailPage() {
                   onClick={handleBookmark}
                   className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${isBookmarked ? "text-amber-600" : "text-gray-600"}`}
                   title={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                  aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
                 >
                   <Bookmark className={`w-5 h-5 ${isBookmarked ? "fill-amber-600" : ""}`} />
                 </button>
@@ -789,6 +796,7 @@ export function TopicDetailPage() {
                   onClick={handleShare}
                   className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
                   title="Share"
+                  aria-label="Share"
                 >
                   <Share2 className="w-5 h-5" />
                 </button>

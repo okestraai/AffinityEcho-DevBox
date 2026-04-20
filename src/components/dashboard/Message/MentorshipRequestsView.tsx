@@ -502,6 +502,7 @@ export function MentorshipRequestsView({
           <button
             onClick={onBack}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Back"
             title="Back"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -188,6 +188,7 @@ function ExportModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close export modal"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -358,6 +359,7 @@ function ActionReasonModal({
           <button
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close action modal"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -481,6 +483,7 @@ function RestoreModal({
           <button
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close restore modal"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -577,6 +580,7 @@ function FilterModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close filter modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -625,6 +629,7 @@ function FilterModal({
             </span>
             <button
               onClick={() => setShowFlaggedOnly(!showFlaggedOnly)}
+              aria-label="Toggle show flagged only"
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 showFlaggedOnly ? "bg-purple-600" : "bg-gray-200"
               }`}
@@ -687,6 +692,7 @@ function SortModal({
           <h3 className="text-lg font-semibold text-gray-900">Sort Content</h3>
           <button
             onClick={onClose}
+            aria-label="Close sort modal"
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -803,6 +809,7 @@ function MobileContentCard({
               {status === "hidden" || status === "removed" ? (
                 <button
                   onClick={() => onAction("restore")}
+                  aria-label="Restore content"
                   className="p-2 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
@@ -810,6 +817,7 @@ function MobileContentCard({
               ) : (
                 <button
                   onClick={() => onAction("hide")}
+                  aria-label="Hide content"
                   className="p-2 rounded-lg hover:bg-orange-50 text-orange-600 transition-colors"
                 >
                   <EyeOff className="w-4 h-4" />
@@ -818,6 +826,7 @@ function MobileContentCard({
               {status !== "removed" && (
                 <button
                   onClick={() => onAction("remove")}
+                  aria-label="Remove content"
                   className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1196,6 +1205,7 @@ export function ContentModerationPage(): JSX.Element {
                 setShowFlaggedOnly(!showFlaggedOnly);
                 setPage(1);
               }}
+              aria-label="Toggle flagged only"
               className={`flex items-center gap-2 px-4 py-2.5 sm:py-3 text-sm rounded-xl border transition-all ${
                 showFlaggedOnly
                   ? "bg-purple-100 text-purple-700 border-purple-300"
@@ -1441,6 +1451,7 @@ export function ContentModerationPage(): JSX.Element {
                               <button
                                 onClick={() => openActionModal(item, "restore")}
                                 title="Restore"
+                                aria-label="Restore content"
                                 className="p-2 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
                               >
                                 <Eye className="w-4 h-4" />
@@ -1449,6 +1460,7 @@ export function ContentModerationPage(): JSX.Element {
                               <button
                                 onClick={() => openActionModal(item, "hide")}
                                 title="Hide"
+                                aria-label="Hide content"
                                 className="p-2 rounded-lg hover:bg-orange-50 text-orange-600 transition-colors"
                               >
                                 <EyeOff className="w-4 h-4" />
@@ -1458,6 +1470,7 @@ export function ContentModerationPage(): JSX.Element {
                               <button
                                 onClick={() => openActionModal(item, "remove")}
                                 title="Remove permanently"
+                                aria-label="Remove content permanently"
                                 className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1466,6 +1479,7 @@ export function ContentModerationPage(): JSX.Element {
                             <button
                               onClick={() => handleViewDetails(item)}
                               title="View details"
+                              aria-label="View content details"
                               className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors"
                             >
                               <MoreVertical className="w-4 h-4" />

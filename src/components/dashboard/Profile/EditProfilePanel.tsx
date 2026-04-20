@@ -104,7 +104,7 @@ function TagInput({ tags, onAdd, onRemove, placeholder }: {
         {tags.map((t) => (
           <span key={t} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
             {t}
-            <button onClick={() => onRemove(t)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+            <button onClick={() => onRemove(t)} aria-label={`Remove ${t}`} className="hover:text-red-500"><X className="w-3 h-3" /></button>
           </span>
         ))}
       </div>
@@ -117,7 +117,7 @@ function TagInput({ tags, onAdd, onRemove, placeholder }: {
           placeholder={placeholder}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         />
-        <button onClick={addTag} className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+        <button onClick={addTag} aria-label="Add tag" className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -151,7 +151,7 @@ function MultiSelectDropdown({ label, options, selected, onSelect, onRemove }: {
           {selected.map((t) => (
             <span key={t} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
               {t}
-              <button onClick={() => onRemove(t)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+              <button onClick={() => onRemove(t)} aria-label={`Remove ${t}`} className="hover:text-red-500"><X className="w-3 h-3" /></button>
             </span>
           ))}
         </div>
@@ -461,7 +461,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} aria-label="Close edit profile panel" className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
             <h2 className="text-lg font-bold text-gray-900">Edit My Profile</h2>
           </div>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm font-medium hover:bg-[#6d28d9] disabled:opacity-50 transition-colors">

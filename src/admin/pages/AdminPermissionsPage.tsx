@@ -132,6 +132,7 @@ function PermissionToggle({
         type="button"
         disabled={disabled}
         onClick={() => onChange(!checked)}
+        aria-label={`Toggle ${label}`}
         className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-1 ${
           checked ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-gray-200'
         } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
@@ -465,6 +466,7 @@ export function AdminPermissionsPage() {
                               onClick={() => toggleGroup(group.id, !allChecked)}
                               className="flex-shrink-0 text-gray-400 hover:text-purple-600 transition-colors"
                               title={allChecked ? 'Deselect all' : 'Select all'}
+                              aria-label={allChecked ? `Deselect all ${group.label} permissions` : `Select all ${group.label} permissions`}
                             >
                               {allChecked ? (
                                 <CheckSquare className="w-4 h-4 text-purple-600" />
@@ -484,6 +486,7 @@ export function AdminPermissionsPage() {
                           </div>
                           <button
                             onClick={() => toggleGroupCollapse(group.id)}
+                            aria-label={isCollapsed ? `Expand ${group.label}` : `Collapse ${group.label}`}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                           >
                             {isCollapsed ? (

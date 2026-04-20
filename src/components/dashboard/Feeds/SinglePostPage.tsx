@@ -498,6 +498,7 @@ export function SinglePostPage() {
                 userReactions.heard ? "text-red-500 bg-red-50" : "text-gray-500"
               }`}
               title="Heard"
+              aria-label="Heard"
             >
               <Heart className={`w-5 h-5 transition-transform duration-200 ${userReactions.heard ? "fill-red-500" : ""}`} />
             </button>
@@ -507,6 +508,7 @@ export function SinglePostPage() {
                 userReactions.validated ? "text-blue-600 bg-blue-50" : "text-gray-500"
               }`}
               title="Validated"
+              aria-label="Validated"
             >
               <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${userReactions.validated ? "animate-reaction-pop" : ""}`} />
             </button>
@@ -516,6 +518,7 @@ export function SinglePostPage() {
                 userReactions.inspired ? "text-yellow-500 bg-yellow-50" : "text-gray-500"
               }`}
               title="Inspired"
+              aria-label="Inspired"
             >
               <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${userReactions.inspired ? "fill-yellow-500" : ""}`} />
             </button>
@@ -526,6 +529,7 @@ export function SinglePostPage() {
                 showComments ? "text-blue-600 bg-blue-50" : "text-gray-500"
               }`}
               title="Comment"
+              aria-label="Toggle comments"
             >
               <MessageSquare className="w-5 h-5" />
             </button>
@@ -533,6 +537,7 @@ export function SinglePostPage() {
               onClick={handleShare}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
               title="Share"
+              aria-label="Share"
             >
               <Share2 className="w-5 h-5" />
             </button>
@@ -542,6 +547,7 @@ export function SinglePostPage() {
                 isBookmarked ? "text-amber-600 bg-amber-50" : "text-gray-500"
               }`}
               title={isBookmarked ? "Saved" : "Save"}
+              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
             >
               <Bookmark className={`w-5 h-5 transition-transform duration-200 ${isBookmarked ? "fill-amber-600" : ""}`} />
             </button>
@@ -570,7 +576,7 @@ export function SinglePostPage() {
                 <span className="text-xs text-purple-700 font-medium">
                   Replying to {replyingTo.authorName}
                 </span>
-                <button onClick={() => setReplyingTo(null)} className="text-purple-500 hover:text-purple-700">
+                <button onClick={() => setReplyingTo(null)} className="text-purple-500 hover:text-purple-700" aria-label="Cancel reply">
                   <X className="w-4 h-4" />
                 </button>
               </div>

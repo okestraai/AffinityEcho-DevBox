@@ -533,6 +533,7 @@ export function MentorshipView() {
                   <div className="flex items-start gap-4 mb-4">
                     <button
                       onClick={() => handleViewProfile(mentor, "mentor")}
+                      aria-label="View mentor profile"
                       className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl hover:scale-105 transition-transform cursor-pointer"
                     >
                       {mentorUser?.avatar || "👤"}
@@ -733,6 +734,7 @@ export function MentorshipView() {
                   <div className="flex items-start gap-4 mb-4">
                     <button
                       onClick={() => handleViewProfile(mentee, "mentee")}
+                      aria-label="View mentee profile"
                       className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl hover:scale-105 transition-transform cursor-pointer"
                     >
                       {menteeUser?.avatar || "👤"}

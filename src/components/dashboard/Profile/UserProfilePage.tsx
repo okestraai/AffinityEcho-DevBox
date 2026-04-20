@@ -586,18 +586,21 @@ export function UserProfilePage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostReact(post.id, 'heard'); }}
                       className={`p-2 rounded-lg hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_reactions.heard ? 'text-red-500 bg-red-50' : 'text-gray-500'}`}
+                      aria-label="Heard"
                       title="Heard">
                       <Heart className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.heard ? 'fill-red-500 animate-reaction-pop' : ''}`} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostReact(post.id, 'validated'); }}
                       className={`p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_reactions.validated ? 'text-blue-600 bg-blue-50' : 'text-gray-500'}`}
+                      aria-label="Validated"
                       title="Validated">
                       <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.validated ? 'animate-reaction-pop' : ''}`} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostReact(post.id, 'inspired'); }}
                       className={`p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_reactions.inspired ? 'text-yellow-500 bg-yellow-50' : 'text-gray-500'}`}
+                      aria-label="Inspired"
                       title="Inspired">
                       <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${post.user_reactions.inspired ? 'fill-yellow-500 animate-reaction-pop' : ''}`} />
                     </button>
@@ -605,15 +608,17 @@ export function UserProfilePage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/feeds/post/${post.content_id}`); }}
                       className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                      aria-label="Comment"
                       title="Comment">
                       <MessageSquare className="w-5 h-5" />
                     </button>
-                    <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Share">
+                    <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" aria-label="Share" title="Share">
                       <Share2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostBookmark(post.id); }}
                       className={`p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-110 active:scale-95 ${post.user_bookmarked ? 'text-amber-600 bg-amber-50' : 'text-gray-500'}`}
+                      aria-label={post.user_bookmarked ? 'Saved' : 'Save'}
                       title={post.user_bookmarked ? 'Saved' : 'Save'}>
                       <Bookmark className={`w-5 h-5 transition-transform duration-200 ${post.user_bookmarked ? 'fill-amber-600 animate-reaction-pop' : ''}`} />
                     </button>
@@ -695,6 +700,7 @@ export function UserProfilePage() {
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleTopicBookmark(topic.id); }}
+                          aria-label={topic.user_bookmarked ? 'Remove bookmark' : 'Bookmark'}
                           className={`flex items-center gap-1 transition-all duration-200 hover:scale-110 active:scale-95 px-2 py-1.5 rounded-lg text-xs ${topic.user_bookmarked ? 'text-amber-500 bg-amber-50' : 'text-gray-500 hover:text-amber-500 hover:bg-amber-50'}`}
                         >
                           <Bookmark className={`w-3.5 h-3.5 ${topic.user_bookmarked ? 'fill-current' : ''}`} />

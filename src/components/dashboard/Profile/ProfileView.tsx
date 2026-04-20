@@ -678,6 +678,7 @@ export function ProfileView() {
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                   onClick={() => setActivePage('activity')}
+                  aria-label="Back to activity"
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0"
                 >
                   <ChevronRight className="w-5 h-5 text-gray-500 rotate-180" />
@@ -700,6 +701,7 @@ export function ProfileView() {
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                   onClick={() => setActivePage('profile')}
+                  aria-label="Back to profile"
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0"
                 >
                   <ChevronRight className="w-5 h-5 text-gray-500 rotate-180" />
@@ -892,23 +894,23 @@ export function ProfileView() {
 
                       <div className="px-2 sm:px-4 py-1.5 sm:py-2 border-t border-gray-100">
                         <div className="flex items-center justify-around gap-0.5 sm:gap-1">
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Heard">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Heard" title="Heard">
                             <Heart className="w-5 h-5" />
                           </button>
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Validated">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Validated" title="Validated">
                             <ClapIcon className="w-5 h-5" />
                           </button>
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Inspired">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-yellow-50 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Inspired" title="Inspired">
                             <Lightbulb className="w-5 h-5" />
                           </button>
                           <div className="w-px h-5 bg-gray-200 mx-1 hidden sm:block" />
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Comment">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Comment" title="Comment">
                             <MessageSquare className="w-5 h-5" />
                           </button>
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Share">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Share" title="Share">
                             <Share2 className="w-5 h-5" />
                           </button>
-                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Save">
+                          <button className="p-2.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-110 active:scale-95 text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Save" title="Save">
                             <Bookmark className="w-5 h-5" />
                           </button>
                         </div>
@@ -931,7 +933,7 @@ export function ProfileView() {
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="relative z-10">
                         <div className="flex items-start gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
-                          <button className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-base sm:text-lg md:text-xl shadow-sm border border-purple-200/50 flex-shrink-0 hover:bg-blue-200 transition-colors min-w-[44px] min-h-[44px]">
+                          <button aria-label="View user profile" className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-base sm:text-lg md:text-xl shadow-sm border border-purple-200/50 flex-shrink-0 hover:bg-blue-200 transition-colors min-w-[44px] min-h-[44px]">
                             {avatarEmoji}
                           </button>
                           <div className="flex-1 min-w-0">
@@ -978,31 +980,31 @@ export function ProfileView() {
                         </div>
                         <div className="relative z-20 flex items-center justify-between flex-wrap gap-1 sm:gap-2 md:gap-4 mt-3 sm:mt-4">
                           <div className="flex items-center gap-0 sm:gap-1 md:gap-4 flex-wrap">
-                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-green-600 min-h-[44px]">
+                            <button aria-label="Views" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-green-600 min-h-[44px]">
                               <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.engagement?.views || item.views_count || 0}</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-red-500 min-h-[44px]">
+                            <button aria-label="Heard" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-red-500 min-h-[44px]">
                               <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.heard || item.reactions?.heard || 0}</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-blue-600 min-h-[44px]">
+                            <button aria-label="Validated" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-blue-600 min-h-[44px]">
                               <ClapIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.validated || item.reactions?.validated || 0}</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-yellow-500 min-h-[44px]">
+                            <button aria-label="Inspired" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-yellow-500 min-h-[44px]">
                               <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.inspired || item.reactions?.inspired || 0}</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-purple-600 hover:bg-purple-50 min-h-[44px]">
+                            <button aria-label="Comments" className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-purple-600 hover:bg-purple-50 min-h-[44px]">
                               <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.engagement?.comments || item.commentCount || item.comments_count || 0}</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 min-h-[44px]" title="AI Insights">
+                            <button aria-label="AI Insights" className="flex items-center gap-1 md:gap-2 transition-colors font-medium px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 min-h-[44px]" title="AI Insights">
                               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm hidden sm:inline">AI Insights</span>
                             </button>
-                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-amber-500 hover:bg-amber-50 min-h-[44px]" title="Bookmark">
+                            <button aria-label="Bookmark" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-amber-500 hover:bg-amber-50 min-h-[44px]" title="Bookmark">
                               <Bookmark className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                           </div>

@@ -255,6 +255,7 @@ export function SettingsPage() {
           <button
             type="button"
             onClick={() => setShowResetConfirm(true)}
+            aria-label="Reset settings to defaults"
             className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
           >
             <RefreshCw className="w-4 h-4" />
@@ -461,6 +462,7 @@ export function SettingsPage() {
                               type="button"
                               onClick={() => setSecurity(p => ({ ...p, allowlist_ips: p.allowlist_ips.filter(i => i !== ip) }))}
                               title={`Remove ${ip}`}
+                              aria-label={`Remove ${ip}`}
                               className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
                             >
                               <Trash2 className="w-4 h-4" />
