@@ -3,34 +3,29 @@ import { CookieUtil } from './cookies';
 
 export const TokenUtils = {
   /**
-   * Get access token from cookies (preferred) or localStorage (fallback)
+   * Get access token from cookies
    */
   getAccessToken(): string | null {
-    return CookieUtil.get('access_token') || localStorage.getItem('access_token');
+    return CookieUtil.get('access_token');
   },
 
   /**
-   * Get refresh token from cookies (preferred) or localStorage (fallback)
+   * Get refresh token from cookies
    */
   getRefreshToken(): string | null {
-    return CookieUtil.get('refresh_token') || localStorage.getItem('refresh_token');
+    return CookieUtil.get('refresh_token');
   },
 
   /**
-   * Set both tokens in cookies and localStorage
+   * Set both tokens in cookies
    */
   setTokens(accessToken: string, refreshToken: string): void {
-    // Cookies (7 days for access, 30 days for refresh)
     CookieUtil.set('access_token', accessToken, 7);
     CookieUtil.set('refresh_token', refreshToken, 30);
-
-    // localStorage as fallback
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
   },
 
   /**
-   * Clear all tokens from cookies and localStorage
+   * Clear all tokens from cookies and localStorage (cleanup of old installs)
    */
   clearTokens(): void {
     CookieUtil.remove('access_token');

@@ -16,7 +16,7 @@ export const CookieUtil = {
       `${name}=${encodeURIComponent(value)}`,
       `expires=${expires.toUTCString()}`,
       'path=/',
-      'SameSite=Lax',
+      'SameSite=Strict',
       secure ? 'Secure' : '',
     ]
       .filter(Boolean)

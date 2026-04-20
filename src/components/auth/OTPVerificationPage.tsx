@@ -6,6 +6,7 @@ import { VerifyOTP, ResendOTP } from '../../../api/authApis';
 import { showToast } from '../../Helper/ShowToast';
 import { MSG } from '../../constants/messages';
 import { useAuth } from '../../contexts/AuthContext';
+import { TokenUtils } from '../../utils/tokenUtils';
 
 export function OTPVerificationPage() {
   const location = useLocation();
@@ -80,8 +81,7 @@ export function OTPVerificationPage() {
 
       // SAVE TOKENS
       const { access_token, refresh_token } = response;
-      localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
+      TokenUtils.setTokens(access_token, refresh_token);
 
       // THIS MAKES isAuthenticated = true
       await loadUser();
