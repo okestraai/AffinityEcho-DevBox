@@ -753,17 +753,19 @@ export function MentorshipUserProfileModal({
 
               {/* Stats Row */}
               {statsData && (
-                <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+                <div className={`mb-6 grid gap-2 sm:gap-3 ${statsData.totalFollowers != null ? 'grid-cols-3' : 'grid-cols-2'}`}>
                   <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
-                    <p className="text-2xl font-bold text-purple-700">{statsData.mentorshipSessionsCompleted}</p>
+                    <p className="text-2xl font-bold text-purple-700">{statsData.mentorshipSessionsCompleted ?? 0}</p>
                     <p className="text-xs text-purple-600 font-medium">Sessions</p>
                   </div>
-                  <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-                    <p className="text-2xl font-bold text-blue-700">{statsData.followersCount}</p>
-                    <p className="text-xs text-blue-600 font-medium">Followers</p>
-                  </div>
+                  {statsData.totalFollowers != null && (
+                    <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                      <p className="text-2xl font-bold text-blue-700">{statsData.totalFollowers}</p>
+                      <p className="text-xs text-blue-600 font-medium">Followers</p>
+                    </div>
+                  )}
                   <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
-                    <p className="text-2xl font-bold text-green-700">{statsData.reputationScore}</p>
+                    <p className="text-2xl font-bold text-green-700">{statsData.reputationScore ?? 0}</p>
                     <p className="text-xs text-green-600 font-medium">Reputation</p>
                   </div>
                 </div>
