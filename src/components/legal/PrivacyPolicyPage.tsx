@@ -110,10 +110,26 @@ const sections = [
     ],
   },
   {
+    icon: Shield,
+    color: "from-red-100 to-orange-100",
+    iconColor: "text-red-600",
+    title: "10. Child Safety Standards",
+    intro: "Affinity Echo is designed for adults aged 18 and older. We are committed to preventing child sexual abuse and exploitation (CSAE) on our platform.",
+    list: [
+      "Users must be 18 years or older to create an account.",
+      "We do not knowingly collect personal information from anyone under 18.",
+      "All user-generated content is subject to moderation and community guidelines.",
+      "Users can report inappropriate content or behavior directly within the app.",
+      "Our moderation team reviews flagged content and takes action including content removal and account suspension.",
+      "We comply with all applicable child safety laws and report violations to the relevant authorities.",
+      "If we discover that a user is under 18, their account will be immediately suspended and their data deleted.",
+    ],
+  },
+  {
     icon: Bell,
     color: "from-gray-100 to-slate-100",
     iconColor: "text-gray-600",
-    title: "10. Changes to This Policy",
+    title: "11. Changes to This Policy",
     content:
       "We may update this Privacy Policy periodically. We will notify you of material changes via email or in-app notification. Continued use after changes constitutes acceptance.",
   },
