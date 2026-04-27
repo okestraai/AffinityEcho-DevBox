@@ -549,6 +549,16 @@ export const MSG = {
 
     // Content Detail
     CONTENT_DETAIL_FAILED: 'Unable to load content details, please try again',
+
+    // Analytics
+    ANALYTICS_LOAD_FAILED: 'Unable to load analytics, please try again',
+    FUNNEL_LOAD_FAILED: 'Unable to load funnel data, please try again',
+    GROWTH_LOAD_FAILED: 'Unable to load growth data, please try again',
+    TOP_CONTENT_LOAD_FAILED: 'Unable to load top content, please try again',
+
+    // Health
+    HEALTH_LOAD_FAILED: 'Unable to load health status, please try again',
+    HEALTH_HISTORY_LOAD_FAILED: 'Unable to load health history, please try again',
   },
 
   // ─── HARASSMENT REPORTS ─────────────────────────────────

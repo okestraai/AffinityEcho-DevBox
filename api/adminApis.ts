@@ -33,6 +33,7 @@ export const GetAdminUsers = async (
     search?: string;
     role?: string;
     status?: string;
+    provider?: string;
     sortBy?: string;
     sortOrder?: string;
   } = {},
@@ -49,6 +50,7 @@ export const ExportUsers = async (params: {
   search?: string;
   role?: string;
   status?: string;
+  provider?: string;
   sortBy?: string;
   sortOrder?: string;
 }) => {
@@ -538,4 +540,42 @@ export const GetAdminLogs = async (
   const api = getAuthInstance();
   const res = await api.get(`${BASE}/logs${buildQS(params as any)}`);
   return res.data; // { success, data: [...], meta }
+};
+
+/* ─── 10. Analytics ─── */
+export const GetAdminAnalytics = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/analytics`);
+  return unwrap(res);
+};
+
+export const GetAdminFunnel = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/analytics/funnel`);
+  return unwrap(res);
+};
+
+export const GetAdminGrowth = async (period: 30 | 60 | 90 = 30) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/analytics/growth${buildQS({ period })}`);
+  return unwrap(res);
+};
+
+export const GetAdminTopContent = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/analytics/top-content`);
+  return unwrap(res);
+};
+
+/* ─── 11. System Health ─── */
+export const GetAdminHealth = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/health`);
+  return unwrap(res);
+};
+
+export const GetAdminHealthHistory = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/health/history`);
+  return unwrap(res);
 };

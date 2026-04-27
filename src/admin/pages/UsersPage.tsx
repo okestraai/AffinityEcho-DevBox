@@ -25,6 +25,9 @@ import {
   FileSpreadsheet,
   Check,
   Download as DownloadIcon,
+  Mail,
+  Globe,
+  Smartphone,
 } from "lucide-react";
 import {
   GetAdminUsers,
@@ -51,6 +54,8 @@ interface User {
   email: string;
   role: string;
   job_title: string;
+  avatar: string;
+  auth_provider: string;
   is_suspended: boolean;
   is_deactivated: boolean;
   is_deleted: boolean;
@@ -131,6 +136,37 @@ function StatusBadge({ status }: { status: UserStatus }) {
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize shadow-sm ${styles[status]}`}
     >
       {status}
+    </span>
+  );
+}
+
+function ProviderBadge({ provider }: { provider: string }) {
+  const config: Record<string, { icon: React.ReactNode; label: string; style: string }> = {
+    email: {
+      icon: <Mail className="w-3 h-3" />,
+      label: "Email",
+      style: "bg-gradient-to-br from-blue-50 to-sky-50 text-blue-700 border border-blue-200",
+    },
+    google: {
+      icon: <Globe className="w-3 h-3" />,
+      label: "Google",
+      style: "bg-gradient-to-br from-red-50 to-orange-50 text-red-600 border border-red-200",
+    },
+    apple: {
+      icon: <Smartphone className="w-3 h-3" />,
+      label: "Apple",
+      style: "bg-gradient-to-br from-gray-100 to-slate-50 text-gray-700 border border-gray-300",
+    },
+  };
+  const c = config[provider] || {
+    icon: <Globe className="w-3 h-3" />,
+    label: provider,
+    style: "bg-gray-50 text-gray-600 border border-gray-200",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium capitalize shadow-sm ${c.style}`}>
+      {c.icon}
+      {c.label}
     </span>
   );
 }
@@ -348,6 +384,7 @@ function ExportModal({
     search?: string;
     role?: string;
     status?: string;
+    provider?: string;
   };
 }) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("csv");
@@ -356,7 +393,7 @@ function ExportModal({
 
   const hasActiveFilters =
     activeFilters &&
-    (activeFilters.search || activeFilters.role || activeFilters.status);
+    (activeFilters.search || activeFilters.role || activeFilters.status || activeFilters.provider);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -407,6 +444,14 @@ function ExportModal({
                   • Status:{" "}
                   <span className="font-medium capitalize">
                     {activeFilters.status}
+                  </span>
+                </p>
+              )}
+              {activeFilters.provider && (
+                <p className="text-xs text-purple-700">
+                  • Provider:{" "}
+                  <span className="font-medium capitalize">
+                    {activeFilters.provider}
                   </span>
                 </p>
               )}
@@ -678,8 +723,8 @@ function MobileUserCard({
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3 hover:shadow-md transition-all duration-200">
       <div className="flex items-start justify-between">
         <button onClick={onView} className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
-            {getInitials(user.username)}
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-xl shadow-md">
+            {user.avatar || getInitials(user.username)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">
@@ -700,6 +745,7 @@ function MobileUserCard({
       <div className="flex flex-wrap items-center gap-2">
         <RoleBadge role={user.role} />
         <StatusBadge status={status} />
+        <ProviderBadge provider={user.auth_provider} />
         {user.reports_against > 0 && (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">
             <AlertCircle className="w-3 h-3" />
@@ -730,6 +776,8 @@ function FilterModal({
   setRoleFilter,
   statusFilter,
   setStatusFilter,
+  providerFilter,
+  setProviderFilter,
   onApply,
 }: {
   isOpen: boolean;
@@ -738,6 +786,8 @@ function FilterModal({
   setRoleFilter: (v: string) => void;
   statusFilter: string;
   setStatusFilter: (v: string) => void;
+  providerFilter: string;
+  setProviderFilter: (v: string) => void;
   onApply: () => void;
 }) {
   if (!isOpen) return null;
@@ -791,6 +841,22 @@ function FilterModal({
               <option value="suspended">Suspended</option>
               <option value="deactivated">Deactivated</option>
               <option value="deleted">Deleted</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Provider
+            </label>
+            <select
+              value={providerFilter}
+              onChange={(e) => setProviderFilter(e.target.value)}
+              className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300"
+            >
+              <option value="">All Providers</option>
+              <option value="email">Email</option>
+              <option value="google">Google</option>
+              <option value="apple">Apple</option>
             </select>
           </div>
 
@@ -918,6 +984,7 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [providerFilter, setProviderFilter] = useState("");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [page, setPage] = useState(1);
@@ -938,6 +1005,7 @@ export function UsersPage() {
         search: search || undefined,
         role: roleFilter || undefined,
         status: statusFilter || undefined,
+        provider: providerFilter || undefined,
         sortBy: sortField,
         sortOrder: sortOrder,
       });
@@ -949,7 +1017,7 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, roleFilter, statusFilter, sortField, sortOrder]);
+  }, [page, search, roleFilter, statusFilter, providerFilter, sortField, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
@@ -977,6 +1045,7 @@ export function UsersPage() {
         search: search || undefined,
         role: roleFilter || undefined,
         status: statusFilter || undefined,
+        provider: providerFilter || undefined,
         sortBy: sortField,
         sortOrder,
       });
@@ -1137,6 +1206,20 @@ export function UsersPage() {
               <option value="deactivated">Deactivated</option>
               <option value="deleted">Deleted</option>
             </select>
+
+            <select
+              value={providerFilter}
+              onChange={(e) => {
+                setProviderFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 text-gray-700 min-w-[140px] appearance-none cursor-pointer"
+            >
+              <option value="">All Providers</option>
+              <option value="email">Email</option>
+              <option value="google">Google</option>
+              <option value="apple">Apple</option>
+            </select>
           </div>
 
           {/* Mobile Filter & Sort Buttons */}
@@ -1147,9 +1230,9 @@ export function UsersPage() {
             >
               <Filter className="w-4 h-4" />
               Filters
-              {(roleFilter || statusFilter) && (
+              {(roleFilter || statusFilter || providerFilter) && (
                 <span className="bg-white text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {(roleFilter ? 1 : 0) + (statusFilter ? 1 : 0)}
+                  {(roleFilter ? 1 : 0) + (statusFilter ? 1 : 0) + (providerFilter ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -1181,6 +1264,7 @@ export function UsersPage() {
           search: search || undefined,
           role: roleFilter || undefined,
           status: statusFilter || undefined,
+          provider: providerFilter || undefined,
         }}
       />
       {/* Export Success Modal */}
@@ -1210,6 +1294,8 @@ export function UsersPage() {
         setRoleFilter={setRoleFilter}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        providerFilter={providerFilter}
+        setProviderFilter={setProviderFilter}
         onApply={() => setPage(1)}
       />
 
@@ -1240,6 +1326,9 @@ export function UsersPage() {
                 </th>
                 <th className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Status
+                </th>
+                <th className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Provider
                 </th>
                 <th className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Joined
@@ -1294,8 +1383,8 @@ export function UsersPage() {
                           }}
                           className="flex items-center gap-3 text-left group/btn"
                         >
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-md group-hover/btn:scale-110 transition-transform duration-200">
-                            {getInitials(user.username)}
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-xl shadow-md group-hover/btn:scale-110 transition-transform duration-200">
+                            {user.avatar || getInitials(user.username)}
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-gray-900 group-hover/btn:text-purple-700 transition-colors">
@@ -1312,6 +1401,9 @@ export function UsersPage() {
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         <StatusBadge status={status} />
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        <ProviderBadge provider={user.auth_provider} />
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">

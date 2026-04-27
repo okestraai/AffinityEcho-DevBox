@@ -59,6 +59,12 @@ export const PERMISSIONS = {
   // Admin Management — super_admin only
   ADMINS_VIEW: 'admins:view',
   ADMINS_MANAGE_PERMISSIONS: 'admins:manage_permissions',
+
+  // Analytics
+  ANALYTICS_VIEW: 'analytics:view',
+
+  // System Health
+  HEALTH_VIEW: 'health:view',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -319,6 +325,30 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       },
     ],
   },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: 'BarChart3',
+    permissions: [
+      {
+        key: PERMISSIONS.ANALYTICS_VIEW,
+        label: 'View Analytics',
+        description: 'Access platform analytics and growth data',
+      },
+    ],
+  },
+  {
+    id: 'health',
+    label: 'System Health',
+    icon: 'HeartPulse',
+    permissions: [
+      {
+        key: PERMISSIONS.HEALTH_VIEW,
+        label: 'View Health',
+        description: 'Access system health monitoring dashboard',
+      },
+    ],
+  },
 ];
 
 // ── Default permission sets ────────────────────────────────────────────────────
@@ -339,6 +369,8 @@ export const READ_ONLY_PERMISSIONS: Permission[] = [
   PERMISSIONS.NOOKS_VIEW,
   PERMISSIONS.NOTIFICATIONS_VIEW,
   PERMISSIONS.LOGS_VIEW,
+  PERMISSIONS.ANALYTICS_VIEW,
+  PERMISSIONS.HEALTH_VIEW,
 ];
 
 /** Standard moderator set */

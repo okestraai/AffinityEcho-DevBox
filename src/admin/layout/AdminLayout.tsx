@@ -18,6 +18,8 @@ import {
   Settings,
   User,
   ShieldCheck,
+  BarChart3,
+  HeartPulse,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
@@ -41,6 +43,20 @@ const NAV_ITEMS: NavItem[] = [
     icon: <LayoutDashboard className="w-4.5 h-4.5" />,
     permission: PERMISSIONS.DASHBOARD_VIEW,
     section: "Overview",
+  },
+  {
+    to: "/admin/analytics",
+    label: "Analytics",
+    icon: <BarChart3 className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.ANALYTICS_VIEW,
+    section: "Insights",
+  },
+  {
+    to: "/admin/health",
+    label: "System Health",
+    icon: <HeartPulse className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.HEALTH_VIEW,
+    section: "Insights",
   },
   {
     to: "/admin/users",

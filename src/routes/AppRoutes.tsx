@@ -238,6 +238,16 @@ const AdminNotificationsInboxPage = React.lazy(() =>
     default: m.AdminNotificationsInboxPage,
   })),
 );
+const AdminAnalyticsPage = React.lazy(() =>
+  import("../admin/pages/AnalyticsPage").then((m) => ({
+    default: m.AnalyticsPage,
+  })),
+);
+const AdminHealthPage = React.lazy(() =>
+  import("../admin/pages/HealthPage").then((m) => ({
+    default: m.HealthPage,
+  })),
+);
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, hasCompletedOnboarding, isLoading, user } =
@@ -311,6 +321,8 @@ const AppRoutes: React.FC = () => {
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="content/:contentType/:contentId" element={<AdminContentDetailPage />} />
           <Route path="my-notifications" element={<AdminNotificationsInboxPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="health" element={<AdminHealthPage />} />
           <Route
             path="permissions"
             element={

@@ -11,4 +11,9 @@ export {
   BarChartSkeleton,
   QuickActionsSkeleton,
   ActivitySkeleton,
+  AnalyticsSkeleton,
+  FunnelSkeleton,
+  GrowthSkeleton,
+  TopContentSkeleton,
+  HealthSkeleton,
 } from './Skeletons';
