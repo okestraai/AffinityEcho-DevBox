@@ -16,6 +16,16 @@ import { getApiError } from '../utils/apiError';
 import { HealthSkeleton } from '../components';
 import { PERMISSIONS } from '../types/permissions';
 import { usePermission } from '../hooks/usePermission';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
+import type { HealthHistoryEntry } from '../types';
 import type { HealthData, HealthHistoryData, HealthStatus } from '../types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -375,74 +385,159 @@ export function HealthPage() {
         </div>
       )}
 
-      {/* Health History Timeline */}
+      {/* Latency Multi-Series Line Chart */}
       {historyModules.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-gray-400" />
             <h2 className="text-lg font-semibold text-gray-800">
-              Health Timeline &mdash; Last 24h
+              Latency History
             </h2>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 md:p-6 border border-gray-100/80 overflow-x-auto">
-            <div className="space-y-3 min-w-[500px]">
-              {historyModules.map((name) => {
-                const entries = history!.history[name];
-                if (!entries || entries.length === 0) return null;
-
-                return (
-                  <div key={name} className="flex items-center gap-3">
-                    <span className="text-sm text-gray-700 w-32 sm:w-40 truncate font-medium shrink-0">
-                      {formatModuleName(name)}
-                    </span>
-                    <div className="flex-1 flex gap-px rounded overflow-hidden">
-                      {entries.map((entry, i) => {
-                        const segColor =
-                          entry.status === 'up'
-                            ? 'bg-green-500'
-                            : entry.status === 'degraded'
-                              ? 'bg-amber-500'
-                              : 'bg-red-500';
-                        return (
-                          <div
-                            key={i}
-                            className={`${segColor} h-3 flex-1`}
-                            title={`${formatTime(entry.checked_at)} — ${entry.status}${
-                              entry.latency_ms !== null ? ` (${entry.latency_ms}ms)` : ''
-                            }`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* X-axis time labels */}
-              {(() => {
-                const firstModule = historyModules[0];
-                const entries = history!.history[firstModule];
-                if (!entries || entries.length === 0) return null;
-
-                const first = entries[0];
-                const last = entries[entries.length - 1];
-                const mid = entries[Math.floor(entries.length / 2)];
-
-                return (
-                  <div className="flex items-center gap-3">
-                    <span className="w-32 sm:w-40 shrink-0" />
-                    <div className="flex-1 flex justify-between text-xs text-gray-400">
-                      <span>{formatTime(first.checked_at)}</span>
-                      <span>{formatTime(mid.checked_at)}</span>
-                      <span>{formatTime(last.checked_at)}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+          <LatencyChart history={history!.history} modules={historyModules} />
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Latency Chart — one chart per module with tabs ──────────────────────────
+
+const MODULE_COLORS: Record<string, string> = {
+  database: '#6366f1',
+  auth: '#10b981',
+  feed: '#f59e0b',
+  forum: '#8b5cf6',
+  nooks: '#06b6d4',
+  messaging: '#ec4899',
+  mentorship: '#f97316',
+  notifications: '#14b8a6',
+  email: '#ef4444',
+  push_notifications: '#a855f7',
+  encryption: '#64748b',
+};
+
+function LatencyChart({
+  history,
+  modules,
+}: {
+  history: Record<string, HealthHistoryEntry[]>;
+  modules: string[];
+}) {
+  const [activeModule, setActiveModule] = useState(modules[0] || '');
+
+  const entries = history[activeModule] || [];
+  const data = entries
+    .slice()
+    .sort((a, b) => new Date(a.checked_at).getTime() - new Date(b.checked_at).getTime())
+    .map((e) => ({
+      time: formatTime(e.checked_at),
+      latency: e.latency_ms ?? 0,
+      status: e.status,
+    }));
+
+  const color = MODULE_COLORS[activeModule] || '#6366f1';
+
+  // Stats for the active module
+  const latencies = entries.filter((e) => e.latency_ms !== null).map((e) => e.latency_ms!);
+  const avg = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
+  const peak = latencies.length > 0 ? Math.max(...latencies) : 0;
+  const min = latencies.length > 0 ? Math.min(...latencies) : 0;
+  const downCount = entries.filter((e) => e.status !== 'up').length;
+
+  return (
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 md:p-6 border border-gray-100/80">
+      {/* Module tabs */}
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4">
+        {modules.map((name) => {
+          const isActive = name === activeModule;
+          const modColor = MODULE_COLORS[name] || '#6366f1';
+          return (
+            <button
+              key={name}
+              onClick={() => setActiveModule(name)}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all ${
+                isActive
+                  ? 'text-white shadow-md'
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
+              style={isActive ? { backgroundColor: modColor } : undefined}
+            >
+              {formatModuleName(name)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Quick stats row */}
+      <div className="flex flex-wrap gap-3 sm:gap-4 mb-4">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-semibold">Avg</span>
+          <span className="text-xs sm:text-sm font-bold text-gray-700">{avg}ms</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-semibold">Peak</span>
+          <span className="text-xs sm:text-sm font-bold text-red-600">{peak}ms</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-semibold">Min</span>
+          <span className="text-xs sm:text-sm font-bold text-green-600">{min}ms</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-semibold">Checks</span>
+          <span className="text-xs sm:text-sm font-bold text-gray-700">{entries.length}</span>
+        </div>
+        {downCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-semibold">Down</span>
+            <span className="text-xs sm:text-sm font-bold text-red-600">{downCount}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Chart */}
+      {data.length > 0 ? (
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 10, fill: '#9ca3af' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e2e8f0' }}
+              interval={data.length > 20 ? Math.floor(data.length / 8) : 0}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: '#9ca3af' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e2e8f0' }}
+              unit="ms"
+              width={55}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#1e293b',
+                border: 'none',
+                borderRadius: 12,
+                padding: '10px 14px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              }}
+              labelStyle={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}
+              formatter={(value: number) => [`${value}ms`, 'Latency']}
+            />
+            <Line
+              type="monotone"
+              dataKey="latency"
+              stroke={color}
+              strokeWidth={2}
+              dot={data.length <= 50 ? { r: 3, strokeWidth: 2, fill: 'white' } : false}
+              activeDot={{ r: 5, strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-8">No history data for this module</p>
       )}
     </div>
   );
