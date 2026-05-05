@@ -235,23 +235,11 @@ export function ProfileView() {
     fetchProfileData();
   }, [user?.id]);
 
-  // Fetch settings when settings tab is active
+  // Fetch company verification status on mount
   useEffect(() => {
-    if (activePage !== 'settings') return;
-    const fetchSettings = async () => {
-      setSettingsLoading(true);
+    const fetchVerificationStatus = async () => {
       try {
-        const [privacyRes, notifRes, verifyRes] = await Promise.all([
-          GetPrivacySettings().catch(() => null),
-          GetNotificationSettings().catch(() => null),
-          GetCompanyVerificationStatus().catch(() => null),
-        ]);
-        if (privacyRes) {
-          setPrivacySettings(privacyRes);
-        }
-        if (notifRes) {
-          setNotificationSettings(notifRes);
-        }
+        const verifyRes = await GetCompanyVerificationStatus().catch(() => null);
         if (verifyRes) {
           setVerificationEligible(!!verifyRes.is_eligible);
           setVerificationCompany(verifyRes.company || '');
@@ -266,6 +254,29 @@ export function ProfileView() {
           }
         } else if (user?.is_company_verified) {
           setVerificationStatus('verified');
+        }
+      } catch {
+        // Silent failure
+      }
+    };
+    fetchVerificationStatus();
+  }, [user?.id]);
+
+  // Fetch settings when settings tab is active
+  useEffect(() => {
+    if (activePage !== 'settings') return;
+    const fetchSettings = async () => {
+      setSettingsLoading(true);
+      try {
+        const [privacyRes, notifRes] = await Promise.all([
+          GetPrivacySettings().catch(() => null),
+          GetNotificationSettings().catch(() => null),
+        ]);
+        if (privacyRes) {
+          setPrivacySettings(privacyRes);
+        }
+        if (notifRes) {
+          setNotificationSettings(notifRes);
         }
       } catch {
         // Silent failure for settings fetch

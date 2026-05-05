@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Lightbulb, CheckCircle2, Loader2, ArrowRight, ExternalLink, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Topic, Comment } from '../../types/forum';
-import { analyzeThreadWithLLM } from '../../lib/okestraLLM';
 import { useAuth } from '../../hooks/useAuth';
 import { GetAIInsights, GenerateAIInsights } from '../../../api/okestraApis';
 
@@ -89,28 +88,17 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
           .catch(() => setIsRefreshing(false));
       }
     } catch (err) {
-      console.error('[OkestraPanel] Backend API failed, trying direct LLM...', err);
-
-      try {
-        // Fallback: try direct LLM call
-        const currentUserId = user?.id || 'anonymous';
-        const llmResponse = await analyzeThreadWithLLM(topic, comments, currentUserId);
-        const transformedInsight = transformLlmResponse(llmResponse);
-        setInsight(transformedInsight);
-      } catch (llmErr) {
-        // Final fallback: local heuristics
-        console.error('[OkestraPanel] LLM also failed, using local fallback', llmErr);
-        setError(llmErr instanceof Error ? llmErr.message : 'Failed to generate insights');
-        const allComments = getAllComments(comments);
-        const totalEngagement = topic.reactions.seen + topic.reactions.validated +
-                               topic.reactions.inspired + topic.reactions.heard;
-        setInsight({
-          summary: generateSummary(topic, allComments),
-          keyThemes: extractKeyThemes(topic, allComments),
-          actionItems: generateActionItems(topic, allComments, totalEngagement),
-          sentiment: determineSentiment(topic, allComments)
-        });
-      }
+      console.error('[OkestraPanel] Backend API failed, using local fallback', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate insights');
+      const allComments = getAllComments(comments);
+      const totalEngagement = topic.reactions.seen + topic.reactions.validated +
+                             topic.reactions.inspired + topic.reactions.heard;
+      setInsight({
+        summary: generateSummary(topic, allComments),
+        keyThemes: extractKeyThemes(topic, allComments),
+        actionItems: generateActionItems(topic, allComments, totalEngagement),
+        sentiment: determineSentiment(topic, allComments)
+      });
     } finally {
       setLoading(false);
     }
