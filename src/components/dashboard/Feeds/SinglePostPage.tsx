@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { resolveDisplayName, resolveAuthorName } from "../../../utils/nameUtils";
+import { resolveAuthorName } from "../../../utils/nameUtils";
 import {
   ArrowLeft,
   Heart,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
+import { ContentMenu } from "../../shared/ContentMenu";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetPostById,
@@ -31,6 +32,44 @@ import { MSG } from "../../../constants/messages";
 import { shareContent } from "../../../utils/shareUtils";
 import { MentionText } from "../../shared/MentionText";
 import { InlineCommentInput } from "../Forum/InlineCommentInput";
+
+interface PostData {
+  id: string;
+  content_id?: string;
+  user_id?: string;
+  content?: string | { title?: string; text?: string; tags?: string[] };
+  title?: string;
+  tags?: string[];
+  author?: {
+    id?: string;
+    display_name?: string;
+    username?: string;
+    avatar?: string;
+    avatar_url?: string;
+    is_company_verified?: boolean;
+  };
+  user_profile?: {
+    is_company_verified?: boolean;
+  };
+  user_reactions?: Record<string, boolean>;
+  reaction_counts?: Record<string, number>;
+  reactions?: Record<string, number>;
+  reaction_heard_count?: number;
+  reaction_validated_count?: number;
+  reaction_inspired_count?: number;
+  user_has_bookmarked?: boolean;
+  user_bookmarked?: boolean;
+  engagement?: { comments?: number; shares?: number };
+  comments_count?: number;
+  shares_count?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+interface CommentPayload {
+  content: string;
+  parentCommentId?: string;
+}
 
 interface PostComment {
   id: string;
@@ -91,7 +130,7 @@ export function SinglePostPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<PostData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [comments, setComments] = useState<PostComment[]>([]);
@@ -105,6 +144,7 @@ export function SinglePostPage() {
       fetchPost();
       fetchComments();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
   const fetchPost = async () => {
@@ -144,7 +184,7 @@ export function SinglePostPage() {
     const currentCount = post.reaction_counts?.[reactionType] ?? post.reactions?.[reactionType] ?? post[`reaction_${reactionType}_count`] ?? 0;
     const delta = wasActive ? -1 : 1;
 
-    setPost((prev: any) => ({
+    setPost((prev) => prev ? ({
       ...prev,
       user_reactions: { ...prev.user_reactions, [reactionType]: !wasActive },
       reaction_counts: {
@@ -152,12 +192,12 @@ export function SinglePostPage() {
         [reactionType]: Math.max(0, currentCount + delta),
       },
       [`reaction_${reactionType}_count`]: Math.max(0, currentCount + delta),
-    }));
+    }) : null);
 
     try {
       await ToggleFeedReaction("post", contentId, reactionType);
     } catch {
-      setPost((prev: any) => ({
+      setPost((prev) => prev ? ({
         ...prev,
         user_reactions: { ...prev.user_reactions, [reactionType]: wasActive },
         reaction_counts: {
@@ -165,7 +205,7 @@ export function SinglePostPage() {
           [reactionType]: currentCount,
         },
         [`reaction_${reactionType}_count`]: currentCount,
-      }));
+      }) : null);
     }
   };
 
@@ -174,13 +214,13 @@ export function SinglePostPage() {
     const contentId = post.content_id || post.id;
     const was = post.user_has_bookmarked || post.user_bookmarked;
 
-    setPost((prev: any) => ({ ...prev, user_has_bookmarked: !was, user_bookmarked: !was }));
+    setPost((prev) => prev ? ({ ...prev, user_has_bookmarked: !was, user_bookmarked: !was }) : null);
 
     try {
       await ToggleBookmark("post", contentId);
       showToast(!was ? MSG.FEED.BOOKMARKED : MSG.FEED.BOOKMARK_REMOVED, "success");
     } catch {
-      setPost((prev: any) => ({ ...prev, user_has_bookmarked: was, user_bookmarked: was }));
+      setPost((prev) => prev ? ({ ...prev, user_has_bookmarked: was, user_bookmarked: was }) : null);
       showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
   };
@@ -188,7 +228,7 @@ export function SinglePostPage() {
   const handleShare = async () => {
     if (!post) return;
     const contentId = post.content_id || post.id;
-    await shareContent({ contentType: "post", contentId, title: post.content?.title });
+    await shareContent({ contentType: "post", contentId, title: typeof post.content === "object" ? post.content?.title : undefined });
   };
 
   const handleCommentSubmit = async (comment: string) => {
@@ -196,18 +236,18 @@ export function SinglePostPage() {
     const contentId = post.content_id || post.id;
 
     try {
-      const payload: any = { content: comment };
+      const payload: CommentPayload = { content: comment };
       if (replyingTo) payload.parentCommentId = replyingTo.id;
       await AddComment("post", contentId, payload);
       setReplyingTo(null);
-      setPost((prev: any) => ({
+      setPost((prev) => prev ? ({
         ...prev,
         engagement: {
           ...prev.engagement,
           comments: (prev.engagement?.comments ?? prev.comments_count ?? 0) + 1,
         },
         comments_count: (prev.comments_count ?? prev.engagement?.comments ?? 0) + 1,
-      }));
+      }) : null);
       await fetchComments();
     } catch {
       showToast(MSG.FEED.COMMENT_FAILED, "error");
@@ -275,6 +315,13 @@ export function SinglePostPage() {
                 {commentName}{(c.user_profile?.is_company_verified ?? c.author?.is_company_verified) && <VerifiedBadge size={18} />}
               </button>
               <span className="text-xs text-gray-400">{formatTimeAgo(c.created_at)}</span>
+              {c.user_id !== user?.id && (
+                <ContentMenu
+                  contentType="comment"
+                  contentId={c.id}
+                  onHide={() => setComments((prev) => prev.filter((cc) => cc.id !== c.id))}
+                />
+              )}
             </div>
             <MentionText text={c.content} className="text-sm text-gray-700 leading-relaxed block" />
             <div className="flex items-center gap-3 mt-1">
@@ -441,6 +488,9 @@ export function SinglePostPage() {
                 </div>
               )}
             </div>
+            {authorId && authorId !== user?.id && (
+              <ContentMenu contentType="post" contentId={post.id} />
+            )}
           </div>
 
           {/* Content */}

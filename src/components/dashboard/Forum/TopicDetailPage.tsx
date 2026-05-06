@@ -10,13 +10,9 @@ import {
   Bookmark,
   Share2,
   MoreVertical,
-  User,
   Clock,
-  Building,
-  Globe,
   Send,
   Flag,
-  Edit,
   Trash2,
   ChevronDown,
   ChevronUp,
@@ -34,7 +30,7 @@ import {
   ToggleTopicBookmark,
 } from "../../../../api/forumApis";
 import { shareContent } from "../../../utils/shareUtils";
-import { formatLastActivity, getTimeAgo } from "../../../utils/forumUtils";
+import { getTimeAgo } from "../../../utils/forumUtils";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { CommentsSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
@@ -43,23 +39,56 @@ import { OkestraPanel } from "../OkestraPanel";
 import { ViewersModal } from "../../Modals/ViewersModal";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
+import { ContentMenu } from "../../shared/ContentMenu";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
+
+interface ForumComment {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  parent_comment_id: string | null;
+  helpful_count?: number;
+  userReactions?: Record<string, boolean | undefined>;
+  user_profile?: { avatar?: string; display_name?: string; username?: string; is_company_verified?: boolean };
+  author?: { is_company_verified?: boolean };
+  replies?: ForumComment[];
+  [key: string]: unknown;
+}
+
+interface ForumTopic {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  tags?: string[];
+  comments_count: number;
+  views_count?: number;
+  reaction_heard_count?: number;
+  reaction_validated_count?: number;
+  reaction_inspired_count?: number;
+  reactions?: { heard?: number; validated?: number; inspired?: number; seen?: number };
+  userReactions?: Record<string, boolean | undefined>;
+  user_bookmarked?: boolean;
+  user_profile?: { avatar?: string; display_name?: string; username?: string; is_company_verified?: boolean };
+  author?: { is_company_verified?: boolean };
+  [key: string]: unknown;
+}
 
 export function TopicDetailPage() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
 
-  const [topic, setTopic] = useState<any | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [topic, setTopic] = useState<ForumTopic | null>(null);
+  const [comments, setComments] = useState<ForumComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [showOptions, setShowOptions] = useState(false);
   const [replyToComment, setReplyToComment] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
   const [expandedComments, setExpandedComments] = useState<Set<string>>(
     new Set(),
   );
@@ -69,7 +98,7 @@ export function TopicDetailPage() {
   const [visibleCommentCount, setVisibleCommentCount] = useState(15);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const commentSentinelRef = useRef<HTMLDivElement>(null);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Reset visible count when topic changes
   useEffect(() => { setVisibleCommentCount(15); }, [topicId]);
 
@@ -95,7 +124,7 @@ export function TopicDetailPage() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBookmark = async () => {
     const prev = isBookmarked;
@@ -147,14 +176,11 @@ export function TopicDetailPage() {
     }
   }, [topicId]);
 
-    const handleViewers = () => {
-    setShowViewersModal(true);
-  };
 
 
   // Recursively flatten pre-nested comments into a flat array
-  const flattenComments = (comments: any[]): any[] => {
-    const result: any[] = [];
+  const flattenComments = (comments: ForumComment[]): ForumComment[] => {
+    const result: ForumComment[] = [];
     for (const c of comments) {
       result.push(c);
       if (c.replies && c.replies.length > 0) {
@@ -165,10 +191,10 @@ export function TopicDetailPage() {
   };
 
   // Build comment tree from flat array if needed
-  const buildCommentTree = (comments: any[]) => {
+  const buildCommentTree = (comments: ForumComment[]) => {
     const flatComments = flattenComments(comments);
-    const commentMap = new Map();
-    const rootComments: any[] = [];
+    const commentMap = new Map<string, ForumComment>();
+    const rootComments: ForumComment[] = [];
 
     // First pass: create map of all comments with empty replies array
     flatComments.forEach((comment) => {
@@ -180,14 +206,14 @@ export function TopicDetailPage() {
 
     // Second pass: build tree
     flatComments.forEach((comment) => {
-      const node = commentMap.get(comment.id);
+      const node = commentMap.get(comment.id)!;
 
       if (comment.parent_comment_id && comment.parent_comment_id !== null) {
         const parent = commentMap.get(comment.parent_comment_id);
         if (parent) {
           // Only add if not already in replies
-          if (!parent.replies.some((r: any) => r.id === node.id)) {
-            parent.replies.push(node);
+          if (!parent.replies!.some((r: ForumComment) => r.id === node.id)) {
+            parent.replies!.push(node);
           }
         }
       } else {
@@ -273,9 +299,10 @@ export function TopicDetailPage() {
   const handleReaction = async (reactionType: string) => {
     try {
       // Optimistically update UI
-      setTopic((prevTopic: any) => {
+      setTopic((prevTopic) => {
+        if (!prevTopic) return prevTopic;
         const reactionKey = `reaction_${reactionType}_count`;
-        const currentValue = prevTopic[reactionKey] || 0;
+        const currentValue = (prevTopic[reactionKey] as number) || 0;
         const isActive = prevTopic.userReactions?.[reactionType];
 
         return {
@@ -300,9 +327,10 @@ export function TopicDetailPage() {
       showToast(MSG.FORUM.REACTION_FAILED, "error");
 
       // Revert on error
-      setTopic((prevTopic: any) => {
+      setTopic((prevTopic) => {
+        if (!prevTopic) return prevTopic;
         const reactionKey = `reaction_${reactionType}_count`;
-        const currentValue = prevTopic[reactionKey] || 0;
+        const currentValue = (prevTopic[reactionKey] as number) || 0;
         const isActive = prevTopic.userReactions?.[reactionType];
 
         return {
@@ -327,7 +355,7 @@ export function TopicDetailPage() {
     try {
       setSubmittingComment(true);
 
-      const payload: any = {
+      const payload: { content: string; topicId: string; isAnonymous: boolean; parentCommentId?: string } = {
         content: newComment.trim(),
         topicId: topic.id,
         isAnonymous: true,
@@ -349,10 +377,13 @@ export function TopicDetailPage() {
       setComments(nestedComments);
 
       // Update topic comment count optimistically
-      setTopic((prev: any) => ({
-        ...prev,
-        comments_count: (prev.comments_count || 0) + 1,
-      }));
+      setTopic((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments_count: (prev.comments_count || 0) + 1,
+        };
+      });
 
       setNewComment("");
       setReplyToComment(null);
@@ -363,10 +394,11 @@ export function TopicDetailPage() {
       }
 
       showToast(MSG.FORUM.COMMENT_POSTED, "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting comment:", error);
+      const errMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
       showToast(
-        error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED,
+        errMsg || MSG.FORUM.CREATE_COMMENT_FAILED,
         "error",
       );
     } finally {
@@ -378,7 +410,7 @@ export function TopicDetailPage() {
   const handleCommentReaction = async (commentId: string) => {
     try {
       // Optimistically update UI
-      const updateComments = (commentsList: any[]): any[] => {
+      const updateComments = (commentsList: ForumComment[]): ForumComment[] => {
         return commentsList.map((comment) => {
           if (comment.id === commentId) {
             const isActive = comment.userReactions?.helpful;
@@ -416,7 +448,7 @@ export function TopicDetailPage() {
       showToast(MSG.FORUM.REACTION_FAILED, "error");
 
       // Revert on error
-      const revertComments = (commentsList: any[]): any[] => {
+      const revertComments = (commentsList: ForumComment[]): ForumComment[] => {
         return commentsList.map((comment) => {
           if (comment.id === commentId) {
             const isActive = comment.userReactions?.helpful;
@@ -451,7 +483,7 @@ export function TopicDetailPage() {
 
     try {
       // Optimistically remove comment from UI
-      const removeComment = (commentsList: any[]): any[] => {
+      const removeComment = (commentsList: ForumComment[]): ForumComment[] => {
         return commentsList
           .filter((comment) => comment.id !== commentId)
           .map((comment) => {
@@ -468,19 +500,23 @@ export function TopicDetailPage() {
       setComments((prev) => removeComment(prev));
 
       // Update topic comment count
-      setTopic((prev: any) => ({
-        ...prev,
-        comments_count: Math.max(0, (prev.comments_count || 0) - 1),
-      }));
+      setTopic((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments_count: Math.max(0, (prev.comments_count || 0) - 1),
+        };
+      });
 
       // Make API call in background
       await DeleteTopicsComments(commentId);
 
       showToast(MSG.FORUM.COMMENT_DELETED, "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting comment:", error);
+      const errMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
       showToast(
-        error.response?.data?.message || MSG.FORUM.COMMENT_DELETE_FAILED,
+        errMsg || MSG.FORUM.COMMENT_DELETE_FAILED,
         "error",
       );
 
@@ -502,7 +538,7 @@ export function TopicDetailPage() {
     setExpandedComments(newExpanded);
   };
 
-  const renderComment = (comment: any, depth: number = 0) => {
+  const renderComment = (comment: ForumComment, depth: number = 0) => {
     const isAuthor = currentUser?.id === comment.user_id;
 
     // Use the nested replies from the comment data
@@ -549,6 +585,13 @@ export function TopicDetailPage() {
                   <Clock className="w-3 h-3" />
                   {getTimeAgo(comment.created_at)}
                 </span>
+                {!isAuthor && (
+                  <ContentMenu
+                    contentType="comment"
+                    contentId={comment.id}
+                    onHide={() => setComments((prev) => prev.filter((c: any) => c.id !== comment.id))}
+                  />
+                )}
               </div>
 
               <MentionText
@@ -618,7 +661,7 @@ export function TopicDetailPage() {
         {/* Show nested replies ONLY when expanded */}
         {hasReplies && isExpanded && showReplyIndicator && (
           <div className="space-y-4 border-l-2 border-gray-100 pl-4 mt-4">
-            {replies.map((reply: any) => renderComment(reply, depth + 1))}
+            {replies.map((reply: ForumComment) => renderComment(reply, depth + 1))}
           </div>
         )}
       </div>
@@ -671,31 +714,9 @@ export function TopicDetailPage() {
                 </div>
               </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowOptions(!showOptions)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="More options"
-                >
-                  <MoreVertical className="w-5 h-5 text-gray-600" />
-                </button>
-
-                {showOptions && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-10">
-                    <button
-                      onClick={() => {
-                        setShowOptions(false);
-                        // Implement report functionality
-                        console.log("Report topic:", topic.id);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Flag className="w-4 h-4" />
-                      Report
-                    </button>
-                  </div>
-                )}
-              </div>
+              {topic.user_id !== currentUser?.id && (
+                <ContentMenu contentType="topic" contentId={topic.id} />
+              )}
             </div>
 
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
@@ -929,15 +950,15 @@ export function TopicDetailPage() {
           onClose={() => setShowViewersModal(false)}
           contentId={topic.id}
           contentType="topic"
-          totalViewers={topic.reactions.seen}
+          totalViewers={topic.reactions?.seen || 0}
         />
       )}
 
       <OkestraPanel
         isOpen={showOkestraPanel}
         onClose={() => setShowOkestraPanel(false)}
-        topic={topic}
-        comments={comments}
+        topic={topic as unknown as Parameters<typeof OkestraPanel>[0]['topic']}
+        comments={comments as unknown as Parameters<typeof OkestraPanel>[0]['comments']}
       />
     </div>
   );
