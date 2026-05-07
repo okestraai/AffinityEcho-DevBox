@@ -43,6 +43,59 @@ interface ProfileCheckData {
   isMenteeProfile?: boolean;
 }
 
+// Flexible connection interface for mentor/mentee connection objects from API
+interface MentorshipConnectionUser {
+  id?: string;
+  username?: string;
+  displayName?: string;
+  display_name?: string;
+  avatar?: string;
+  bio?: string;
+  company?: string;
+  jobTitle?: string;
+  careerLevel?: string;
+  career_level?: string;
+  career_level_encrypted?: string;
+  location?: string;
+  skills?: string[];
+  yearsExperience?: number;
+  affinityTags?: string[];
+  mentoringAs?: string;
+  is_company_verified?: boolean;
+  mentorProfile?: {
+    bio?: string;
+    expertise?: string[];
+    industries?: string[];
+    availability?: string;
+    responseTime?: string;
+    style?: string;
+    languages?: string[];
+  };
+  menteeProfile?: {
+    bio?: string;
+    interests?: string[];
+    industries?: string[];
+    availability?: string;
+    goals?: string[];
+    languages?: string[];
+  };
+  [key: string]: unknown;
+}
+
+interface MentorshipConnection {
+  id?: string;
+  mentor?: MentorshipConnectionUser;
+  mentee?: MentorshipConnectionUser;
+  mentorProfile?: MentorshipConnectionUser;
+  menteeProfile?: MentorshipConnectionUser;
+  connectedSince?: string;
+  matchScore?: number;
+  message?: string;
+  status?: string;
+  goals?: string[];
+  [key: string]: unknown;
+}
+
 export function MentorshipView() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -55,16 +108,16 @@ export function MentorshipView() {
   const [showMentorshipRequest, setShowMentorshipRequest] = useState(false);
   const [showMentorProfile, setShowMentorProfile] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing] = useState(false);
   const [profileCheck, setProfileCheck] = useState<ProfileCheckData | null>(
     null,
   );
 
-  const [myMentors, setMyMentors] = useState<any[]>([]);
-  const [myMentees, setMyMentees] = useState<any[]>([]);
+  const [myMentors, setMyMentors] = useState<MentorshipConnection[]>([]);
+  const [myMentees, setMyMentees] = useState<MentorshipConnection[]>([]);
 
   // Add state for mentorship metrics
-  const [mentorshipMetrics, setMentorshipMetrics] = useState<{
+  const [, setMentorshipMetrics] = useState<{
     total: number;
     sent: {
       total: number;
@@ -104,6 +157,7 @@ export function MentorshipView() {
 
   useEffect(() => {
     initializeData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeData = async () => {
@@ -122,26 +176,10 @@ export function MentorshipView() {
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      if (activeView === "mentors") {
-        await fetchMentorshipConnections();
-      } else if (activeView === "mentees") {
-        await fetchMentorshipConnections();
-      }
-      showToast(MSG.MENTORSHIP.REFRESH_SUCCESS, "success");
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      showToast(MSG.MENTORSHIP.REFRESH_FAILED, "error");
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   // Function to handle profile selection — maps pre-decrypted connection data to MentorshipUserProfile
-  const handleViewProfile = (connection: any, userType: "mentor" | "mentee" = "mentor") => {
-    const userData = connection[userType] || connection;
+  const handleViewProfile = (connection: MentorshipConnection, userType: "mentor" | "mentee" = "mentor") => {
+    const userData = (connection[userType] || connection) as MentorshipConnectionUser;
     const mentorP = userData?.mentorProfile;
     const menteeP = userData?.menteeProfile;
 
@@ -254,10 +292,10 @@ export function MentorshipView() {
   };
 
   // Helper function to determine profile type based on new response
-  const getProfileType = (profileData: any): string => {
+  const getProfileType = (profileData: ProfileCheckData | null): string => {
     if (!profileData) return "none";
 
-    const { hasMentorProfile, hasMenteeProfile, mentoringAs } = profileData;
+    const { hasMentorProfile, hasMenteeProfile } = profileData;
 
     if (hasMentorProfile && hasMenteeProfile) return "both";
     if (hasMentorProfile) return "mentor";
@@ -301,9 +339,9 @@ export function MentorshipView() {
   };
 
   // Decrypt career_level_encrypted for a user object
-  const decryptConnectionUser = async (userData: any) => {
+  const decryptConnectionUser = async (userData: MentorshipConnectionUser): Promise<MentorshipConnectionUser> => {
     if (!userData) return userData;
-    const decrypted = { ...userData };
+    const decrypted: MentorshipConnectionUser = { ...userData };
     if (userData.career_level_encrypted) {
       try {
         const result = await DecryptData({ encryptedData: userData.career_level_encrypted });
@@ -330,16 +368,16 @@ export function MentorshipView() {
 
       // Decrypt career_level_encrypted for each connection's user
       const decryptedMentors = await Promise.all(
-        mentors.map(async (m: any) => {
-          const mentorUser = m.mentor || m;
+        mentors.map(async (m: MentorshipConnection) => {
+          const mentorUser = (m.mentor || m) as MentorshipConnectionUser;
           const decryptedUser = await decryptConnectionUser(mentorUser);
           return m.mentor ? { ...m, mentor: decryptedUser } : decryptedUser;
         })
       );
 
       const decryptedMentees = await Promise.all(
-        mentees.map(async (m: any) => {
-          const menteeUser = m.mentee || m;
+        mentees.map(async (m: MentorshipConnection) => {
+          const menteeUser = (m.mentee || m) as MentorshipConnectionUser;
           const decryptedUser = await decryptConnectionUser(menteeUser);
           return m.mentee ? { ...m, mentee: decryptedUser } : decryptedUser;
         })
@@ -352,27 +390,6 @@ export function MentorshipView() {
       setMyMentors([]);
       setMyMentees([]);
     }
-  };
-
-  // Calculate total requests count
-  const getTotalRequestsCount = () => {
-    if (mentorshipMetrics) {
-      // Use the total from metrics API
-      return mentorshipMetrics.total;
-    }
-
-    // Fallback to old calculation if metrics not loaded yet
-    return myMentors.length + myMentees.length;
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   };
 
   // Get time since connection
@@ -781,7 +798,7 @@ export function MentorshipView() {
                     {(menteeUser?.menteeProfile?.interests || menteeUser?.mentorProfile?.expertise) &&
                       (menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {(menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise)
+                          {(menteeUser.menteeProfile?.interests || menteeUser.mentorProfile?.expertise || [])
                             .slice(0, 3)
                             .map((skill: string, idx: number) => (
                               <span

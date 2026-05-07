@@ -20,6 +20,7 @@ export function UserProfileModal({ isOpen, onClose, userId }: Props) {
       onClose(); // close the "modal" state immediately
       navigate(`/dashboard/profile/${userId}`);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, userId]);
 
   return null;

@@ -78,9 +78,10 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
       });
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating nook:', err);
-      setError(err.response?.data?.error?.message || 'Failed to create nook. Please try again.');
+      const errObj = err as { response?: { data?: { error?: { message?: string } } } };
+      setError(errObj.response?.data?.error?.message || 'Failed to create nook. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -199,7 +200,7 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
               <label className="block text-sm font-bold text-gray-800 mb-3">Urgency Level</label>
               <select 
                 value={formData.urgency}
-                onChange={(e) => setFormData(prev => ({ ...prev, urgency: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, urgency: e.target.value as 'low' | 'medium' | 'high' }))}
                 disabled={submitting}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-gray-50 focus:bg-white transition-all disabled:opacity-50"
               >

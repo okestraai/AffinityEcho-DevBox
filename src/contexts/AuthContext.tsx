@@ -72,11 +72,6 @@ interface LoginResponseData {
   };
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: string;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -85,17 +80,18 @@ interface AuthContextType {
   actionLoading: boolean;
   hasCompletedOnboarding: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, termsAccepted?: boolean) => Promise<void>;
   socialLogin: (provider: "google" | "facebook") => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
-  completeOnboarding: (data?: any) => Promise<void>;
+  completeOnboarding: (data?: unknown) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");
@@ -224,13 +220,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
 
       // Check if the response has the expected structure
-      let userData: any = res;
+      type RawUserData = Record<string, unknown> & {
+        id?: string; userId?: string; email?: string; username?: string;
+        avatar?: string | null; avatar_url?: string | null;
+        first_name?: string; firstName?: string;
+        last_name?: string; lastName?: string;
+        role?: string; permissions?: string[];
+        has_completed_onboarding?: boolean; hasCompletedOnboarding?: boolean;
+        is_deactivated?: boolean; isDeactivated?: boolean;
+        company_encrypted?: string; company_type?: string;
+        demographics?: User['demographics'];
+        basicProfile?: User['basicProfile'];
+        is_company_verified?: boolean; isCompanyVerified?: boolean;
+      };
+      let userData = res as RawUserData;
 
       // Handle different response structures
       if (res && typeof res === "object") {
         // If the response has a 'data' property with nested user
         if ('data' in res && res.data && typeof res.data === 'object') {
-          userData = res.data;
+          userData = res.data as RawUserData;
         }
 
         // Ensure role is set (default to 'user' if not present)
@@ -378,12 +387,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       // Load full user profile in background (login response may lack fields like company_encrypted)
       loadUser();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
+      const axiosErr = err as { response?: { data?: { message?: string; data?: { message?: string } } }; message?: string };
       const message =
-        err.response?.data?.message ||
-        err.response?.data?.data?.message ||
-        err.message ||
+        axiosErr.response?.data?.message ||
+        axiosErr.response?.data?.data?.message ||
+        axiosErr.message ||
         MSG.AUTH.INVALID_CREDENTIALS;
       showToast(message, "error");
     } finally {
@@ -391,16 +401,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, termsAccepted?: boolean) => {
     setActionLoading(true);
     try {
       const username = generateUsername();
       const avatar = generateAvatar();
-      await registerUser({ email, password: password.trim(), username, avatar });
+      await registerUser({ email, password: password.trim(), username, avatar, termsAccepted: termsAccepted ?? true } as any);
       showToast(MSG.AUTH.OTP_SENT, "success");
       navigate("/verify-otp", { state: { email }, replace: true });
-    } catch (err: any) {
-      showToast(err.response?.data?.message || MSG.AUTH.SIGNUP_FAILED, "error");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      showToast(axiosErr.response?.data?.message || MSG.AUTH.SIGNUP_FAILED, "error");
     } finally {
       setActionLoading(false);
     }
@@ -426,7 +437,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         throw new Error("Invalid redirect URL");
       }
       window.location.href = socialData.url;
-    } catch (error) {
+    } catch {
       showToast(MSG.AUTH.SOCIAL_FAILED, "error");
       setActionLoading(false);
     }
@@ -441,7 +452,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         state: { email, type: "password-reset" },
         replace: true,
       });
-    } catch (error) {
+    } catch {
       showToast(MSG.AUTH.OTP_SENT, "info");
     } finally {
       setActionLoading(false);
@@ -458,7 +469,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     navigate("/login", { replace: true });
   };
 
-  const completeOnboarding = async (onboardingData?: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const completeOnboarding = async (_onboardingData?: unknown) => {
     setActionLoading(true);
     try {
       // Here you would typically send the onboarding data to your API
@@ -475,7 +487,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       } else {
         navigate("/dashboard", { replace: true });
       }
-    } catch (error) {
+    } catch {
       showToast(MSG.AUTH.ONBOARDING_FAILED, "error");
     } finally {
       setActionLoading(false);
@@ -491,6 +503,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

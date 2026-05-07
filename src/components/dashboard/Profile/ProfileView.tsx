@@ -32,6 +32,8 @@ import {
   BadgeCheck,
   Mail,
   CheckCircle2,
+  ShieldOff,
+  HelpCircle,
 } from 'lucide-react';
 import { ClapIcon } from '../../shared/ClapIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -86,7 +88,7 @@ interface NotificationSettings {
 }
 
 export function ProfileView() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -123,6 +125,8 @@ export function ProfileView() {
     digestFrequency: 'daily'
   });
 
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+
   // Loading States
   const [statsLoading, setStatsLoading] = useState(true);
   const [badgesLoading, setBadgesLoading] = useState(true);
@@ -157,7 +161,7 @@ export function ProfileView() {
   // Page-level tab: My Posts, My Profile, Settings — persisted in URL so back navigation preserves it
   const validTabs = ['activity', 'profile', 'settings'] as const;
   const tabParam = searchParams.get('tab');
-  const activePage: 'activity' | 'profile' | 'settings' = validTabs.includes(tabParam as any) ? (tabParam as 'activity' | 'profile' | 'settings') : 'activity';
+  const activePage: 'activity' | 'profile' | 'settings' = validTabs.includes(tabParam as typeof validTabs[number]) ? (tabParam as 'activity' | 'profile' | 'settings') : 'activity';
   const setActivePage = (tab: 'activity' | 'profile' | 'settings') => {
     if (tab === 'activity') {
       setSearchParams({}, { replace: true });
@@ -169,14 +173,14 @@ export function ProfileView() {
   // Content tabs state (within My Activity page)
   const [profileTab, setProfileTab] = useState<'my_posts' | 'bookmarked'>('my_posts');
   const [contentFilter, setContentFilter] = useState<'all' | 'post' | 'topic' | 'nook'>('all');
-  const [aggregatedItems, setAggregatedItems] = useState<any[]>([]);
+  const [aggregatedItems, setAggregatedItems] = useState<Record<string, unknown>[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
 
   // Profile page inner tabs: Profile info vs Follow
   const [profileInnerTab, setProfileInnerTab] = useState<'profile' | 'follow'>('profile');
   const [followSubTab, setFollowSubTab] = useState<'following' | 'followers'>('following');
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [following, setFollowing] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<Record<string, unknown>[]>([]);
+  const [following, setFollowing] = useState<Record<string, unknown>[]>([]);
   const [followersTotal, setFollowersTotal] = useState(0);
   const [followingTotal, setFollowingTotal] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
@@ -255,6 +259,13 @@ export function ProfileView() {
         } else if (user?.is_company_verified) {
           setVerificationStatus('verified');
         }
+        // Fetch blocked users
+        try {
+          const { GetBlockedUsers } = await import('../../../../api/profileApis');
+          const blockedRes = await GetBlockedUsers();
+          const blockedData = blockedRes?.data || blockedRes || [];
+          setBlockedUsers(Array.isArray(blockedData) ? blockedData : blockedData.users || blockedData.blocked || []);
+        } catch {}
       } catch {
         // Silent failure
       }
@@ -285,6 +296,7 @@ export function ProfileView() {
       }
     };
     fetchSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage]);
 
   // Fetch followers/following when follow tab is active
@@ -323,8 +335,8 @@ export function ProfileView() {
       setFollowing(prev => prev.filter(f => (f.followed_id || f.id || f.user_id) !== userId));
       setFollowingTotal(prev => Math.max(0, prev - 1));
       showToast(MSG.FOLLOW.UNFOLLOWED, 'success');
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || MSG.FOLLOW.UNFOLLOW_FAILED, 'error');
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || MSG.FOLLOW.UNFOLLOW_FAILED, 'error');
     }
   };
 
@@ -335,37 +347,39 @@ export function ProfileView() {
     if (!user?.id) return;
     setContentLoading(true);
     try {
-      let results: any[] = [];
+      let results: Record<string, unknown>[] = [];
 
       if (profileTab === 'my_posts') {
         try {
           // Try new aggregated endpoint first
           const response = await GetMyActivity({ page: 1, limit: 50 });
           const items = Array.isArray(response) ? response : (response?.items || []);
-          results = items.map((item: any) => {
-            const t = item.type || item.content_type || 'post';
-            const mapped: any = {
+          results = items.map((item: Record<string, unknown>) => {
+            const t = (item.type || item.content_type || 'post') as string;
+            const mapped: Record<string, unknown> = {
               ...item,
               _type: t === 'nook_message' ? 'nook' : t,
             };
             // Flatten nested content fields for card rendering
+            const content = item.content as Record<string, unknown> | undefined;
+            const engagement = item.engagement as Record<string, unknown> | undefined;
             if (t === 'topic') {
-              mapped.title = item.content?.title || '';
-              mapped.forum_name = item.content?.forum_name || '';
-              mapped.tags = item.content?.tags || [];
-              mapped.views_count = item.engagement?.views || 0;
-              mapped.comments_count = item.engagement?.comments || 0;
+              mapped.title = content?.title || '';
+              mapped.forum_name = content?.forum_name || '';
+              mapped.tags = content?.tags || [];
+              mapped.views_count = engagement?.views || 0;
+              mapped.comments_count = engagement?.comments || 0;
             } else if (t === 'comment') {
-              mapped.title = item.content?.topic_title || 'Comment';
-              mapped.comment_text = item.content?.text || '';
+              mapped.title = content?.topic_title || 'Comment';
+              mapped.comment_text = content?.text || '';
             } else if (t === 'nook_message') {
-              mapped.title = item.content?.nook_title || item.content?.title || 'Nook Message';
-              mapped.description = item.content?.text || '';
+              mapped.title = content?.nook_title || content?.title || 'Nook Message';
+              mapped.description = content?.text || '';
               mapped.nook_id = item.nook_id || item.content_id || item.id;
-              mapped.urgency = item.content?.nook_urgency || 'low';
-              mapped.scope = item.content?.nook_scope || 'global';
-              mapped.members_count = item.engagement?.members || 0;
-              mapped.messages_count = item.engagement?.comments || 0;
+              mapped.urgency = content?.nook_urgency || 'low';
+              mapped.scope = content?.nook_scope || 'global';
+              mapped.members_count = engagement?.members || 0;
+              mapped.messages_count = engagement?.comments || 0;
               if (item.expires_at) mapped.expires_at = item.expires_at;
             }
             return mapped;
@@ -381,17 +395,17 @@ export function ProfileView() {
           if (postsRes.status === 'fulfilled') {
             const d = postsRes.value;
             const posts = d?.posts || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...posts.map((p: any) => ({ ...p, _type: 'post' })));
+            results.push(...posts.map((p: Record<string, unknown>) => ({ ...p, _type: 'post' })));
           }
           if (topicsRes.status === 'fulfilled') {
             const d = topicsRes.value;
             const topics = d?.topics || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...topics.map((t: any) => ({ ...t, _type: 'topic' })));
+            results.push(...topics.map((t: Record<string, unknown>) => ({ ...t, _type: 'topic' })));
           }
           if (nooksRes.status === 'fulfilled') {
             const d = nooksRes.value;
             const nooks = d?.nooks || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...nooks.map((n: any) => ({ ...n, _type: 'nook' })));
+            results.push(...nooks.map((n: Record<string, unknown>) => ({ ...n, _type: 'nook' })));
           }
         }
       } else {
@@ -399,22 +413,24 @@ export function ProfileView() {
           // Try new aggregated bookmarks endpoint first
           const response = await GetMyBookmarks({ page: 1, limit: 50 });
           const items = Array.isArray(response) ? response : response?.items || [];
-          results = items.map((item: any) => {
-            const ct = item.content_type || item.type || 'post';
-            const mapped: any = {
+          results = items.map((item: Record<string, unknown>) => {
+            const ct = (item.content_type || item.type || 'post') as string;
+            const mapped: Record<string, unknown> = {
               ...item,
               _type: ct === 'nook_message' ? 'nook' : ct === 'comment' ? 'topic' : ct,
               // Bookmarks have content_id instead of id
               id: item.id || item.content_id,
             };
             // Flatten nook bookmark content fields to match nook card expectations
+            const content = item.content as Record<string, unknown> | undefined;
+            const engagement = item.engagement as Record<string, unknown> | undefined;
             if (ct === 'nook_message') {
-              mapped.title = item.content?.title || 'Nook';
-              mapped.description = item.content?.text || '';
-              mapped.urgency = item.content?.nook_urgency || 'low';
-              mapped.scope = item.content?.nook_scope || 'global';
-              mapped.members_count = item.engagement?.members || 0;
-              mapped.messages_count = item.engagement?.comments || 0;
+              mapped.title = content?.title || 'Nook';
+              mapped.description = content?.text || '';
+              mapped.urgency = content?.nook_urgency || 'low';
+              mapped.scope = content?.nook_scope || 'global';
+              mapped.members_count = engagement?.members || 0;
+              mapped.messages_count = engagement?.comments || 0;
               mapped.nook_id = item.nook_id || item.content_id;
               if (item.expires_at) mapped.expires_at = item.expires_at;
             }
@@ -431,17 +447,17 @@ export function ProfileView() {
           if (postsRes.status === 'fulfilled') {
             const d = postsRes.value;
             const posts = d?.bookmarks || d?.posts || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...posts.map((p: any) => ({ ...p, _type: 'post' })));
+            results.push(...posts.map((p: Record<string, unknown>) => ({ ...p, _type: 'post' })));
           }
           if (topicsRes.status === 'fulfilled') {
             const d = topicsRes.value;
             const topics = d?.topics || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...topics.map((t: any) => ({ ...t, _type: 'topic' })));
+            results.push(...topics.map((t: Record<string, unknown>) => ({ ...t, _type: 'topic' })));
           }
           if (nooksRes.status === 'fulfilled') {
             const d = nooksRes.value;
             const nooks = d?.nooks || d?.items || (Array.isArray(d) ? d : []);
-            results.push(...nooks.map((n: any) => ({ ...n, _type: 'nook' })));
+            results.push(...nooks.map((n: Record<string, unknown>) => ({ ...n, _type: 'nook' })));
           }
         }
       }
@@ -548,8 +564,8 @@ export function ProfileView() {
       await SendCompanyVerificationEmail(verificationEmail.trim());
       setVerificationStatus('pending');
       showToast(MSG.COMPANY.VERIFICATION_SENT, 'success');
-    } catch (error: any) {
-      setVerificationError(error?.response?.data?.message || 'Failed to send verification email');
+    } catch (error: unknown) {
+      setVerificationError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to send verification email');
     } finally {
       setVerificationSending(false);
     }
@@ -562,8 +578,8 @@ export function ProfileView() {
     try {
       await UpdateCompanyVerificationEmail(verificationEmail);
       showToast(MSG.COMPANY.VERIFICATION_RESENT, 'success');
-    } catch (error: any) {
-      setVerificationError(error?.response?.data?.message || 'Failed to resend verification email');
+    } catch (error: unknown) {
+      setVerificationError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to resend verification email');
     } finally {
       setVerificationSending(false);
     }
@@ -589,8 +605,8 @@ export function ProfileView() {
       setNewVerificationEmail('');
       setShowChangeEmail(false);
       showToast(MSG.COMPANY.VERIFICATION_UPDATED, 'success');
-    } catch (error: any) {
-      setVerificationError(error?.response?.data?.message || 'Failed to update verification email');
+    } catch (error: unknown) {
+      setVerificationError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update verification email');
     } finally {
       setVerificationSending(false);
     }
@@ -1197,20 +1213,27 @@ export function ProfileView() {
                   ) : (
                     <>
                       {[
-                        { value: stats.postsCreated, label: 'Posts', color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/forums' },
-                        { value: stats.commentsPosted, label: 'Comments', color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums' },
-                        { value: stats.reputationScore, label: 'Reputation', color: 'text-amber-600', bg: 'bg-amber-50', nav: '' },
-                        { value: stats.helpfulReactions, label: 'Helpful', color: 'text-rose-600', bg: 'bg-rose-50', nav: '/dashboard/forums' },
-                        { value: stats.nooksJoined, label: 'Nooks', color: 'text-teal-600', bg: 'bg-teal-50', nav: '/dashboard/nooks' },
+                        { value: stats.postsCreated, label: 'Posts', color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/forums', tooltip: 'Total posts you\'ve created' },
+                        { value: stats.commentsPosted, label: 'Comments', color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums', tooltip: 'Total comments you\'ve posted' },
+                        { value: stats.reputationScore, label: 'Reputation', color: 'text-amber-600', bg: 'bg-amber-50', nav: '', tooltip: 'Your community reputation score' },
+                        { value: stats.helpfulReactions, label: 'Helpful', color: 'text-rose-600', bg: 'bg-rose-50', nav: '/dashboard/forums', tooltip: 'Reactions received on your content' },
+                        { value: stats.nooksJoined, label: 'Nooks', color: 'text-teal-600', bg: 'bg-teal-50', nav: '/dashboard/nooks', tooltip: 'Nooks you\'ve joined' },
                       ].map((stat) => (
-                        <button
-                          key={stat.label}
-                          onClick={() => stat.nav && navigate(stat.nav)}
-                          className={`text-center p-2 sm:p-3 rounded-xl ${stat.bg} hover:shadow-sm transition-all group min-h-[44px]`}
-                        >
-                          <div className={`text-lg sm:text-xl font-bold ${stat.color} group-hover:scale-110 transition-transform`}>{stat.value}</div>
-                          <div className="text-[10px] sm:text-xs text-gray-500 font-medium mt-0.5">{stat.label}</div>
-                        </button>
+                        <div key={stat.label} className="relative group/stat">
+                          <button
+                            onClick={() => stat.nav && navigate(stat.nav)}
+                            className={`text-center p-2 sm:p-3 rounded-xl ${stat.bg} hover:shadow-sm transition-all group min-h-[44px] w-full`}
+                          >
+                            <div className={`text-lg sm:text-xl font-bold ${stat.color} group-hover:scale-110 transition-transform`}>{stat.value}</div>
+                            <div className="flex items-center justify-center gap-1 mt-0.5">
+                              <span className="text-[10px] sm:text-xs text-gray-500 font-medium">{stat.label}</span>
+                              <HelpCircle className="w-3 h-3 text-gray-400" />
+                            </div>
+                          </button>
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1 whitespace-nowrap z-10 shadow-lg opacity-0 group-hover/stat:opacity-100 transition-opacity pointer-events-none">
+                            {stat.tooltip}
+                          </div>
+                        </div>
                       ))}
                     </>
                   )}
@@ -1441,11 +1464,11 @@ export function ProfileView() {
 
                 <div className="space-y-2">
                   {[
-                    { label: 'Forum Posts', value: stats.postsCreated, icon: MessageCircle, color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums' },
-                    { label: 'Comments Posted', value: stats.commentsPosted, icon: MessageSquare, color: 'text-green-600', bg: 'bg-green-50', nav: '/dashboard/forums' },
-                    { label: 'Helpful Reactions', value: stats.helpfulReactions, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', nav: '/dashboard/forums' },
-                    { label: 'Reputation Score', value: stats.reputationScore, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', nav: '' },
-                    { label: 'Nooks Participated', value: stats.nooksJoined, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/nooks' },
+                    { label: 'Forum Posts', value: stats.postsCreated, icon: MessageCircle, color: 'text-blue-600', bg: 'bg-blue-50', nav: '/dashboard/forums', tooltip: 'Total posts you\'ve created' },
+                    { label: 'Comments Posted', value: stats.commentsPosted, icon: MessageSquare, color: 'text-green-600', bg: 'bg-green-50', nav: '/dashboard/forums', tooltip: 'Total comments you\'ve posted' },
+                    { label: 'Helpful Reactions', value: stats.helpfulReactions, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', nav: '/dashboard/forums', tooltip: 'Reactions received on your content' },
+                    { label: 'Reputation Score', value: stats.reputationScore, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', nav: '', tooltip: 'Your community reputation score' },
+                    { label: 'Nooks Participated', value: stats.nooksJoined, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50', nav: '/dashboard/nooks', tooltip: 'Nooks you\'ve joined' },
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -1506,7 +1529,7 @@ export function ProfileView() {
                   )}
                   {user.demographics?.affinityTags?.map((tag) => {
                     const groupNames: { [key: string]: string } = {
-                      'black-women-tech': 'Black Women in Tech',
+                      'black-professionals': 'Black Professionals',
                       'women-leadership': 'Women in Leadership',
                       'latino-leaders': 'Latino Leaders',
                       'lgbtq-finance': 'LGBTQ+ in Finance'
@@ -1835,6 +1858,49 @@ export function ProfileView() {
                     <Toggle enabled={notificationSettings.notifyOnConnectionRequest} onToggle={() => handleNotificationToggle('notifyOnConnectionRequest')} label="Toggle connection request notifications" />
                   </div>
                 </div>
+              </div>
+
+              {/* Restricted Users */}
+              <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <ShieldOff className="w-4 h-4" />
+                  Restricted Users
+                </h3>
+                {blockedUsers.length === 0 ? (
+                  <p className="text-xs sm:text-sm text-gray-400">No restricted users. Users you restrict will appear here.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedUsers.map((bu: any) => (
+                      <div key={bu.userId || bu.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-purple-600">
+                            {(bu.avatar || (bu.display_name || bu.username || '?').charAt(0).toUpperCase())}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{bu.display_name || bu.username || 'Unknown'}</p>
+                            {bu.username && <p className="text-xs text-gray-400">@{bu.username}</p>}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const { UnblockUser } = await import('../../../../api/profileApis');
+                              await UnblockUser(bu.userId || bu.id);
+                              setBlockedUsers((prev: any[]) => prev.filter((u: any) => (u.userId || u.id) !== (bu.userId || bu.id)));
+                              showToast('User unrestricted', 'success');
+                            } catch {
+                              showToast('Failed to unrestrict', 'error');
+                            }
+                          }}
+                          className="text-xs font-medium text-purple-600 hover:text-purple-700 px-3 py-1.5 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                        >
+                          Unrestrict
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Account Actions */}

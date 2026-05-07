@@ -105,13 +105,22 @@ export const isWithinTimeRange = (
   }
 };
 
+interface SortableTopic {
+  reactions?: { seen?: number; validated?: number; inspired?: number; heard?: number };
+  commentCount?: number;
+  comments_count?: number;
+  last_activity_at?: string;
+  lastActivity?: string;
+  created_at?: string;
+}
+
 /**
  * Sort topics by different criteria
  */
 export const sortTopics = (
-  topics: any[],
+  topics: SortableTopic[],
   sortBy: "relevant" | "recent" | "popular" | "trending"
-): any[] => {
+): SortableTopic[] => {
   const sorted = [...topics];
 
   switch (sortBy) {
@@ -149,13 +158,13 @@ export const sortTopics = (
       return sorted.sort((a, b) => {
         const reactionsA = a.reactions
           ? Object.values(a.reactions).reduce(
-              (sum: number, val: any) => sum + (val || 0),
+              (sum: number, val) => sum + (Number(val) || 0),
               0
             )
           : 0;
         const reactionsB = b.reactions
           ? Object.values(b.reactions).reduce(
-              (sum: number, val: any) => sum + (val || 0),
+              (sum: number, val) => sum + (Number(val) || 0),
               0
             )
           : 0;
@@ -177,13 +186,13 @@ export const sortTopics = (
 
         const reactionsA = a.reactions
           ? Object.values(a.reactions).reduce(
-              (sum: number, val: any) => sum + (val || 0),
+              (sum: number, val) => sum + (Number(val) || 0),
               0
             )
           : 0;
         const reactionsB = b.reactions
           ? Object.values(b.reactions).reduce(
-              (sum: number, val: any) => sum + (val || 0),
+              (sum: number, val) => sum + (Number(val) || 0),
               0
             )
           : 0;
@@ -202,10 +211,58 @@ export const sortTopics = (
   }
 };
 
+interface ApiTopicResponse {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  user_profile?: { username?: string; avatar?: string };
+  forum_id: string;
+  company_name?: string;
+  scope?: string;
+  is_anonymous?: boolean;
+  is_pinned?: boolean;
+  tags?: string[];
+  link?: string;
+  reactions?: { seen?: number; validated?: number; inspired?: number; heard?: number };
+  reaction_seen_count?: number;
+  reaction_validated_count?: number;
+  reaction_inspired_count?: number;
+  reaction_heard_count?: number;
+  userReactions?: { seen?: boolean; validated?: boolean; inspired?: boolean; heard?: boolean };
+  comments_count?: number;
+  commentCount?: number;
+  views_count?: number;
+  created_at?: string;
+  last_activity_at?: string;
+  forum?: unknown;
+}
+
+interface TransformedTopic {
+  id: string;
+  title: string;
+  content: string;
+  author: { id: string; username: string; avatar: string };
+  forumId: string;
+  companyId?: string;
+  scope?: string;
+  isAnonymous?: boolean;
+  isPinned?: boolean;
+  tags: string[];
+  link?: string;
+  reactions: { seen: number; validated: number; inspired: number; heard: number };
+  userReactions: { seen: boolean; validated: boolean; inspired: boolean; heard: boolean };
+  commentCount: number;
+  views: number;
+  createdAt?: string;
+  lastActivity?: string;
+  forum?: unknown;
+}
+
 /**
  * Transform API response to frontend format
  */
-export const transformTopicFromAPI = (apiTopic: any): any => {
+export const transformTopicFromAPI = (apiTopic: ApiTopicResponse): TransformedTopic => {
   return {
     id: apiTopic.id,
     title: apiTopic.title,
@@ -242,10 +299,42 @@ export const transformTopicFromAPI = (apiTopic: any): any => {
   };
 };
 
+interface ApiForumResponse {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  is_global?: boolean;
+  company_name?: string;
+  topic_count?: number;
+  member_count?: number;
+  last_activity?: string | Date | null;
+  rules?: string[];
+  moderators?: string[];
+  is_joined?: boolean;
+}
+
+interface TransformedForum {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  isGlobal?: boolean;
+  companyName?: string;
+  topicCount: number;
+  memberCount: number;
+  lastActivity: string;
+  rules: string[];
+  moderators: string[];
+  isJoined: boolean;
+}
+
 /**
  * Transform forum from API format
  */
-export const transformForumFromAPI = (apiForum: any): any => {
+export const transformForumFromAPI = (apiForum: ApiForumResponse): TransformedForum => {
   return {
     id: apiForum.id,
     name: apiForum.name,

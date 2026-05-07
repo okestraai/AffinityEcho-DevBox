@@ -1,4 +1,4 @@
-import { CookieUtil } from './cookies';
+import { CookieUtil } from '../utils/cookies';
 
 // Helper to clear all cookies between tests
 function clearAllCookies() {

@@ -99,7 +99,7 @@ export function ReportHarassmentPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const reporterType = formData.reporterType === 'anonymous' ? 'other' as const : 'victim' as const;
+      const reporterType = formData.reporterType;
       const response = await SubmitHarassmentReport({
         incidentType: formData.incidentType,
         description: formData.description,

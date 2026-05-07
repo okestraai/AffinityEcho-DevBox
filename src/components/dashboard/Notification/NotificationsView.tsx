@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
-  MessageCircle,
   Heart,
   Target,
   Briefcase,
@@ -48,7 +47,7 @@ interface Notification {
   reference_type: string | null;
   is_read: boolean;
   action_taken: boolean;
-  metadata: any;
+  metadata: Record<string, string | null | undefined>;
   created_at: string;
   read_at: string | null;
   actor_username?: string;
@@ -81,12 +80,14 @@ export function NotificationsView() {
     if (user?.id) {
       fetchNotifications();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, filter, limit]);
 
   // Listen for real-time notifications via WebSocket
   useEffect(() => {
-    const handleNewNotification = (data: any) => {
-      const notification = data?.data || data;
+    const handleNewNotification = (data: unknown) => {
+      const payload = data as { data?: Notification } | Notification;
+      const notification = ('data' in (payload as object) ? (payload as { data?: Notification }).data : payload) as Notification | undefined;
       if (notification?.id) {
         setNotifications((prev) => {
           const exists = prev.some((n) => n.id === notification.id);

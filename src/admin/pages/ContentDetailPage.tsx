@@ -27,14 +27,6 @@ import {
 import { showToast } from "../../Helper/ShowToast";
 import { MSG } from '../../constants/messages';
 
-type ContentType =
-  | "feed_post"
-  | "feed_comment"
-  | "forum_topic"
-  | "forum_comment"
-  | "nook"
-  | "nook_message";
-
 const TYPE_CONFIG: Record<
   string,
   { icon: React.ReactNode; label: string; color: string; bg: string }

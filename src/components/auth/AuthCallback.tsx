@@ -52,9 +52,9 @@ export function AuthCallback() {
         } else {
           navigate("/dashboard", { replace: true });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("OAuth callback error:", err);
-        setError(err.message || "Authentication failed");
+        setError(err instanceof Error ? err.message : "Authentication failed");
         setTimeout(() => navigate("/login", { replace: true }), 3000);
       }
     };

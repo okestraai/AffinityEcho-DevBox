@@ -21,7 +21,8 @@ export function MentionTextarea({
   onChange,
   onMentionsChange,
   className,
-  mentionClassName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  mentionClassName: _mentionClassName,
   ...textareaProps
 }: MentionTextareaProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -56,7 +57,7 @@ export function MentionTextarea({
         ? result
         : result?.users || result?.data || [];
       setSuggestions(
-        users.map((u: any) => ({
+        users.map((u: { id?: string; user_id?: string; username: string; display_name?: string; displayName?: string; avatar_emoji?: string; demographics?: { avatar_emoji?: string } }) => ({
           id: u.id || u.user_id,
           username: u.username,
           display_name: u.display_name || u.displayName,
@@ -206,15 +207,8 @@ export function MentionTextarea({
       setMentionedUsers(updated);
       onMentionsChange?.(Array.from(updated.values()));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
-
-  // Calculate dropdown position
-  const getDropdownPosition = () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return { top: 0, left: 0 };
-    // Position above the textarea
-    return { bottom: "100%", left: 0, marginBottom: "4px" };
-  };
 
   return (
     <div className="relative flex-1 min-w-0">
@@ -324,7 +318,7 @@ export function MentionInput({
         ? result
         : result?.users || result?.data || [];
       setSuggestions(
-        users.map((u: any) => ({
+        users.map((u: { id?: string; user_id?: string; username: string; display_name?: string; displayName?: string; avatar_emoji?: string; demographics?: { avatar_emoji?: string } }) => ({
           id: u.id || u.user_id,
           username: u.username,
           display_name: u.display_name || u.displayName,
@@ -460,6 +454,7 @@ export function MentionInput({
       setMentionedUsers(updated);
       onMentionsChange?.(Array.from(updated.values()));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   return (

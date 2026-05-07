@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { ForumDetailView } from "./ForumDetailView";
-import { Topic, Forum } from "../../../types/forum";
+import { Topic } from "../../../types/forum";
 import {
   GetLocalScopeMetrics,
   GetGlobalScopeMetrics,
@@ -36,7 +36,7 @@ export function ForumsView() {
   const [viewMode, setViewMode] = useState<
     "overview" | "company" | "forum" | "global" | "forumDetail"
   >("overview");
-  const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(
+  const [selectedUserProfile, setSelectedUserProfile] = useState<{ id: string } | null>(
     null
   );
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,18 +48,18 @@ export function ForumsView() {
     "all" | "today" | "week" | "month"
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [selectedTopic] = useState<Topic | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
   // API State
   const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
   const [companyType, setCompanyType] = useState<string>("");
-  const [localMetrics, setLocalMetrics] = useState<any>(null);
-  const [globalMetrics, setGlobalMetrics] = useState<any>(null);
-  const [recentDiscussions, setRecentDiscussions] = useState<any[]>([]);
-  const [foundationForums, setFoundationForums] = useState<any[]>([]);
-  const [globalForums, setGlobalForums] = useState<any[]>([]);
-  const [userJoinedForums, setUserJoinedForums] = useState<any[]>([]);
+  const [localMetrics, setLocalMetrics] = useState<Record<string, unknown> | null>(null);
+  const [globalMetrics, setGlobalMetrics] = useState<Record<string, unknown> | null>(null);
+  const [recentDiscussions, setRecentDiscussions] = useState<Record<string, unknown>[]>([]);
+  const [foundationForums, setFoundationForums] = useState<Record<string, unknown>[]>([]);
+  const [globalForums, setGlobalForums] = useState<Record<string, unknown>[]>([]);
+  const [userJoinedForums, setUserJoinedForums] = useState<Record<string, unknown>[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [companyNameResolved, setCompanyNameResolved] = useState(
     !currentUser?.company_encrypted
@@ -155,9 +155,9 @@ export function ForumsView() {
           setFoundationForums(foundationData?.forums || []);
           setUserJoinedForums(Array.isArray(joinedData) ? joinedData : (joinedData?.forums || []));
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching initial data:", err);
-        setError(err.message || "Failed to load forum data");
+        setError((err as { message?: string })?.message || "Failed to load forum data");
       } finally {
         setInitialLoading(false);
       }
@@ -174,7 +174,7 @@ export function ForumsView() {
 
         setTopicsLoading(true);
 
-        const filters: any = {
+        const filters: Record<string, unknown> = {
           sortBy: sortBy,
           timeFilter: timeFilter,
           page: currentPage,
@@ -432,10 +432,10 @@ export function ForumsView() {
       });
 
       showToast(MSG.FORUM.COMMENT_POSTED, "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting comment:", error);
       showToast(
-        error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED,
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED,
         "error"
       );
 
@@ -506,7 +506,7 @@ export function ForumsView() {
       console.log("Refreshing topics after creation...");
 
       // Refresh recent discussions
-      const filters: any = {
+      const filters: Record<string, unknown> = {
         sortBy: sortBy,
         timeFilter: timeFilter,
         page: currentPage,

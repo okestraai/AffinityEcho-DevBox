@@ -579,3 +579,26 @@ export const GetAdminHealthHistory = async () => {
   const res = await api.get(`${BASE}/health/history`);
   return unwrap(res);
 };
+
+/* ─── 12. Content Flags ─── */
+export const GetContentFlags = async (
+  params: {
+    status?: string;
+    content_type?: string;
+    page?: number;
+    limit?: number;
+  } = {},
+) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/flags${buildQS(params)}`);
+  return res.data;
+};
+
+export const ReviewContentFlag = async (
+  flagId: string,
+  status: "reviewed" | "dismissed" | "actioned",
+) => {
+  const api = getAuthInstance();
+  const res = await api.patch(`${BASE}/flags/${flagId}`, { status });
+  return unwrap(res);
+};

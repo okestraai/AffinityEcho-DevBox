@@ -33,8 +33,26 @@ import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
+interface ForumData {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  memberCount?: number;
+  member_count?: number;
+  topicCount?: number;
+  topic_count?: number;
+  lastActivity?: string;
+  last_activity?: string;
+  company_name?: string;
+  is_global?: boolean;
+  companyId?: string;
+  rules?: string[];
+  forum_topics?: unknown[];
+}
+
 interface Props {
-  forum: any;
+  forum: ForumData;
   onBack: () => void;
   onForumMembershipChange?: () => Promise<void>; // NEW: Callback to refresh parent
 }
@@ -51,7 +69,7 @@ export function ForumDetailView({
   const [isJoined, setIsJoined] = useState(false);
   const [memberCount, setMemberCount] = useState(initialForum.memberCount || 0);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [topics, setTopics] = useState<any[]>([]);
+  const [topics, setTopics] = useState<ReturnType<typeof transformTopicFromAPI>[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingJoinStatus, setCheckingJoinStatus] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -152,7 +170,7 @@ export function ForumDetailView({
       const joinedForums = Array.isArray(result) ? result : (result?.forums || []);
 
       // Check if user is in this forum
-      const hasJoined = joinedForums.some((f: any) => f.id === initialForum.id);
+      const hasJoined = joinedForums.some((f: { id: string }) => f.id === initialForum.id);
       setIsJoined(hasJoined);
 
       // Also update member count if joined
@@ -202,10 +220,11 @@ export function ForumDetailView({
       if (onForumMembershipChange) {
         await onForumMembershipChange();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error toggling join status:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message || MSG.FORUM.JOIN_FAILED,
+        errObj.response?.data?.message || MSG.FORUM.JOIN_FAILED,
         "error"
       );
 

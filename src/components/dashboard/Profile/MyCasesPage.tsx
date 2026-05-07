@@ -117,6 +117,7 @@ export function MyCasesPage() {
         handleViewDetail(target);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caseId, cases]);
 
   const fetchCases = async () => {

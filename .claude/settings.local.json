@@ -14,7 +14,10 @@
       "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -60)",
       "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -30)",
       "Bash(cd \"E:\\\\codebase\\\\Personal\\\\Okestra\\\\AffinityEchoDevFrontend\\\\AffinityEcho\" && npx tsc --noEmit --pretty 2>&1 | head -20)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

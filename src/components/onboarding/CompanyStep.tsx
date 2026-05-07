@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Search, Building } from "lucide-react";
 
 // Logging utility for consistent formatting
-const log = (component: string, message: string, data?: any) => {
+const log = (component: string, message: string, data?: unknown) => {
   const timestamp = new Date().toISOString();
   if (data !== undefined) {
     console.log(`[${timestamp}] [CompanyStep.${component}] ${message}:`, data);
@@ -12,9 +12,15 @@ const log = (component: string, message: string, data?: any) => {
   }
 };
 
+interface CompanyData {
+  company: string;
+  companyType: string;
+  isCustomCompany: boolean;
+}
+
 interface Props {
-  data: any;
-  updateData: (updates: any) => void;
+  data: CompanyData;
+  updateData: (updates: Partial<CompanyData>) => void;
   onNext: () => void;
 }
 

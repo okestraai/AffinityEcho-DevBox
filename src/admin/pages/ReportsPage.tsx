@@ -28,8 +28,6 @@ import {
   Download as DownloadIcon,
   Check,
   Users,
-  BarChart3,
-  PieChart,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -234,6 +232,7 @@ function MobileCardSkeleton() {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function DetailPanelSkeleton() {
   return (
     <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col animate-pulse">

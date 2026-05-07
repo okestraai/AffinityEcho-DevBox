@@ -1,11 +1,36 @@
 // src/components/forums/company/CompanyMode.tsx - COMPLETE
-import { ArrowLeft, Search, Plus } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
 
-export function CompanyMode(props: any) {
+interface CompanyModeProps {
+  currentUser: { id?: string } | null;
+  selectedCompany: string;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  showCreateModal: boolean;
+  setShowCreateModal: (show: boolean) => void;
+  showTopicDetail: boolean;
+  setShowTopicDetail: (show: boolean) => void;
+  showUserProfile: boolean;
+  setShowUserProfile: (show: boolean) => void;
+  selectedUserProfile: unknown;
+  selectedTopic: unknown;
+  handleUserClick: (userId: string) => void;
+  handleBackToOverview: () => void;
+  foundationForums: { id: string; name: string; icon: string; description: string; lastActivity?: string; last_activity?: string; metrics?: { topicCount?: number; memberCount?: number }; originalTopicCount?: number; originalMemberCount?: number }[];
+  localMetrics: { totalMembers?: number } | null;
+  userCompany: { actualCompanyName?: string } | null;
+  handleForumSelect: (forumId: string) => void;
+  handleTopicCreated?: () => void;
+  handleFollow?: () => void;
+  handleUnfollow?: () => void;
+  handleChat?: (userId: string) => void;
+}
+
+export function CompanyMode(props: CompanyModeProps) {
   const {
     currentUser,
     selectedCompany,
@@ -68,7 +93,7 @@ export function CompanyMode(props: any) {
 
       {/* Company Forums Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {foundationForums.map((forum: any) => (
+        {foundationForums.map((forum) => (
           <button
             key={forum.id}
             onClick={() => props.handleForumSelect(forum.id)}

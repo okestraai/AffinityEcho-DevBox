@@ -31,7 +31,7 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
   const [loading, setLoading] = useState(true);
   const [insight, setInsight] = useState<OkestraInsight | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [, setIsRefreshing] = useState(false);
 
   const isNook = topic.forumId === 'nook';
   const contentRoute = isNook
@@ -43,12 +43,13 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
     if (isOpen && topic) {
       generateInsight();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, topic, comments]);
 
-  const transformLlmResponse = (llmResponse: any): OkestraInsight => ({
+  const transformLlmResponse = (llmResponse: { tldr: string; keyThemes: string[]; actionItems?: { action: string; rationale: string; confidence: string; category: string }[]; themes: { name: string; sentiment: string }[] }): OkestraInsight => ({
     summary: llmResponse.tldr,
     keyThemes: llmResponse.keyThemes,
-    actionItems: (llmResponse.actionItems || []).map((item: any) => ({
+    actionItems: (llmResponse.actionItems || []).map((item: { action: string; rationale: string; confidence: string; category: string }) => ({
       title: item.action,
       description: item.rationale,
       priority: item.confidence === 'High' ? 'high' : item.confidence === 'Med' ? 'medium' : 'low',

@@ -1,13 +1,11 @@
 // src/screens/LoginScreen.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
   Shield,
-  Users,
   MessageCircle,
   Heart,
   Star,
@@ -35,6 +33,7 @@ export function LoginScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +62,7 @@ export function LoginScreen() {
       if (isLogin) {
         await login(email, password);
       } else {
-        await signup(email, password);
+        await signup(email, password, termsAccepted);
       }
     } catch {
       // Errors are already handled + toasted inside AuthContext
@@ -73,7 +72,7 @@ export function LoginScreen() {
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     try {
       await socialLogin(provider);
-    } catch (err) {
+    } catch {
       // Handled in context
     }
   };
@@ -87,7 +86,7 @@ export function LoginScreen() {
 
     try {
       await forgotPassword(resetEmail);
-    } catch (err) {
+    } catch {
       // Handled in context
     }
   };
@@ -406,9 +405,31 @@ export function LoginScreen() {
                         </div>
                       )}
 
+                      {/* EULA Checkbox (Sign Up only) */}
+                      {!isLogin && (
+                        <label className="flex items-start gap-3 mb-4 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                          <span className="text-sm text-gray-600 leading-snug">
+                            I agree to the{" "}
+                            <a href="/terms" target="_blank" className="text-purple-600 font-semibold hover:underline">
+                              Terms of Service
+                            </a>
+                            {" "}and{" "}
+                            <a href="/privacy" target="_blank" className="text-purple-600 font-semibold hover:underline">
+                              Privacy Policy
+                            </a>
+                          </span>
+                        </label>
+                      )}
+
                       <button
                         type="submit"
-                        disabled={actionLoading}
+                        disabled={actionLoading || (!isLogin && !termsAccepted)}
                         className="w-full py-3.5 sm:py-3 px-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[48px]"
                       >
                         {actionLoading ? (
@@ -496,6 +517,7 @@ export function LoginScreen() {
                           setMessage("");
                           setPassword("");
                           setConfirmPassword("");
+                          setTermsAccepted(false);
                         }}
                         className="text-purple-600 hover:text-purple-700 font-medium transition-colors"
                       >

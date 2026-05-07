@@ -11,7 +11,6 @@ import {
   Target,
   BookOpen,
   Plus,
-  Check,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { GetEditableProfile, UpdateEditableProfile } from '../../../../api/profileApis';
@@ -52,7 +51,7 @@ const RACES = [
 const GENDERS = ['Woman', 'Man', 'Non-binary', 'Prefer not to say'];
 
 const AFFINITY_TAGS = [
-  { id: 'black-women-tech', label: 'Black Women in Tech', icon: '👩🏾‍💻' },
+  { id: 'black-professionals', label: 'Black Professionals', icon: '👨🏾‍💼' },
   { id: 'latino-leaders', label: 'Latino Leaders', icon: '🌟' },
   { id: 'lgbtq-finance', label: 'LGBTQ+ in Finance', icon: '🏳️‍🌈' },
   { id: 'asian-entrepreneurs', label: 'Asian Entrepreneurs', icon: '🚀' },
@@ -77,7 +76,7 @@ const STATIC_COMPANIES = [
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 function SectionHeader({ title, icon: Icon, expanded, onToggle }: {
-  title: string; icon: any; expanded: boolean; onToggle: () => void;
+  title: string; icon: React.ComponentType<{ className?: string }>; expanded: boolean; onToggle: () => void;
 }) {
   return (
     <button onClick={onToggle} className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
@@ -201,13 +200,13 @@ interface EditProfilePanelProps {
 }
 
 export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
-  const { user, updateUser, logout } = useAuth();
+  const { updateUser, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const originalRef = useRef<any>(null);
-  const [filterOptions, setFilterOptions] = useState<any>(null);
+  const originalRef = useRef<Record<string, unknown> | null>(null);
+  const [filterOptions, setFilterOptions] = useState<Record<string, unknown> | null>(null);
   const [showCompanyConfirm, setShowCompanyConfirm] = useState(false);
-  const pendingPayloadRef = useRef<any>(null);
+  const pendingPayloadRef = useRef<Record<string, unknown> | null>(null);
 
   // Section expansion
   const [sections, setSections] = useState({
@@ -266,7 +265,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
       try {
         const filtersRes = await GetFilterOptions();
         setFilterOptions(filtersRes?.data ?? filtersRes);
-      } catch {}
+      } catch { /* ignore filter options failure */ }
       const res = await GetEditableProfile();
       const data = res?.data ?? res;
       originalRef.current = JSON.parse(JSON.stringify(data));
@@ -322,57 +321,62 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
   const buildPayload = () => {
     const orig = originalRef.current;
     if (!orig) return {};
-    const payload: any = {};
+    const origBasic = orig.basic as Record<string, unknown> | undefined;
+    const origCompany = orig.company as Record<string, unknown> | undefined;
+    const origIdentity = orig.identity as Record<string, unknown> | undefined;
+    const origMentor = orig.mentor as Record<string, unknown> | undefined;
+    const origMentee = orig.mentee as Record<string, unknown> | undefined;
+    const payload: Record<string, unknown> = {};
 
-    const bd: any = {};
-    if (firstName !== (orig.basic?.first_name || '')) bd.first_name = firstName;
-    if (lastName !== (orig.basic?.last_name || '')) bd.last_name = lastName;
-    if (username !== (orig.basic?.username || '')) bd.username = username;
-    if (avatar !== (orig.basic?.avatar || '')) bd.avatar = avatar;
-    if (bio !== (orig.basic?.bio || '')) bd.bio = bio;
-    if (jobTitle !== (orig.basic?.job_title || '')) bd.job_title = jobTitle;
-    if (location !== (orig.basic?.location || '')) bd.location = location;
+    const bd: Record<string, unknown> = {};
+    if (firstName !== (origBasic?.first_name || '')) bd.first_name = firstName;
+    if (lastName !== (origBasic?.last_name || '')) bd.last_name = lastName;
+    if (username !== (origBasic?.username || '')) bd.username = username;
+    if (avatar !== (origBasic?.avatar || '')) bd.avatar = avatar;
+    if (bio !== (origBasic?.bio || '')) bd.bio = bio;
+    if (jobTitle !== (origBasic?.job_title || '')) bd.job_title = jobTitle;
+    if (location !== (origBasic?.location || '')) bd.location = location;
     const yn = yearsExp ? parseInt(yearsExp, 10) : 0;
-    if (yn !== (orig.basic?.years_experience || 0)) bd.years_experience = yn;
-    if (JSON.stringify(skills) !== JSON.stringify(orig.basic?.skills || [])) bd.skills = skills;
+    if (yn !== (origBasic?.years_experience || 0)) bd.years_experience = yn;
+    if (JSON.stringify(skills) !== JSON.stringify(origBasic?.skills || [])) bd.skills = skills;
     if (Object.keys(bd).length) payload.basic = bd;
 
-    if (companyName !== (orig.company?.company_name || '')) payload.company = { company_name: companyName };
+    if (companyName !== (origCompany?.company_name || '')) payload.company = { company_name: companyName };
 
-    const id: any = {};
-    if (careerLevel !== (orig.identity?.career_level || '')) id.career_level = careerLevel;
-    if (race !== (orig.identity?.race || '')) id.race = race;
-    if (gender !== (orig.identity?.gender || '')) id.gender = gender;
-    const ot = Array.isArray(orig.identity?.affinity_tags) ? orig.identity.affinity_tags : [];
+    const id: Record<string, unknown> = {};
+    if (careerLevel !== (origIdentity?.career_level || '')) id.career_level = careerLevel;
+    if (race !== (origIdentity?.race || '')) id.race = race;
+    if (gender !== (origIdentity?.gender || '')) id.gender = gender;
+    const ot = Array.isArray(origIdentity?.affinity_tags) ? origIdentity.affinity_tags : [];
     if (JSON.stringify(affinityTags) !== JSON.stringify(ot)) id.affinity_tags = JSON.stringify(affinityTags);
     if (Object.keys(id).length) payload.identity = id;
 
     if (hasMentor) {
-      const md: any = {};
-      if (mentorBio !== (orig.mentor?.mentor_bio || '')) md.mentor_bio = mentorBio;
-      if (JSON.stringify(expertise) !== JSON.stringify(orig.mentor?.expertise || [])) md.expertise = expertise;
-      if (JSON.stringify(mentorIndustries) !== JSON.stringify(orig.mentor?.industries || [])) md.industries = mentorIndustries;
-      if (mentorAvail !== (orig.mentor?.availability || '')) md.availability = mentorAvail;
-      if (responseTime !== (orig.mentor?.response_time || '')) md.response_time = responseTime;
-      if (mentoringStyle !== (orig.mentor?.mentoring_style || '')) md.mentoring_style = mentoringStyle;
-      if (JSON.stringify(mentorLangs) !== JSON.stringify(orig.mentor?.languages || [])) md.languages = mentorLangs;
+      const md: Record<string, unknown> = {};
+      if (mentorBio !== (origMentor?.mentor_bio || '')) md.mentor_bio = mentorBio;
+      if (JSON.stringify(expertise) !== JSON.stringify(origMentor?.expertise || [])) md.expertise = expertise;
+      if (JSON.stringify(mentorIndustries) !== JSON.stringify(origMentor?.industries || [])) md.industries = mentorIndustries;
+      if (mentorAvail !== (origMentor?.availability || '')) md.availability = mentorAvail;
+      if (responseTime !== (origMentor?.response_time || '')) md.response_time = responseTime;
+      if (mentoringStyle !== (origMentor?.mentoring_style || '')) md.mentoring_style = mentoringStyle;
+      if (JSON.stringify(mentorLangs) !== JSON.stringify(origMentor?.languages || [])) md.languages = mentorLangs;
       const rn = hourlyRate ? parseInt(hourlyRate, 10) : 0;
-      if (rn !== (orig.mentor?.hourly_rate || 0)) md.hourly_rate = rn;
+      if (rn !== (origMentor?.hourly_rate || 0)) md.hourly_rate = rn;
       if (Object.keys(md).length) payload.mentor = md;
     }
 
     if (hasMentee) {
-      const me: any = {};
-      if (menteeBio !== (orig.mentee?.mentee_bio || '')) me.mentee_bio = menteeBio;
-      if (goals !== (orig.mentee?.goals || '')) me.goals = goals;
-      if (JSON.stringify(interests) !== JSON.stringify(orig.mentee?.interests || [])) me.interests = interests;
-      if (JSON.stringify(menteeIndustries) !== JSON.stringify(orig.mentee?.industries || [])) me.industries = menteeIndustries;
-      if (menteeAvail !== (orig.mentee?.availability || '')) me.availability = menteeAvail;
-      if (urgency !== (orig.mentee?.urgency || '')) me.urgency = urgency;
-      if (topic !== (orig.mentee?.topic || '')) me.topic = topic;
-      if (mentoredStyle !== (orig.mentee?.mentored_style || '')) me.mentored_style = mentoredStyle;
-      if (JSON.stringify(menteeLangs) !== JSON.stringify(orig.mentee?.languages || [])) me.languages = menteeLangs;
-      if (commMethod !== (orig.mentee?.communication_method || '')) me.communication_method = commMethod;
+      const me: Record<string, unknown> = {};
+      if (menteeBio !== (origMentee?.mentee_bio || '')) me.mentee_bio = menteeBio;
+      if (goals !== (origMentee?.goals || '')) me.goals = goals;
+      if (JSON.stringify(interests) !== JSON.stringify(origMentee?.interests || [])) me.interests = interests;
+      if (JSON.stringify(menteeIndustries) !== JSON.stringify(origMentee?.industries || [])) me.industries = menteeIndustries;
+      if (menteeAvail !== (origMentee?.availability || '')) me.availability = menteeAvail;
+      if (urgency !== (origMentee?.urgency || '')) me.urgency = urgency;
+      if (topic !== (origMentee?.topic || '')) me.topic = topic;
+      if (mentoredStyle !== (origMentee?.mentored_style || '')) me.mentored_style = mentoredStyle;
+      if (JSON.stringify(menteeLangs) !== JSON.stringify(origMentee?.languages || [])) me.languages = menteeLangs;
+      if (commMethod !== (origMentee?.communication_method || '')) me.communication_method = commMethod;
       if (Object.keys(me).length) payload.mentee = me;
     }
 
@@ -380,7 +384,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
   };
 
   // Save
-  const submitPayload = async (payload: any) => {
+  const submitPayload = async (payload: Record<string, unknown>) => {
     setSaving(true);
     try {
       const res = await UpdateEditableProfile(payload);
@@ -388,25 +392,27 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
       originalRef.current = JSON.parse(JSON.stringify(updated));
 
       // If company changed, log out so fresh state loads on next login
-      if (payload.company?.company_name) {
+      const payloadCompany = payload.company as Record<string, unknown> | undefined;
+      if (payloadCompany?.company_name) {
         showToast(MSG.USER.COMPANY_CHANGED, 'success');
         setTimeout(() => logout(), 1000);
         return;
       }
 
       if (payload.basic) {
-        const u: any = {};
-        if (payload.basic.username) u.username = payload.basic.username;
-        if (payload.basic.avatar) u.avatar = payload.basic.avatar;
-        if (payload.basic.first_name) u.first_name = payload.basic.first_name;
-        if (payload.basic.last_name) u.last_name = payload.basic.last_name;
+        const payloadBasic = payload.basic as Record<string, unknown>;
+        const u: Record<string, unknown> = {};
+        if (payloadBasic.username) u.username = payloadBasic.username;
+        if (payloadBasic.avatar) u.avatar = payloadBasic.avatar;
+        if (payloadBasic.first_name) u.first_name = payloadBasic.first_name;
+        if (payloadBasic.last_name) u.last_name = payloadBasic.last_name;
         if (Object.keys(u).length) updateUser(u);
       }
 
       showToast(MSG.USER.PROFILE_UPDATED, 'success');
       onClose();
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || MSG.AUTH.PROFILE_UPDATE_FAILED, 'error');
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || MSG.AUTH.PROFILE_UPDATE_FAILED, 'error');
     } finally {
       setSaving(false);
     }
@@ -416,7 +422,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
     const payload = buildPayload();
     if (!Object.keys(payload).length) { showToast(MSG.USER.NO_CHANGES, 'info'); return; }
 
-    if (payload.company?.company_name) {
+    if ((payload.company as Record<string, unknown> | undefined)?.company_name) {
       pendingPayloadRef.current = payload;
       setShowCompanyConfirm(true);
       return;

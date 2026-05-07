@@ -1,8 +1,7 @@
 // components/Modals/MentorShipModals/MentorshipModal.tsx
-import React, { useState } from "react";
+import React from "react";
 import {
   X,
-  Target,
   Star,
   MessageCircle,
   Calendar,
@@ -23,8 +22,6 @@ export function MentorshipModal({
   onClose,
   onBecomeMentor,
 }: MentorshipModalProps) {
-  const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
-
   if (!isOpen) return null;
 
   const mentorMatches = [
@@ -34,7 +31,7 @@ export function MentorshipModal({
       avatar: "👩🏾‍💼",
       careerLevel: "Senior Leadership",
       company: "Microsoft",
-      affinityTags: ["Black Women in Tech", "Women in Leadership"],
+      affinityTags: ["Black Professionals", "Women in Leadership"],
       matchScore: 95,
       bio: "VP of Engineering with 15+ years experience. Passionate about helping others navigate corporate challenges.",
       availability: "Weekly 30-min calls",

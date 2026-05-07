@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { toast, type ToastOptions } from 'react-toastify';
 import { CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
 import type { ReactNode } from 'react';

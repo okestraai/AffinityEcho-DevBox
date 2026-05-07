@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, MessageCircle, UserPlus, UserMinus, Calendar,
-  Shield, Loader2, MapPin, Briefcase, ExternalLink,
+  Shield, Loader2, MapPin, Briefcase,
   FileText, Users, Lightbulb, Heart, Eye, MessageSquare,
-  Zap, Share2, Bookmark, Star,
+  Zap, Share2, Bookmark, Star, ShieldOff, ShieldCheck,
 } from 'lucide-react';
 import { ClapIcon } from '../../shared/ClapIcon';
 import {
@@ -14,6 +14,9 @@ import {
   CheckFollowingStatus,
   FollowUser,
   UnfollowUser,
+  BlockUser,
+  UnblockUser,
+  CheckBlockStatus,
 } from '../../../../api/profileApis';
 import { ToggleFeedReaction, ToggleBookmark } from '../../../../api/feedApis';
 import { ForumTopicsReactions, ToggleTopicBookmark } from '../../../../api/forumApis';
@@ -128,11 +131,16 @@ export function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
+  const [restricted, setRestricted] = useState(false);
+  const [restrictedByThem, setRestrictedByThem] = useState(false);
+  const [restrictLoading, setRestrictLoading] = useState(false);
+  const [showRestrictModal, setShowRestrictModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ActivityTab>('posts');
 
   useEffect(() => {
     if (!userId) return;
     fetchProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const fetchProfile = async () => {
@@ -193,6 +201,15 @@ export function UserProfilePage() {
           setIsFollowing(followRes?.isFollowing || profileRes?.isFollowing || false);
         }
       }
+
+      if (!isOwnProfile) {
+        try {
+          const blockRes = await CheckBlockStatus(userId);
+          const blockData = blockRes?.data || blockRes || {};
+          setRestricted(blockData.isBlocked ?? blockData.is_blocked ?? false);
+          setRestrictedByThem(blockData.isBlockedBy ?? blockData.is_blocked_by ?? false);
+        } catch {}
+      }
     } catch {
       showToast(MSG.USER.PROFILE_FAILED, 'error');
     } finally {
@@ -223,6 +240,29 @@ export function UserProfilePage() {
   const handleChat = () => {
     navigate('/dashboard/messages', { state: { startChatWith: userId, contextType: 'regular' } });
   };
+
+  const handleRestrict = async () => {
+    if (!userId) return;
+    setRestrictLoading(true);
+    try {
+      if (restricted) {
+        await UnblockUser(userId);
+        setRestricted(false);
+        showToast('User unrestricted', 'success');
+      } else {
+        await BlockUser(userId);
+        setRestricted(true);
+        showToast('User restricted', 'success');
+      }
+    } catch {
+      showToast('Failed to update restriction', 'error');
+    } finally {
+      setRestrictLoading(false);
+      setShowRestrictModal(false);
+    }
+  };
+
+  const canInteract = !restricted && !restrictedByThem;
 
   // ---- post interactions ----
   const handlePostReact = useCallback(async (postId: string, type: 'heard' | 'validated' | 'inspired') => {
@@ -265,6 +305,7 @@ export function UserProfilePage() {
       ));
       showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- topic interactions ----
@@ -307,6 +348,7 @@ export function UserProfilePage() {
       ));
       showToast(MSG.FEED.BOOKMARK_FAILED, "error");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- loading / error states ----
@@ -339,6 +381,7 @@ export function UserProfilePage() {
   const stats = profile.stats ?? {};
 
   return (
+    <>
     <div className="max-w-2xl mx-auto pb-10">
       {/* Back */}
       <button type="button" onClick={() => navigate(-1)}
@@ -362,9 +405,9 @@ export function UserProfilePage() {
         </div>
 
         <div className="px-4 sm:px-6 pb-5 -mt-12">
-          {/* Avatar + actions row */}
-          <div className="flex items-end justify-between mb-4">
-            <div className="relative">
+          {/* Avatar */}
+          <div className="mb-4">
+            <div className="relative inline-block">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl border-4 border-white shadow-xl flex items-center justify-center text-3xl sm:text-4xl select-none">
                 {profile.avatar}
               </div>
@@ -374,31 +417,60 @@ export function UserProfilePage() {
                 </span>
               )}
             </div>
-            {!isOwnProfile && (
-              <div className="flex gap-2 mt-2">
-                <button type="button" onClick={handleFollow} disabled={followLoading}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 shadow-sm active:scale-95 ${
-                    isFollowing
-                      ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 border border-gray-200'
-                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700'
-                  }`}>
-                  {followLoading ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : isFollowing ? <UserMinus className="w-4 h-4" />
-                    : <UserPlus className="w-4 h-4" />}
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-                </button>
-                <button type="button" onClick={handleChat}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm active:scale-95">
-                  <MessageCircle className="w-4 h-4 text-indigo-500" />
-                  Message
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Name + meta */}
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight inline-flex items-center gap-1.5">{displayName}{profile.is_company_verified && <VerifiedBadge size={24} />}</h1>
           <p className="text-sm text-gray-400 font-medium">@{profile.username}</p>
+
+          {/* Action buttons — below name */}
+          {!isOwnProfile && (
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {restrictedByThem && (
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-xl">
+                  <ShieldOff className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-400 font-medium">You cannot interact with this user</span>
+                </div>
+              )}
+
+              {canInteract && (
+                <>
+                  <button type="button" onClick={handleFollow} disabled={followLoading}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 shadow-sm active:scale-95 ${
+                      isFollowing
+                        ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 border border-gray-200'
+                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700'
+                    }`}>
+                    {followLoading ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : isFollowing ? <UserMinus className="w-4 h-4" />
+                      : <UserPlus className="w-4 h-4" />}
+                    {isFollowing ? 'Unfollow' : 'Follow'}
+                  </button>
+                  <button type="button" onClick={handleChat}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm active:scale-95">
+                    <MessageCircle className="w-4 h-4 text-indigo-500" />
+                    Message
+                  </button>
+                </>
+              )}
+
+              {!restrictedByThem && (
+                <button
+                  type="button"
+                  onClick={() => restricted ? handleRestrict() : setShowRestrictModal(true)}
+                  disabled={restrictLoading}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50 border ${
+                    restricted
+                      ? 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'bg-white border-red-200 text-red-500 hover:bg-red-50'
+                  }`}
+                >
+                  {restrictLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : restricted ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldOff className="w-3.5 h-3.5" />}
+                  {restricted ? 'Unrestrict User' : 'Restrict User'}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Info pills */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -761,6 +833,37 @@ export function UserProfilePage() {
         <span>Profile shared while preserving community anonymity</span>
       </div>
     </div>
+
+    {/* Restrict Confirmation Modal */}
+    {showRestrictModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowRestrictModal(false)}>
+        <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Restrict User</h3>
+          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            Are you sure you want to restrict this user? You won't see their posts, topics, or messages, and they won't be able to message you.
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowRestrictModal(false)}
+              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRestrict}
+              disabled={restrictLoading}
+              className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {restrictLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Restrict
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

@@ -4,7 +4,7 @@ import { NookCard } from "./NooksCard";
 import { NooksGridSkeleton } from "../../../Helper/SkeletonLoader";
 
 interface NooksGridProps {
-  nooks: any[];
+  nooks: Record<string, unknown>[];
   viewMode: "grid" | "all";
   totalCount: number;
   onNookClick: (id: string) => void;

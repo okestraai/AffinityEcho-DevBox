@@ -279,6 +279,7 @@ export function AnalyticsPage() {
         showToast(getApiError(err, MSG.ADMIN.ANALYTICS_LOAD_FAILED), "error");
       })
       .finally(() => setLoadingOverview(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Lazy fetch when tab changes ────────────────────────────────────────────
@@ -317,6 +318,7 @@ export function AnalyticsPage() {
         })
         .finally(() => setLoadingTopContent(false));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   // ── Re-fetch growth when period changes ────────────────────────────────────
@@ -331,6 +333,7 @@ export function AnalyticsPage() {
         showToast(getApiError(err, MSG.ADMIN.ANALYTICS_LOAD_FAILED), "error");
       })
       .finally(() => setLoadingGrowth(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [growthPeriod]);
 
   // ── Permission guard ───────────────────────────────────────────────────────

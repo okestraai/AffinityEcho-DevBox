@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { GetNookById } from "../../../../api/nookApis";
@@ -11,7 +11,7 @@ export function NookDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [nookData, setNookData] = useState<any>(null);
+  const [nookData, setNookData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);

@@ -243,6 +243,11 @@ const AdminAnalyticsPage = React.lazy(() =>
     default: m.AnalyticsPage,
   })),
 );
+const AdminContentFlagsPage = React.lazy(() =>
+  import("../admin/pages/ContentFlagsPage").then((m) => ({
+    default: m.ContentFlagsPage,
+  })),
+);
 const AdminHealthPage = React.lazy(() =>
   import("../admin/pages/HealthPage").then((m) => ({
     default: m.HealthPage,
@@ -313,6 +318,7 @@ const AppRoutes: React.FC = () => {
           <Route path="users/:userId" element={<AdminUserDetailPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
           <Route path="moderation" element={<AdminModerationPage />} />
+          <Route path="content-flags" element={<AdminContentFlagsPage />} />
           <Route path="forums" element={<AdminForumsPage />} />
           <Route path="nooks" element={<AdminNooksPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />

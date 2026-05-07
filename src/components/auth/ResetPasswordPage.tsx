@@ -66,8 +66,9 @@ export function ResetPasswordPage() {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || MSG.AUTH.INVALID_OTP;
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = errObj?.response?.data?.message || errObj?.message || MSG.AUTH.INVALID_OTP;
       setError(msg);
       showToast(msg, 'error');
     } finally {

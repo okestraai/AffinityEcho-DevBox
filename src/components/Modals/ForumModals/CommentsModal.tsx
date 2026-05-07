@@ -26,15 +26,32 @@ import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 import { UserProfileModal } from "../UserProfileModal";
 
+interface ForumComment {
+  id: string;
+  content: string;
+  user_id: string;
+  user_profile?: { avatar?: string; display_name?: string; username?: string; is_company_verified?: boolean };
+  author?: { is_company_verified?: boolean };
+  parent_comment_id?: string | null;
+  created_at: string;
+  reaction_helpful_count?: number;
+  replies?: ForumComment[];
+}
+
+interface TopicData {
+  id: string;
+  title?: string;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  topic: any | null;
+  topic: TopicData | null;
   onUserClick?: (userId: string) => void;
 }
 
-function flattenComments(comments: any[]): any[] {
-  const result: any[] = [];
+function flattenComments(comments: ForumComment[]): ForumComment[] {
+  const result: ForumComment[] = [];
   for (const c of comments) {
     result.push(c);
     if (c.replies && c.replies.length > 0) {
@@ -54,7 +71,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
   );
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<ForumComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -96,9 +113,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       const result = await GetAllCommentsForATopic(topic.id);
       setComments(flattenComments(result.data || []));
       setNewComment("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting comment:", error);
-      showToast(error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      showToast(axiosErr.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
     } finally {
       setSubmitting(false);
     }
@@ -123,9 +141,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       setComments(flattenComments(result.data || []));
       setReplyText("");
       setReplyingTo(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting reply:", error);
-      showToast(error.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      showToast(axiosErr.response?.data?.message || MSG.FORUM.CREATE_COMMENT_FAILED, "error");
     } finally {
       setSubmitting(false);
     }
@@ -155,9 +174,10 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
       // Refresh comments
       const result = await GetAllCommentsForATopic(topic.id);
       setComments(flattenComments(result.data || []));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting comment:", error);
-      showToast(error.response?.data?.message || MSG.FORUM.COMMENT_DELETE_FAILED, "error");
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      showToast(axiosErr.response?.data?.message || MSG.FORUM.COMMENT_DELETE_FAILED, "error");
     }
   };
 
@@ -181,7 +201,7 @@ export function CommentsModal({ isOpen, onClose, topic, onUserClick }: Props) {
     }
   };
 
-  const renderComment = (comment: any, depth = 0) => {
+  const renderComment = (comment: ForumComment, depth = 0) => {
     const isCurrentUser = user?.id === comment.user_id;
     const replies = comments.filter((c) => c.parent_comment_id === comment.id);
     const hasReplies = replies.length > 0;

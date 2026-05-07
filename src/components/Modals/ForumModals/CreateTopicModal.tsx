@@ -10,7 +10,6 @@ import {
   Tag,
   ChevronDown,
   Users,
-  Globe as GlobeIcon,
   MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
@@ -22,6 +21,17 @@ import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 import { useNavigate } from "react-router-dom";
+
+interface ForumItem {
+  id: string;
+  name: string;
+  icon?: string;
+  is_global?: boolean;
+  company_name?: string;
+  member_count?: number;
+  topic_count?: number;
+  description?: string;
+}
 
 interface Props {
   isOpen: boolean;
@@ -38,7 +48,6 @@ export function CreateTopicModal({
   onTopicCreated,
   forumName,
   forumId,
-  companyId,
 }: Props) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -54,9 +63,9 @@ export function CreateTopicModal({
   // API State
   const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
   const [companyType, setCompanyType] = useState<string>("");
-  const [availableForums, setAvailableForums] = useState<any[]>([]);
+  const [availableForums, setAvailableForums] = useState<ForumItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [allJoinedForums, setAllJoinedForums] = useState<any[]>([]);
+  const [allJoinedForums, setAllJoinedForums] = useState<ForumItem[]>([]);
 
   // Decrypt company name and get company type
   useEffect(() => {
@@ -96,7 +105,7 @@ export function CreateTopicModal({
       try {
         const apiCompanyName = getCompanyNameForApi();
 
-        let forums: any[] = [];
+        let forums: ForumItem[] = [];
 
         if (apiCompanyName) {
           const result = await GetUserJoinedForums(apiCompanyName);
@@ -119,6 +128,7 @@ export function CreateTopicModal({
       fetchAllJoinedForums();
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, decryptedCompanyName, companyType]);
 
   // Filter forums based on scope
@@ -133,7 +143,7 @@ export function CreateTopicModal({
 
       if (scope === "local") {
         const companyForums = allJoinedForums.filter(
-          (f: any) => !f.is_global && f.company_name === apiCompanyName,
+          (f) => !f.is_global && f.company_name === apiCompanyName,
         );
         setAvailableForums(companyForums);
       } else {
@@ -146,6 +156,7 @@ export function CreateTopicModal({
     } else if (isOpen) {
       setAvailableForums([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, scope, allJoinedForums]);
 
   if (!isOpen) return null;
@@ -157,7 +168,16 @@ export function CreateTopicModal({
     try {
       const apiCompanyName = getCompanyNameForApi();
 
-      const payload: any = {
+      const payload: {
+        title: string;
+        content: string;
+        forumId: string;
+        scope: string;
+        isAnonymous: boolean;
+        tags: string[];
+        companyName?: string;
+        link?: string;
+      } = {
         title: title.trim(),
         content: content.trim(),
         forumId: selectedForumId,
@@ -192,10 +212,11 @@ export function CreateTopicModal({
       if (onTopicCreated) {
         await onTopicCreated();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating topic:", error);
+      const axiosErr = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message ||
+        axiosErr.response?.data?.message ||
           MSG.FORUM.CREATE_TOPIC_FAILED,
         "error",
       );
@@ -238,8 +259,8 @@ export function CreateTopicModal({
   const apiCompanyName = getCompanyNameForApi();
 
   // Group forums by type for better display
-  const globalForums = availableForums.filter((f: any) => f.is_global);
-  const companyForums = availableForums.filter((f: any) => !f.is_global);
+  const globalForums = availableForums.filter((f) => f.is_global);
+  const companyForums = availableForums.filter((f) => !f.is_global);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -397,7 +418,7 @@ export function CreateTopicModal({
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           {selectedForum.is_global ? (
                             <>
-                              <GlobeIcon className="w-3 h-3" />
+                              <Globe className="w-3 h-3" />
                               <span>Global Forum</span>
                             </>
                           ) : (

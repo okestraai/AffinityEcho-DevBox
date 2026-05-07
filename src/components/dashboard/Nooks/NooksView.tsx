@@ -27,7 +27,7 @@ import {
 } from "../../../../api/nookApis";
 
 // Logging utility
-const log = (component: string, message: string, data?: any) => {
+const log = (component: string, message: string, data?: unknown) => {
   const timestamp = new Date().toISOString();
   if (data !== undefined) {
     console.log(`[${timestamp}] [NooksView.${component}] ${message}:`, data);
@@ -43,17 +43,18 @@ export function NooksView() {
   // UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedNook, setSelectedNook] = useState<string | null>(null);
-  const [selectedNookData, setSelectedNookData] = useState<any>(null);
+  const [selectedNookData, setSelectedNookData] = useState<Record<string, unknown> | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "all">("grid");
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   // Data State
-  const [displayedNooks, setDisplayedNooks] = useState<any[]>([]);
+  const [displayedNooks, setDisplayedNooks] = useState<Record<string, unknown>[]>([]);
   const [stats, setStats] = useState({
     activeNooks: 0,
-    anonymousUsers: 0,
-    totalMessageParticipants: 0,
+    inANookNow: 0,
+    allTimeNooksCreated: 0,
+    allTimeNookInteractions: 0,
   });
 
   // Loading States
@@ -63,7 +64,7 @@ export function NooksView() {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -87,6 +88,7 @@ export function NooksView() {
     log("NooksView", "Component initialized");
     fetchStats();
     fetchNooks(1, true); // Initial load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ========================================================================
@@ -101,8 +103,9 @@ export function NooksView() {
       if (response) {
         setStats({
           activeNooks: response.activeNooks || 0,
-          anonymousUsers: response.anonymousUsers || 0,
-          totalMessageParticipants: response.totalMessageParticipants || 0,
+          inANookNow: response.inANookNow || 0,
+          allTimeNooksCreated: response.allTimeNooksCreated || 0,
+          allTimeNookInteractions: response.allTimeNookInteractions || 0,
         });
         log("fetchStats", "Stats loaded", response);
       }
@@ -121,7 +124,7 @@ export function NooksView() {
     try {
       setLoading(true);
 
-      const filterParams: any = {
+      const filterParams: Record<string, string | number> = {
         page,
         limit: NOOKS_PER_PAGE,
         sortBy: "last_activity_at",
@@ -219,6 +222,7 @@ export function NooksView() {
       setCurrentPage(1);
       fetchNooks(1, true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, viewMode]);
 
   const resetFilters = () => {
@@ -243,6 +247,7 @@ export function NooksView() {
     });
 
     await fetchNooks(currentPage + 1, false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore, currentPage, displayedNooks.length, filters]);
 
   // Intersection Observer for infinite scroll
@@ -393,8 +398,9 @@ export function NooksView() {
 
       <NooksStats
         activeNooks={stats.activeNooks}
-        anonymousUsers={stats.anonymousUsers}
-        totalMessageParticipants={stats.totalMessageParticipants}
+        inANookNow={stats.inANookNow}
+        allTimeNooksCreated={stats.allTimeNooksCreated}
+        allTimeNookInteractions={stats.allTimeNookInteractions}
         loading={statsLoading}
       />
 

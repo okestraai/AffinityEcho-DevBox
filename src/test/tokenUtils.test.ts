@@ -1,7 +1,7 @@
-import { TokenUtils } from './tokenUtils';
-import { CookieUtil } from './cookies';
+import { TokenUtils } from '../utils/tokenUtils';
+import { CookieUtil } from '../utils/cookies';
 
-vi.mock('./cookies', () => ({
+vi.mock('../utils/cookies', () => ({
   CookieUtil: {
     get: vi.fn(),
     set: vi.fn(),

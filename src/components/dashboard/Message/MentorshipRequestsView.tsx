@@ -54,7 +54,7 @@ type ExtendedDirectMentorshipRequest = DirectMentorshipRequest & {
     isSent: boolean;
     isReceived: boolean;
     userRole: string;
-    otherUser: any;
+    otherUser: unknown;
     isRead: boolean;
   };
 };
@@ -86,6 +86,7 @@ export function MentorshipRequestsView({
 
   useEffect(() => {
     fetchRequests();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   // Mark requests as read function - FIXED VERSION
@@ -146,6 +147,7 @@ export function MentorshipRequestsView({
     ) {
       markRequestsAsRead();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, receivedRequests.length, hasUnreadRequests]);
 
   const fetchRequests = async () => {

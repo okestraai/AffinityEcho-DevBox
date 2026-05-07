@@ -16,12 +16,9 @@ import {
   ChevronDown,
   Save,
   Send,
-  Loader2,
   Mail,
   Briefcase,
   MoreVertical,
-  X,
-  User as UserIcon,
 } from "lucide-react";
 import {
   GetAdminUserById,
@@ -56,6 +53,22 @@ interface User {
   total_comments: number;
   mentorship_sessions?: number;
   reports_against: number;
+}
+
+interface Report {
+  id: string;
+  reference_number: string;
+  incident_type?: string;
+  status: string;
+  created_at: string;
+}
+
+interface SuspensionRecord {
+  action?: string;
+  reason: string;
+  performed_by: string;
+  at: string;
+  metadata?: { expires_at?: string };
 }
 
 function getInitials(u: string) {
@@ -237,8 +250,8 @@ export function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [reportsAgainst, setReportsAgainst] = useState<any[]>([]);
-  const [suspensionHistory, setSuspensionHistory] = useState<any[]>([]);
+  const [reportsAgainst, setReportsAgainst] = useState<Report[]>([]);
+  const [suspensionHistory, setSuspensionHistory] = useState<SuspensionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -285,6 +298,7 @@ export function UserDetailPage() {
 
   useEffect(() => {
     loadUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function handleSuspend() {
@@ -608,7 +622,7 @@ export function UserDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {reportsAgainst.map((r: any) => (
+                          {reportsAgainst.map((r) => (
                             <tr
                               key={r.id}
                               className="hover:bg-gray-50/50 transition-colors"
@@ -647,7 +661,7 @@ export function UserDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {suspensionHistory.map((s: any, i: number) => (
+                    {suspensionHistory.map((s, i) => (
                       <div
                         key={i}
                         className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 text-sm border border-gray-100 hover:shadow-md transition-all"

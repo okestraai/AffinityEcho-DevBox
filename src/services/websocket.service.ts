@@ -4,12 +4,12 @@ import { TokenUtils } from "../utils/tokenUtils";
 
 interface QueuedOperation {
   type: "join" | "send" | "leave";
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 class WebSocketService {
   private socket: Socket | null = null;
-  private listeners = new Map<string, ((data: any) => void)[]>();
+  private listeners = new Map<string, ((data: unknown) => void)[]>();
   private isManualDisconnect = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -134,13 +134,13 @@ class WebSocketService {
       }
     });
 
-    this.socket.on("connect_error", (err: any) => {
+    this.socket.on("connect_error", (err: Error & { type?: string; description?: string }) => {
       this.reconnectAttempts++;
       this._isAuthenticated = false;
       this.emit("connection_error", {
         message: err.message,
-        type: err?.type,
-        description: err?.description,
+        type: err.type,
+        description: err.description,
         attempt: this.reconnectAttempts,
         maxAttempts: this.maxReconnectAttempts,
       });
@@ -389,14 +389,14 @@ class WebSocketService {
 
   /* -------------------- EVENT BUS -------------------- */
 
-  on(event: string, callback: (data: any) => void) {
+  on(event: string, callback: (data: unknown) => void) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback?: (data: any) => void) {
+  off(event: string, callback?: (data: unknown) => void) {
     if (!callback) {
       this.listeners.delete(event);
       return;
@@ -409,7 +409,7 @@ class WebSocketService {
     );
   }
 
-  private emit(event: string, data: any) {
+  private emit(event: string, data: unknown) {
     const callbacks = this.listeners.get(event);
     if (!callbacks) return;
 

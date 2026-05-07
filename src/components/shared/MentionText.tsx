@@ -26,7 +26,7 @@ export function MentionText({ text, className, onChat }: MentionTextProps) {
         ? result
         : result?.users || result?.data || [];
       const match = users.find(
-        (u: any) => (u.username || "").toLowerCase() === username.toLowerCase()
+        (u: { username?: string; id?: string; user_id?: string }) => (u.username || "").toLowerCase() === username.toLowerCase()
       );
       if (match) {
         const id = match.id || match.user_id;

@@ -7,7 +7,7 @@ export function TestLLMButton() {
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
-    details?: any;
+    details?: unknown;
   } | null>(null);
 
   const handleTest = async () => {

@@ -51,13 +51,11 @@ export function NookDetail({
   nook,
   userAvatar,
   currentUserId,
-  currentUsername,
-  currentDisplayName,
   onBack,
   onUserClick,
   onNookUpdated,
 }: NookDetailProps) {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -87,6 +85,7 @@ export function NookDetail({
 
   useEffect(() => {
     fetchMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nook.id]);
 
   const fetchMessages = async (silent = false) => {
@@ -107,25 +106,26 @@ export function NookDetail({
 
       // Build current user's reactions map (including nested replies)
       const reactionsMap: Record<string, string[]> = {};
-      const collectReactions = (msgs: any[]) => {
-        msgs.forEach((msg: any) => {
+      const collectReactions = (msgs: Record<string, unknown>[]) => {
+        msgs.forEach((msg) => {
+          const msgId = msg.id as string;
           if (msg.user_reactions) {
-            reactionsMap[msg.id] = msg.user_reactions
-              .filter((r: any) => r.user_id === currentUserId)
-              .map((r: any) => r.reaction_type);
+            reactionsMap[msgId] = (msg.user_reactions as { user_id: string; reaction_type: string }[])
+              .filter((r) => r.user_id === currentUserId)
+              .map((r) => r.reaction_type);
           } else {
-            reactionsMap[msg.id] = [];
+            reactionsMap[msgId] = [];
           }
-          if (msg.replies && msg.replies.length > 0) {
-            collectReactions(msg.replies);
+          if (msg.replies && (msg.replies as Record<string, unknown>[]).length > 0) {
+            collectReactions(msg.replies as Record<string, unknown>[]);
           }
         });
       };
       collectReactions(messagesData);
       setUserReactions(reactionsMap);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching messages:", err);
-      setError(err.response?.data?.error?.message || "Failed to load messages");
+      setError((err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message || "Failed to load messages");
     } finally {
       setLoading(false);
       setSilentRefreshing(false);
@@ -134,7 +134,7 @@ export function NookDetail({
 
   const handleSendMessage = async (content: string) => {
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         content,
         is_anonymous: true,
       };
@@ -156,9 +156,9 @@ export function NookDetail({
           behavior: "smooth",
         });
       }, 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Send message error:", err);
-      showToast(err.response?.data?.error?.message || MSG.NOOK.POST_FAILED, "error");
+      showToast((err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message || MSG.NOOK.POST_FAILED, "error");
       setLocalMessageCount((prev) => prev - 1);
     }
   };
@@ -190,9 +190,9 @@ export function NookDetail({
     try {
       // Use toggle endpoint (same POST for add & remove)
       await toggleMessageReaction(messageId, { reaction_type: reactionType });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Reaction error:", err);
-      showToast(err.response?.data?.error?.message || MSG.NOOK.REACTION_FAILED, "error");
+      showToast((err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message || MSG.NOOK.REACTION_FAILED, "error");
 
       // Revert on error
       await fetchMessages();
@@ -229,8 +229,8 @@ export function NookDetail({
             : msg
         )
       );
-    } catch (err: any) {
-      showToast(err.response?.data?.error?.message || MSG.NOOK.EDIT_MSG_FAILED, "error");
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message || MSG.NOOK.EDIT_MSG_FAILED, "error");
       throw err;
     }
   };

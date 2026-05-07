@@ -12,6 +12,7 @@ import { ClapIcon } from "../../shared/ClapIcon";
 import { useState } from "react";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
+import { ContentMenu } from "../../shared/ContentMenu";
 import { useAuth } from "../../../hooks/useAuth";
 import { MentionText } from "../../shared/MentionText";
 
@@ -32,7 +33,7 @@ interface NookMessageProps {
       display_name?: string;
       is_company_verified?: boolean;
     } | null;
-    replies?: any[];
+    replies?: unknown[];
   };
   currentUserId?: string;
   userReactions?: string[]; // reactions for current user on this message
@@ -190,6 +191,9 @@ export function NookMessage({
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 ml-auto">
                 Replying
               </span>
+            )}
+            {!message.is_mine && (
+              <ContentMenu contentType="nook_message" contentId={message.id} />
             )}
             {canEdit && !isEditing && (
               <button

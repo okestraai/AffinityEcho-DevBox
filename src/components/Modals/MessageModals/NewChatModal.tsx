@@ -25,13 +25,13 @@ export function NewChatModal({
   onConversationCreated,
 }: NewChatModalProps) {
   const [search, setSearch] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [users, setUsers] = useState<Record<string, unknown>[]>([]);
+  const [suggestions, setSuggestions] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"all" | "mentor" | "mentee">(
     "all",
   );
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     excludeExisting: true,
     limit: 20,
     offset: 0,
@@ -46,6 +46,7 @@ export function NewChatModal({
         setUsers([]);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, search, selectedRole]);
 
   const loadSuggestions = async () => {

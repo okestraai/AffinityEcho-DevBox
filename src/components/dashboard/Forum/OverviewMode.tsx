@@ -30,7 +30,6 @@ import { InlineCommentInput } from "./InlineCommentInput";
 import { formatLastActivity } from "../../../utils/forumUtils";
 import {
   TopicsSkeleton,
-  SidebarSkeleton,
   ForumViewSkeleton,
 } from "../../../Helper/SkeletonLoader";
 import { OkestraPanel } from "../OkestraPanel";
@@ -41,8 +40,91 @@ import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { resolveAuthorName } from "../../../utils/nameUtils";
+import { ContentMenu } from "../../shared/ContentMenu";
 
-export function OverviewMode(props: any) {
+interface ForumItem {
+  id: string;
+  name: string;
+  icon?: string;
+  is_global?: boolean;
+  company_name?: string;
+  topic_count?: number;
+  member_count?: number;
+  last_activity?: string | Date | null;
+}
+
+interface TopicItem {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  user_profile?: { avatar?: string; display_name?: string; username?: string; is_company_verified?: boolean };
+  author?: { is_company_verified?: boolean };
+  forum?: { icon?: string; name?: string };
+  company_name?: string;
+  scope?: string;
+  is_pinned?: boolean;
+  tags?: string[];
+  reactions?: { seen?: number; validated?: number; inspired?: number; heard?: number };
+  reaction_heard_count?: number;
+  reaction_validated_count?: number;
+  reaction_inspired_count?: number;
+  views_count?: number;
+  userReactions?: { seen?: boolean; validated?: boolean; inspired?: boolean; heard?: boolean };
+  commentCount?: number;
+  comments_count?: number;
+  created_at: string;
+  last_activity_at?: string;
+  updated_at?: string;
+  user_has_bookmarked?: boolean;
+  comments?: unknown[];
+}
+
+interface OverviewModeProps {
+  handleCommentClick: (topicId: string, e: React.MouseEvent) => void;
+  handleCommentSubmit: (topicId: string, comment: string) => void;
+  handleCommentCancel: () => void;
+  userCompany: { name: string; actualName: string; companyType?: string } | null;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  showFilters: boolean;
+  setShowFilters: (show: boolean) => void;
+  sortBy: string;
+  setSortBy: (sort: "relevant" | "recent" | "popular" | "trending") => void;
+  timeFilter: string;
+  setTimeFilter: (filter: "all" | "today" | "week" | "month") => void;
+  paginatedTopics: { topics: TopicItem[]; totalPages: number; totalTopics: number };
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  TOPICS_PER_PAGE: number;
+  showCreateModal: boolean;
+  setShowCreateModal: (show: boolean) => void;
+  showTopicDetail: boolean;
+  setShowTopicDetail: (show: boolean) => void;
+  showUserProfile: boolean;
+  setShowUserProfile: (show: boolean) => void;
+  selectedUserProfile: { id: string } | null;
+  selectedTopic: TopicItem | null;
+  handleUserClick: (userId: string) => void;
+  handleReaction: (topicId: string, reactionType: string, e: React.MouseEvent) => void;
+  handleTopicClick: (topic: TopicItem) => void;
+  handleHashtagClick: (tag: string) => void;
+  getTimeAgo: (date: string) => string;
+  currentUser: { id?: string } | null;
+  handleCompanySelect: (companyName: string) => void;
+  handleForumSelect: (forumId: string) => void;
+  globalForums: ForumItem[];
+  activeCommentId: string | null;
+  localMetrics: { totalTopics?: number; totalMembers?: number } | null;
+  globalMetrics: { totalTopics?: number; totalMembers?: number } | null;
+  initialLoading: boolean;
+  topicsLoading: boolean;
+  handleViewAllGlobalForums: () => void;
+  handleTopicCreated?: () => Promise<void>;
+  handleChat?: (userId: string) => void;
+}
+
+export function OverviewMode(props: OverviewModeProps) {
   const {
     handleCommentClick,
     handleCommentSubmit,
@@ -79,10 +161,9 @@ export function OverviewMode(props: any) {
     globalForums,
     activeCommentId,
     localMetrics,
-    globalMetrics,
     initialLoading,
     topicsLoading,
-    handleViewAllGlobalForums, // NEW: Handler for view all button
+    handleViewAllGlobalForums,
   } = props;
 
     const [okestraSelectedTopic, setOkestraSelectedTopic] = useState<Topic | null>(null);
@@ -106,14 +187,14 @@ export function OverviewMode(props: any) {
 
   const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
 
-  const isTopicBookmarked = (topic: any) => {
+  const isTopicBookmarked = (topic: TopicItem) => {
     if (topic.id in bookmarkOverrides) return bookmarkOverrides[topic.id];
     return !!topic.user_has_bookmarked;
   };
 
   const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: any) => t.id === topicId)?.user_has_bookmarked ?? false;
+    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: TopicItem) => t.id === topicId)?.user_has_bookmarked ?? false;
     setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
@@ -207,7 +288,7 @@ export function OverviewMode(props: any) {
                       return (
                         <button
                           key={o.value}
-                          onClick={() => setSortBy(o.value as any)}
+                          onClick={() => setSortBy(o.value as "relevant" | "recent" | "popular" | "trending")}
                           className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
                             sortBy === o.value
                               ? "bg-purple-50 border-purple-200 text-purple-700"
@@ -234,7 +315,7 @@ export function OverviewMode(props: any) {
                     ].map((o) => (
                       <button
                         key={o.value}
-                        onClick={() => setTimeFilter(o.value as any)}
+                        onClick={() => setTimeFilter(o.value as "all" | "today" | "week" | "month")}
                         className={`p-3 rounded-xl border transition-all text-sm font-medium ${
                           timeFilter === o.value
                             ? "bg-blue-50 border-blue-200 text-blue-700"
@@ -263,7 +344,7 @@ export function OverviewMode(props: any) {
             </div>
           ) : (
             <div className="space-y-4">
-              {paginatedTopics.topics.map((topic: any) => {
+              {paginatedTopics.topics.map((topic: TopicItem) => {
                 const avatarEmoji = topic.user_profile?.avatar || "👤";
                 const username = resolveAuthorName(currentUser, topic.user_id, topic.user_profile?.display_name, topic.user_profile?.username);
 
@@ -273,6 +354,10 @@ export function OverviewMode(props: any) {
                     className="bg-white/90 backdrop-blur-xl rounded-2xl p-4 md:p-6 border border-gray-200/50 hover:shadow-lg hover:border-purple-300 transition-all duration-300 group relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                    <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
+                      <ContentMenu contentType="topic" contentId={topic.id} />
+                    </div>
 
                     <div
                       className="relative z-10 cursor-pointer"
@@ -599,7 +684,7 @@ export function OverviewMode(props: any) {
                   </h3>
                 </div>
                 <div className="space-y-3">
-                  {globalForums.slice(0, 5).map((forum: any) => (
+                  {globalForums.slice(0, 5).map((forum: ForumItem) => (
                     <button
                       key={forum.id}
                       onClick={() => handleForumSelect(forum.id)}

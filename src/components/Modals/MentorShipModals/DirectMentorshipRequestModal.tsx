@@ -63,6 +63,7 @@ export function DirectMentorshipRequestModal({
       // Reset state when modal closes
       resetModalState();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, profile]);
 
   const initializeModal = async () => {
@@ -188,7 +189,6 @@ export function DirectMentorshipRequestModal({
   const isMentorRequest = requestType === "mentor";
   const statusInfo = getStatusMessage();
   const alreadySentRequest = hasAlreadySentRequest();
-  const canSendRequest = !alreadySentRequest && profileCheck.canCreateRequest;
   const isLoading = isCheckingProfile || checkingRequest;
   const isButtonDisabled =
     requestButtonDisabled ||
@@ -228,10 +228,11 @@ export function DirectMentorshipRequestModal({
       showToast(MSG.MENTORSHIP.REQUEST_SENT, "success");
       setMessage("");
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending request:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message ||
+        errObj.response?.data?.message ||
           MSG.MENTORSHIP.REQUEST_FAILED,
         "error"
       );

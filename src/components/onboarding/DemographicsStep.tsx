@@ -2,13 +2,15 @@ import React from "react";
 import { EyeOff, Shield } from "lucide-react";
 
 // Logging utility for consistent formatting
-const log = (action: string, message: string, data?: any) => {
+const log = (action: string, message: string, data?: unknown) => {
   const timestamp = new Date().toISOString();
   const prefix = `[${timestamp}] [DemographicsStep] ${action}`;
 
-  data !== undefined
-    ? console.log(`${prefix}: ${message}`, data)
-    : console.log(`${prefix}: ${message}`);
+  if (data !== undefined) {
+    console.log(`${prefix}: ${message}`, data);
+  } else {
+    console.log(`${prefix}: ${message}`);
+  }
 };
 
 interface DemographicsData {
@@ -17,6 +19,7 @@ interface DemographicsData {
   race?: string;
   gender?: string;
   careerLevel?: string;
+  ageConfirmed?: boolean;
 }
 
 interface Props {
@@ -190,8 +193,23 @@ export function DemographicsStep({ data, updateData }: Props) {
         </select>
       </div>
 
+      {/* Age confirmation */}
+      <div className="pt-4">
+        <label className="flex items-center gap-3 p-4 bg-purple-50 rounded-2xl border border-purple-100 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={data.ageConfirmed || false}
+            onChange={(e) => updateData({ ageConfirmed: e.target.checked })}
+            className="w-5 h-5 rounded border-purple-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+          />
+          <span className="text-sm font-medium text-gray-700">
+            I confirm that I am 18 years of age or older
+          </span>
+        </label>
+      </div>
+
       {/* Security notice */}
-      <div className="pt-6 border-t border-gray-100">
+      <div className="pt-4 border-t border-gray-100">
         <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border">
           <Shield className="w-5 h-5 text-green-600" />
           <span className="text-sm font-medium text-green-800">

@@ -29,6 +29,7 @@ export function OnboardingFlow() {
     companyType: "", // Added companyType field
     isCustomCompany: false,
     affinityTags: [] as string[],
+    ageConfirmed: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { completeOnboarding } = useAuth();
@@ -99,16 +100,18 @@ export function OnboardingFlow() {
         ...(formData.affinityTags.length > 0 && {
           affinityTags: formData.affinityTags,
         }),
+        ageConfirmed: formData.ageConfirmed,
       };
 
       console.log("Submitting onboarding payload:", payload);
 
       await CreateOnboardingProfile(payload);
       await completeOnboarding(); // This refreshes user + redirects + shows toast
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during onboarding completion:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       const message =
-        error?.response?.data?.message ||
+        errObj?.response?.data?.message ||
         MSG.AUTH.ONBOARDING_FAILED;
       showToast(message, "error");
     } finally {
@@ -131,6 +134,9 @@ export function OnboardingFlow() {
   // Determine button disabled states
   const getNextButtonDisabled = () => {
     if (isSubmitting) return true;
+
+    // For demographics step, require age confirmation
+    if (currentStep === 0 && !formData.ageConfirmed) return true;
 
     // For company step, disable if custom company but no company name
     if (

@@ -78,6 +78,7 @@ export function ProfilePage() {
         });
       })
       .finally(() => setIsDecrypting(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const getUserInitials = () => {

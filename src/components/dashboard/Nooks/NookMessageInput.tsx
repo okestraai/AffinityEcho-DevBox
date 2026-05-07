@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Shield, Send } from 'lucide-react';
 import { MentionTextarea } from '../../shared/MentionTextarea';
 
@@ -10,12 +10,13 @@ interface NookMessageInputProps {
   parentMessageId?: string;
 }
 
-export function NookMessageInput({ 
-  nookId, 
-  userAvatar, 
-  timeLeft, 
+export function NookMessageInput({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  nookId,
+  userAvatar,
+  timeLeft,
   onSendMessage,
-  parentMessageId 
+  parentMessageId
 }: NookMessageInputProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);

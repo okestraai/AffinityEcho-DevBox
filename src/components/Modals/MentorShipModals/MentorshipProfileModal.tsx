@@ -1,5 +1,5 @@
 // components/Modals/MentorShipModals/MentorshipProfileModal.tsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Loader, CheckCircle } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import {
@@ -9,7 +9,6 @@ import {
   CheckUserProfileExist,
   GetFilterOptions,
 } from "../../../../api/mentorshipApis";
-import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 
@@ -30,10 +29,9 @@ export function MentorshipProfileModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
-  const [profileId, setProfileId] = useState<string | null>(null);
+  const [, setProfileId] = useState<string | null>(null);
   const [decryptedCompanyName, setDecryptedCompanyName] = useState("");
   const [decryptedCareerLevel, setDecryptedCareerLevel] = useState("");
-  const [decryptedLocation, setDecryptedLocation] = useState("");
   const [decryptedAffinityTags, setDecryptedAffinityTags] = useState<string[]>(
     [],
   );
@@ -82,8 +80,7 @@ export function MentorshipProfileModal({
 
         // Always call fetchMentorProfile — it returns basicProfile even when no mentor profile exists yet
         await fetchMentorProfile();
-      } catch (error) {
-
+      } catch {
         showToast(MSG.MENTORSHIP.PROFILE_LOAD_FAILED, "error");
       } finally {
         setLoading(false);
@@ -91,213 +88,8 @@ export function MentorshipProfileModal({
     };
 
     initializeModal();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, currentUser]);
-
-  const loadUserData = async () => {
-    try {
-      if (currentUser) {
-        // Use basicProfile from /me endpoint (plain text, no decryption needed)
-        const bp = currentUser.basicProfile;
-        if (bp) {
-          setDecryptedCompanyName(bp.company || "");
-          setDecryptedCareerLevel(bp.careerLevel || "");
-          setDecryptedLocation(bp.location || "");
-          setDecryptedAffinityTags(bp.affinityTags || []);
-          setFormData((prev) => ({
-            ...prev,
-            company: bp.company || "",
-            careerLevel: bp.careerLevel || "",
-            affinityTags: bp.affinityTags || [],
-            location: bp.location || "",
-            jobTitle: bp.jobTitle || "",
-            yearsExperience: bp.yearsExperience || 0,
-            bio: bp.bio || "",
-            mentorBio: bp.bio || "",
-            expertise: Array.isArray(bp.skills) && bp.skills.length > 0 ? bp.skills : prev.expertise,
-          }));
-          return;
-        }
-
-        // Fallback: decrypt from encrypted fields if basicProfile not available
-        const encryptedFields = [
-          {
-            key: "company_encrypted",
-            formKey: "company",
-            setter: setDecryptedCompanyName,
-            type: "string",
-          },
-          {
-            key: "career_level_encrypted",
-            formKey: "careerLevel",
-            setter: setDecryptedCareerLevel,
-            type: "string",
-          },
-          {
-            key: "location_encrypted",
-            formKey: "location",
-            setter: setDecryptedLocation,
-            type: "string",
-          },
-          {
-            key: "affinity_tags_encrypted",
-            formKey: "affinityTags",
-            setter: setDecryptedAffinityTags,
-            type: "array",
-          },
-        ];
-
-        const decryptedData: Record<string, any> = {};
-        const promises = [];
-
-        encryptedFields.forEach((field) => {
-          if (currentUser[field.key]) {
-
-            promises.push(
-              DecryptData({
-                encryptedData: currentUser[field.key],
-              })
-                .then((result) => ({
-                  key: field.formKey,
-                  value: result?.decryptedData || "",
-                  setter: field.setter,
-                  type: field.type,
-                }))
-                .catch((error) => {
-
-                  return {
-                    key: field.formKey,
-                    value: "",
-                    setter: field.setter,
-                    type: field.type,
-                  };
-                }),
-            );
-          }
-        });
-
-        const results = await Promise.all(promises);
-    
-
-        const ensureArray = (value: any): string[] => {
-
-          if (value == null || value === "") return [];
-          if (Array.isArray(value)) return value;
-          if (typeof value === "string") {
-            try {
-              const trimmed = value.trim();
-           
-
-              // If empty string after trimming
-              if (!trimmed) return [];
-
-              // First try to parse as JSON
-              if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                try {
-                  const parsed = JSON.parse(trimmed);
-
-                  return Array.isArray(parsed) ? parsed : [];
-                } catch (jsonError) {
-              
-                }
-              }
-
-              // If it starts and ends with quotes, remove them and try again
-              if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-                const unquoted = trimmed.slice(1, -1).trim();
-
-                if (unquoted.startsWith("[") && unquoted.endsWith("]")) {
-                  try {
-                    const parsed = JSON.parse(unquoted);
-                    return Array.isArray(parsed) ? parsed : [];
-                  } catch (jsonError) {
-                   
-                  }
-                }
-              }
-
-              // Try comma-separated
-              if (trimmed.includes(",")) {
-                return trimmed
-                  .split(",")
-                  .map((item) => item.trim())
-                  .filter((item) => item);
-              }
-
-              // Single value
-              return trimmed ? [trimmed] : [];
-            } catch (error) {
-
-              return [];
-            }
-          }
-          return [].concat(value).filter((item) => item != null);
-        };
-
-        const ensureString = (value: any): string => {
-          if (value == null) return "";
-          if (Array.isArray(value)) {
-            return value.length > 0 ? String(value[0]) : "";
-          }
-          return String(value);
-        };
-
-        results.forEach((result) => {
-
-          let processedValue;
-
-          if (result.type === "array") {
-            processedValue = ensureArray(result.value);
-
-          } else {
-            processedValue = ensureString(result.value);
-          }
-
-          decryptedData[result.key] = processedValue;
-          if (result.setter) {
-            if (result.key === "company") {
-              result.setter(processedValue);
-            } else if (result.key === "careerLevel") {
-              setDecryptedCareerLevel(processedValue);
-            } else if (result.key === "location") {
-              setDecryptedLocation(processedValue);
-            } else if (result.key === "affinityTags") {
-              setDecryptedAffinityTags(processedValue);
-            }
-          }
-        });
-
-        const getStringFromUser = (key: string, defaultValue = ""): string => {
-          const value = (currentUser as any)[key];
-          if (value == null) return defaultValue;
-          if (Array.isArray(value)) {
-            return value.length > 0 ? String(value[0]) : defaultValue;
-          }
-          return String(value);
-        };
-
-        
-
-        const fallbackBio = getStringFromUser("bio", "");
-        setFormData((prev) => ({
-          ...prev,
-          company: decryptedData.company || getStringFromUser("company", ""),
-          careerLevel:
-            decryptedData.careerLevel || getStringFromUser("career_level", ""),
-          affinityTags: Array.isArray(decryptedData.affinityTags)
-            ? decryptedData.affinityTags
-            : [],
-          location: decryptedData.location || getStringFromUser("location", ""),
-          jobTitle: getStringFromUser("job_title", ""),
-          yearsExperience: currentUser.years_experience || 0,
-          bio: fallbackBio,
-          mentorBio: fallbackBio,
-        }));
-      }
-    } catch (err) {
-
-      showToast(MSG.MENTORSHIP.USER_LOAD_FAILED, "error");
-    }
-  };
 
   const checkProfileStatusAndFetch = async () => {
     try {
@@ -309,10 +101,6 @@ export function MentorshipProfileModal({
 
       // Check if user has mentor profile in the new structure
       const hasMentorProfile = profileData?.hasMentorProfile === true;
-      const hasMenteeProfile = profileData?.hasMenteeProfile === true;
-      const isActiveMentor = profileData?.isActiveMentor || false;
-      const isActiveMentee = profileData?.isActiveMentee || false;
-      const mentoringAs = profileData?.mentoringAs || "none";
 
       // Determine if user has a profile (mentor profile exists)
       const profileExists = hasMentorProfile;
@@ -324,8 +112,7 @@ export function MentorshipProfileModal({
       }
 
       return profileExists;
-    } catch (error) {
-   
+    } catch {
       return false;
     }
   };
@@ -455,11 +242,11 @@ export function MentorshipProfileModal({
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving mentor profile:", error);
+      const errMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
       showToast(
-        error.response?.data?.message ||
-          MSG.MENTORSHIP.SAVE_FAILED,
+        errMsg || MSG.MENTORSHIP.SAVE_FAILED,
         "error",
       );
     } finally {

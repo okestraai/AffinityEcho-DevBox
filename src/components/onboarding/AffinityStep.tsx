@@ -1,8 +1,8 @@
 import React from 'react';
-import { Heart, Users, Briefcase, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
 // Logging utility for consistent formatting
-const log = (component: string, message: string, data?: any) => {
+const log = (component: string, message: string, data?: unknown) => {
   const timestamp = new Date().toISOString();
   if (data !== undefined) {
     console.log(`[${timestamp}] [AffinityStep.${component}] ${message}:`, data);
@@ -11,9 +11,14 @@ const log = (component: string, message: string, data?: any) => {
   }
 };
 
+interface OnboardingData {
+  affinityTags?: string[];
+  [key: string]: unknown;
+}
+
 interface Props {
-  data: any;
-  updateData: (updates: any) => void;
+  data: OnboardingData;
+  updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
 }
 
@@ -24,6 +29,7 @@ export function AffinityStep({ data, updateData }: Props) {
       data, 
       selectedTagsCount: data.affinityTags?.length || 0 
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Log affinity tags changes
@@ -35,7 +41,7 @@ export function AffinityStep({ data, updateData }: Props) {
   }, [data.affinityTags]);
 
   const affinityGroups = [
-    { id: 'black-women-tech', name: 'Black Women in Tech', icon: '👩🏾‍💻' },
+    { id: 'black-professionals', name: 'Black Professionals', icon: '👨🏾‍💼' },
     { id: 'latino-leaders', name: 'Latino Leaders', icon: '🌟' },
     { id: 'lgbtq-finance', name: 'LGBTQ+ in Finance', icon: '🏳️‍🌈' },
     { id: 'asian-entrepreneurs', name: 'Asian Entrepreneurs', icon: '🚀' },

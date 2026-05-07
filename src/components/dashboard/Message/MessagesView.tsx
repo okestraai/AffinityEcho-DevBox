@@ -1,5 +1,5 @@
 // MessagesView.tsx - Production Ready
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { resolveDisplayName } from "../../../utils/nameUtils";
 import {
   Search,
@@ -40,7 +40,7 @@ import {
   EditMessage,
   DeleteConversation,
 } from "../../../../api/messaging";
-import { MentionInput, MentionTextarea } from "../../shared/MentionTextarea";
+import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { webSocketService } from "../../../services/websocket.service";
@@ -662,6 +662,8 @@ export function MessagesView() {
   const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [searchUsername, setSearchUsername] = useState("");
+  const [convSearch, setConvSearch] = useState("");
+  const convSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [identityRevealStatus, setIdentityRevealStatus] = useState<{
     is_revealed: boolean;
@@ -675,8 +677,8 @@ export function MessagesView() {
     } | null;
     can_request?: boolean;
   } | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
-  const [mentorProfileData, setMentorProfileData] = useState<any>(null);
+  const [, setWsConnected] = useState(false);
+  const [mentorProfileData, setMentorProfileData] = useState<Record<string, unknown> | null>(null);
   const [showMentorProfileModal, setShowMentorProfileModal] = useState(false);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
@@ -686,10 +688,10 @@ export function MessagesView() {
 
   // ==================== HELPERS ====================
 
-  const parseConversationsResponse = (response: any): Conversation[] => {
+  const parseConversationsResponse = (response: unknown): Conversation[] => {
     if (!response) return [];
     if (Array.isArray(response)) return response;
-    if (Array.isArray(response.conversations)) return response.conversations;
+    if (typeof response === "object" && response !== null && "conversations" in response && Array.isArray((response as { conversations: unknown }).conversations)) return (response as { conversations: Conversation[] }).conversations;
     return [];
   };
 
@@ -707,7 +709,7 @@ export function MessagesView() {
         exclude_existing: true,
       });
 
-      let usersArray: any[] = [];
+      let usersArray: Record<string, unknown>[] = [];
 
       if (Array.isArray(response)) {
         usersArray = response;
@@ -715,17 +717,17 @@ export function MessagesView() {
         usersArray = response.users;
       }
 
-      const formattedUsers = usersArray.map((userData: any) => ({
-        id: userData.id,
-        username: userData.username || "Unknown User",
-        display_name: resolveDisplayName(userData.display_name, userData.username) || "Unknown User",
-        avatar: userData.avatar || "👤",
+      const formattedUsers = usersArray.map((userData: Record<string, unknown>) => ({
+        id: userData.id as string,
+        username: (userData.username as string) || "Unknown User",
+        display_name: resolveDisplayName(userData.display_name as string | undefined, userData.username as string | undefined) || "Unknown User",
+        avatar: (userData.avatar as string) || "👤",
         job_title:
-          userData.job_title || userData.job_title_encrypted || "Not specified",
+          (userData.job_title as string) || (userData.job_title_encrypted as string) || "Not specified",
         company:
-          userData.company_encrypted || userData.company || "Not specified",
-        bio: userData.bio,
-        skills: userData.skills || [],
+          (userData.company_encrypted as string) || (userData.company as string) || "Not specified",
+        bio: userData.bio as string | undefined,
+        skills: (userData.skills as string[]) || [],
         can_message: userData.can_message !== false,
       }));
 
@@ -763,7 +765,7 @@ export function MessagesView() {
     [],
   );
 
-  const fetchConversations = useCallback(async (limit?: number) => {
+  const fetchConversations = useCallback(async (limit?: number, query = '') => {
     if (!user?.id) return;
 
     const fetchLimit = limit || conversationLimit;
@@ -774,7 +776,7 @@ export function MessagesView() {
         chat_type: "all",
         limit: fetchLimit,
         offset: 0,
-        search: "",
+        search: query,
       });
 
       const conversationsArray = parseConversationsResponse(response);
@@ -930,8 +932,8 @@ export function MessagesView() {
       if (!webSocketService.isReady()) {
         webSocketService.reconnect();
       }
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || MSG.MESSAGING.SEND_FAILED;
+    } catch (error: unknown) {
+      const msg = (error instanceof Object && "response" in error && (error as { response?: { data?: { message?: string } } }).response?.data?.message) || MSG.MESSAGING.SEND_FAILED;
       showToast(msg, "error");
       throw error;
     }
@@ -949,7 +951,7 @@ export function MessagesView() {
         (typeof error === "object" &&
           error !== null &&
           "response" in error &&
-          (error as any).response?.data?.message) ||
+          (error as { response?: { data?: { message?: string } } }).response?.data?.message) ||
         MSG.MENTORSHIP.REQUEST_FAILED;
       showToast(errorMessage, "error");
     }
@@ -967,7 +969,7 @@ export function MessagesView() {
         (typeof error === "object" &&
           error !== null &&
           "response" in error &&
-          (error as any).response?.data?.message) ||
+          (error as { response?: { data?: { message?: string } } }).response?.data?.message) ||
         MSG.MENTORSHIP.CANCEL_FAILED;
       showToast(errorMessage, "error");
     }
@@ -982,7 +984,7 @@ export function MessagesView() {
   };
 
   // Helper: decrypt a single encrypted field, returns original value on failure
-  const decryptField = async (value: string | undefined | null): Promise<string> => {
+  const decryptField = useCallback(async (value: string | undefined | null): Promise<string> => {
     if (!value || typeof value !== "string") return "";
     // Skip if it doesn't look encrypted (base64-like with special chars)
     if (value.length < 20 || /^[a-zA-Z0-9 ,.\-_()]+$/.test(value)) return value;
@@ -992,7 +994,7 @@ export function MessagesView() {
     } catch {
       return value;
     }
-  };
+  }, []);
 
   // Pre-fetch mentor profile when entering a mentorship conversation
   const fetchMentorProfileForConversation = useCallback(async (userId: string) => {
@@ -1057,7 +1059,7 @@ export function MessagesView() {
     } catch (error) {
       console.error("Failed to pre-fetch mentor profile:", error);
     }
-  }, []);
+  }, [decryptField]);
 
   const handleViewMentorProfile = () => {
     // Data is already pre-fetched — just open the modal
@@ -1198,6 +1200,7 @@ export function MessagesView() {
     if (isMentorshipChat && otherUserId) {
       fetchMentorProfileForConversation(otherUserId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation?.id, fetchMentorProfileForConversation]);
 
   // WebSocket connection setup
@@ -1221,8 +1224,9 @@ export function MessagesView() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const handleNewMessage = (data: any) => {
-      const messageData = data.data || data;
+    const handleNewMessage = (data: unknown) => {
+      const raw = data as Record<string, unknown>;
+      const messageData = (raw.data || raw) as Record<string, unknown>;
 
       if (
         selectedConversation &&
@@ -1262,8 +1266,9 @@ export function MessagesView() {
       fetchConversations();
     };
 
-    const handleMessageSent = (data: any) => {
-      const messageData = data?.data || data;
+    const handleMessageSent = (data: unknown) => {
+      const raw = data as Record<string, unknown>;
+      const messageData = (raw?.data || raw) as Record<string, unknown>;
 
       if (
         selectedConversation &&
@@ -1281,13 +1286,15 @@ export function MessagesView() {
       fetchConversations();
     };
 
-    const handleMessageError = (data: any) => {
-      const errorData = data?.data || data;
-      showToast(errorData?.message || MSG.MESSAGING.WS_SEND_FAILED, "error");
+    const handleMessageError = (data: unknown) => {
+      const raw = data as Record<string, unknown>;
+      const errorData = (raw?.data || raw) as Record<string, unknown>;
+      showToast((errorData?.message as string) || MSG.MESSAGING.WS_SEND_FAILED, "error");
     };
 
-    const handleTypingStart = (data: any) => {
-      const typingData = data.data || data;
+    const handleTypingStart = (data: unknown) => {
+      const raw = data as Record<string, unknown>;
+      const typingData = (raw.data || raw) as Record<string, unknown>;
 
       if (
         selectedConversation &&
@@ -1315,8 +1322,9 @@ export function MessagesView() {
       }
     };
 
-    const handleTypingEnd = (data: any) => {
-      const typingData = data.data || data;
+    const handleTypingEnd = (data: unknown) => {
+      const raw = data as Record<string, unknown>;
+      const typingData = (raw.data || raw) as Record<string, unknown>;
 
       if (selectedConversation) {
         setTypingUsers((prev) =>
@@ -1447,6 +1455,15 @@ export function MessagesView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debounced conversation search
+  useEffect(() => {
+    if (convSearchTimer.current) clearTimeout(convSearchTimer.current);
+    convSearchTimer.current = setTimeout(() => {
+      fetchConversations(undefined, convSearch.trim());
+    }, 400);
+    return () => { if (convSearchTimer.current) clearTimeout(convSearchTimer.current); };
+  }, [convSearch, fetchConversations]);
+
   // Refetch conversations when returning from chat view (selectedConversation becomes null)
   const prevSelectedRef = useRef(selectedConversation);
   useEffect(() => {
@@ -1522,6 +1539,7 @@ export function MessagesView() {
           showToast(msg, "error");
         });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, conversationsLoaded]);
 
   // Handle ?user= query param (e.g., from MentorshipView Message button)
@@ -1572,6 +1590,7 @@ export function MessagesView() {
           showToast(msg, "error");
         });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, conversationsLoaded]);
 
   // Scroll to bottom
@@ -1699,7 +1718,7 @@ export function MessagesView() {
                   title="View profile"
                 >
                   {resolveDisplayName(otherUser.display_name, otherUser.username) || "User"}
-                  {(otherUser as any).is_company_verified && <VerifiedBadge size={18} />}
+                  {(otherUser as unknown as { is_company_verified?: boolean }).is_company_verified && <VerifiedBadge size={18} />}
                 </button>
                 {isMentorship && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
@@ -1974,6 +1993,8 @@ export function MessagesView() {
               <input
                 type="text"
                 placeholder="Search conversations..."
+                value={convSearch}
+                onChange={(e) => setConvSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               />
             </div>

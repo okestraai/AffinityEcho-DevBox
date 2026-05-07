@@ -1,5 +1,6 @@
 import React from "react";
 import { Flame, Zap, Eye, Bookmark } from "lucide-react";
+import { ContentMenu } from "../../shared/ContentMenu";
 
 interface NookCardProps {
   nook: {
@@ -18,9 +19,10 @@ interface NookCardProps {
   };
   onClick: (id: string) => void;
   onBookmark?: (id: string, e: React.MouseEvent) => void;
+  onHide?: (id: string) => void;
 }
 
-export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
+export function NookCard({ nook, onClick, onBookmark, onHide }: NookCardProps) {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case "high":
@@ -149,6 +151,9 @@ export function NookCard({ nook, onClick, onBookmark }: NookCardProps) {
                 <Bookmark className={`w-4 h-4 transition-transform duration-200 ${nook.user_has_bookmarked ? "fill-amber-500 animate-reaction-pop" : ""}`} />
               </button>
             )}
+            <div onClick={(e) => e.stopPropagation()}>
+              <ContentMenu contentType="nook" contentId={nook.id} onHide={() => onHide?.(nook.id)} />
+            </div>
           </div>
         </div>
       </div>

@@ -9,13 +9,9 @@ import {
   Star,
   MapPin,
   Briefcase,
-  Award,
   MessageCircle,
   Target,
-  Users,
-  Loader,
   UserPlus,
-  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { MentorshipUserProfileModal } from "../../Modals/MentorShipModals/MentorshipUserProfileModal";
@@ -50,7 +46,7 @@ export function FindMentorshipView() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [, setSelectedUserId] = useState<string | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<MentorProfile | null>(
     null
@@ -63,13 +59,13 @@ export function FindMentorshipView() {
   );
   const [requestType, setRequestType] = useState<"mentor" | "mentee">("mentor");
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [profileCheck, setProfileCheck] = useState<{
     hasProfile: boolean;
     profileType?: string;
   } | null>(null);
 
-  const [profiles, setProfiles] = useState<MentorProfile[]>([]);
+  const [, setProfiles] = useState<MentorProfile[]>([]);
   const [decryptedProfiles, setDecryptedProfiles] = useState<MentorProfile[]>(
     []
   );
@@ -105,17 +101,20 @@ export function FindMentorshipView() {
     checkProfileStatus();
     fetchFilterOptions();
     fetchProfiles();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reset page and fetch when viewMode or filters change
   useEffect(() => {
     setCurrentPage(1);
     fetchProfiles(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, filters]);
 
   // Fetch when page changes
   useEffect(() => {
     fetchProfiles(currentPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const checkProfileStatus = async () => {
@@ -180,7 +179,7 @@ export function FindMentorshipView() {
 
       const response = await GetMentorsAndMentees(apiFilters);
 
-      let profilesData: any[] = [];
+      let profilesData: MentorProfile[] = [];
       let paginationData: { totalPages?: number; total?: number } = {};
 
       if (response) {
@@ -203,7 +202,7 @@ export function FindMentorshipView() {
       if (paginationData.total !== undefined) setTotalProfiles(paginationData.total);
 
       const profilesWithDecryption = await Promise.all(
-        profilesData.map(async (profile: any) => {
+        profilesData.map(async (profile: MentorProfile) => {
           try {
             const mapped = { ...profile };
 
@@ -388,11 +387,9 @@ export function FindMentorshipView() {
 
   const handleSearch = useCallback(() => {
     fetchProfiles();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, filters, viewMode]);
 
-  const handleRefresh = () => {
-    fetchProfiles(true);
-  };
 
   const activeFilterCount =
     filters.careerLevel.length +

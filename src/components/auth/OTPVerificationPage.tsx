@@ -91,8 +91,9 @@ export function OTPVerificationPage() {
       // ALWAYS GO TO ONBOARDING — NEW USER!
       navigate('/onboarding');
 
-    } catch (err: any) {
-      const msg = err.response?.data?.message || MSG.AUTH.INVALID_OTP;
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      const msg = errObj.response?.data?.message || MSG.AUTH.INVALID_OTP;
       setError(msg);
       showToast(msg, 'error');
     } finally {
@@ -108,8 +109,9 @@ export function OTPVerificationPage() {
       showToast(MSG.AUTH.OTP_SENT, 'success');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-    } catch (err: any) {
-      const msg = err.response?.data?.message || MSG.AUTH.OTP_SENT;
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      const msg = errObj.response?.data?.message || MSG.AUTH.OTP_SENT;
       setError(msg);
       showToast(msg, 'error');
     } finally {

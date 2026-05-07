@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Eye, Search } from 'lucide-react';
 import { UserProfileModal } from './UserProfileModal';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,7 @@ export function ViewersModal({
   isOpen,
   onClose,
   contentId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contentType,
   totalViewers
 }: ViewersModalProps) {
@@ -30,12 +31,9 @@ export function ViewersModal({
   const [viewers, setViewers] = useState<Viewer[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
-
-  const VIEWERS_PER_PAGE = 20;
 
   useEffect(() => {
     if (isOpen) {

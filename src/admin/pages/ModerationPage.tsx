@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   EyeOff,
@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Hash,
   Loader2,
-  AlertTriangle,
   Filter,
   X,
   Download,

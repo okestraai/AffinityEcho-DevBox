@@ -110,6 +110,7 @@ export function MentorshipUserProfileModal({
     } else {
       setRequestStatus(null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, profile?.id, currentUserId]);
 
   useEffect(() => {
@@ -275,10 +276,11 @@ export function MentorshipUserProfileModal({
         setIsFollowing(true);
         showToast(MSG.FOLLOW.FOLLOWED, "success");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error toggling follow:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message || MSG.USER.FOLLOW_STATUS_FAILED,
+        errObj.response?.data?.message || MSG.USER.FOLLOW_STATUS_FAILED,
         "error"
       );
     } finally {
@@ -344,10 +346,11 @@ export function MentorshipUserProfileModal({
         direction: "sent",
       });
       setRequestMessage("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending mentorship request:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message ||
+        errObj.response?.data?.message ||
           MSG.MENTORSHIP.REQUEST_FAILED,
         "error"
       );

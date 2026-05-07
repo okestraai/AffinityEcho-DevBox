@@ -160,7 +160,7 @@ export const companies: Company[] = [
     id: 'techcorp',
     name: 'TechCorp',
     memberCount: 127,
-    forums: foundationForums.map((forum, index) => ({
+    forums: foundationForums.map((forum) => ({
       ...forum,
       id: `techcorp-${forum.name.toLowerCase().replace(/\s+/g, '-')}`,
       companyId: 'techcorp',
@@ -173,7 +173,7 @@ export const companies: Company[] = [
     id: 'google',
     name: 'Google',
     memberCount: 342,
-    forums: foundationForums.map((forum, index) => ({
+    forums: foundationForums.map((forum) => ({
       ...forum,
       id: `google-${forum.name.toLowerCase().replace(/\s+/g, '-')}`,
       companyId: 'google',
@@ -186,7 +186,7 @@ export const companies: Company[] = [
     id: 'microsoft',
     name: 'Microsoft',
     memberCount: 298,
-    forums: foundationForums.map((forum, index) => ({
+    forums: foundationForums.map((forum) => ({
       ...forum,
       id: `microsoft-${forum.name.toLowerCase().replace(/\s+/g, '-')}`,
       companyId: 'microsoft',
@@ -199,7 +199,7 @@ export const companies: Company[] = [
     id: 'goldman-sachs',
     name: 'Goldman Sachs',
     memberCount: 156,
-    forums: foundationForums.map((forum, index) => ({
+    forums: foundationForums.map((forum) => ({
       ...forum,
       id: `goldman-sachs-${forum.name.toLowerCase().replace(/\s+/g, '-')}`,
       companyId: 'goldman-sachs',
@@ -303,7 +303,7 @@ export const mockUserProfiles: UserProfile[] = [
     demographics: {
       careerLevel: 'Senior (8-12 years)',
       company: 'TechCorp',
-      affinityTags: ['Black Women in Tech', 'Women in Leadership']
+      affinityTags: ['Black Professionals', 'Women in Leadership']
     },
     stats: {
       postsCreated: 24,

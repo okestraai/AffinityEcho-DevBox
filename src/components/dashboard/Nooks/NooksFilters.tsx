@@ -8,7 +8,7 @@ interface NooksFiltersProps {
     temperature: "all" | "hot" | "warm" | "cool";
     hashtag: string;
   };
-  onFilterChange: (filters: any) => void;
+  onFilterChange: (filters: NooksFiltersProps["filters"]) => void;
   onReset: () => void;
 }
 

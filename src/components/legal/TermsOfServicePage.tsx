@@ -67,7 +67,7 @@ const sections = [
     iconColor: "text-purple-600",
     title: "7. Moderation and Enforcement",
     content:
-      "We reserve the right to remove content, suspend, or terminate accounts that violate these Terms or our Community Guidelines. Users may report content that they believe violates these terms.",
+      "Affinity Echo has zero tolerance for objectionable content or abusive users. We actively monitor and review reported content to maintain a safe community. Objectionable content will be removed within 24 hours of being reported. Users who post objectionable, abusive, or harmful content will have their accounts suspended or permanently terminated. All users can flag or report content and other users directly within the app. Users can restrict other users to prevent seeing their content or receiving messages from them. Users can hide individual posts or content they find objectionable from their personal feed. We reserve the right to remove any content, suspend, or terminate accounts at our sole discretion. For urgent concerns, contact us at support@affinityecho.com.",
   },
   {
     icon: Users,

@@ -94,6 +94,7 @@ export function MentorshipRequestModal({
     };
 
     initializeModal();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, currentUser]);
 
   const loadUserData = async () => {
@@ -118,11 +119,12 @@ export function MentorshipRequestModal({
           }));
         } else {
           // Fallback for older auth data
+          const fallbackUser = currentUser as { job_title?: string; years_experience?: number; bio?: string };
           setFormData((prev) => ({
             ...prev,
-            jobTitle: (currentUser as any).job_title || prev.jobTitle,
-            yearsExperience: (currentUser as any).years_experience || prev.yearsExperience,
-            bio: (currentUser as any).bio || prev.bio,
+            jobTitle: fallbackUser.job_title || prev.jobTitle,
+            yearsExperience: fallbackUser.years_experience || prev.yearsExperience,
+            bio: fallbackUser.bio || prev.bio,
           }));
         }
       }
@@ -284,10 +286,11 @@ export function MentorshipRequestModal({
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving mentee profile:", error);
+      const errObj = error as { response?: { data?: { message?: string } } };
       showToast(
-        error.response?.data?.message ||
+        errObj.response?.data?.message ||
           MSG.MENTORSHIP.SAVE_FAILED,
         "error",
       );

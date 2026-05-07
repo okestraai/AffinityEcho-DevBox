@@ -14,6 +14,7 @@ import {
   Heart as HeartIcon,
   Globe,
   Bookmark,
+  Star,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
@@ -25,7 +26,9 @@ import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
+import { ContentMenu } from "../../shared/ContentMenu";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ForumTopicsMode(props: any) {
   const {
     currentUser,
@@ -96,18 +99,18 @@ export function ForumTopicsMode(props: any) {
     );
     observer.observe(el);
     ioRef.current = observer;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({});
 
-  const isTopicBookmarked = (topic: any) => {
+  const isTopicBookmarked = (topic: Record<string, unknown>) => {
     if (topic.id in bookmarkOverrides) return bookmarkOverrides[topic.id];
     return !!topic.user_has_bookmarked;
   };
 
   const handleBookmarkTopic = async (topicId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: any) => t.id === topicId)?.user_has_bookmarked ?? false;
+    const currentState = bookmarkOverrides[topicId] ?? paginatedTopics.topics.find((t: Record<string, unknown>) => t.id === topicId)?.user_has_bookmarked ?? false;
     setBookmarkOverrides((prev) => ({ ...prev, [topicId]: !currentState }));
     try {
       await ToggleTopicBookmark(topicId);
@@ -167,7 +170,7 @@ export function ForumTopicsMode(props: any) {
         {/* Global Forums Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {globalForums
-            .filter((forum: any) =>
+            .filter((forum: Record<string, unknown>) =>
               searchTerm
                 ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   forum.description
@@ -175,7 +178,7 @@ export function ForumTopicsMode(props: any) {
                     .includes(searchTerm.toLowerCase())
                 : true
             )
-            .map((forum: any) => (
+            .map((forum: Record<string, unknown>) => (
               <button
                 key={forum.id}
                 onClick={() => handleForumSelect(forum.id)}
@@ -227,7 +230,7 @@ export function ForumTopicsMode(props: any) {
             ))}
         </div>
 
-        {globalForums.filter((forum: any) =>
+        {globalForums.filter((forum: Record<string, unknown>) =>
           searchTerm
             ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
               forum.description
@@ -250,8 +253,8 @@ export function ForumTopicsMode(props: any) {
   // Regular forum view with topics
   const isGlobalForum = viewMode === "global";
   const forum = isGlobalForum
-    ? globalForums.find((f: any) => f.id === selectedForum)
-    : foundationForums.find((f: any) => f.id === selectedForum);
+    ? globalForums.find((f: Record<string, unknown>) => f.id === selectedForum)
+    : foundationForums.find((f: Record<string, unknown>) => f.id === selectedForum);
 
   if (!forum) return null;
 
@@ -309,7 +312,7 @@ export function ForumTopicsMode(props: any) {
 
           {/* Topics list */}
           <div className="space-y-4">
-            {paginatedTopics.topics.map((topic: any) => (
+            {paginatedTopics.topics.map((topic: Record<string, unknown>) => (
               <div
                 key={topic.id}
                 className="bg-white/90 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-gray-200/50 hover:shadow-lg hover:border-purple-300 transition-all duration-300 cursor-pointer group relative overflow-hidden"
@@ -338,6 +341,11 @@ export function ForumTopicsMode(props: any) {
                           </span>
                         )}
                         <span className="text-gray-400 text-xs">• {getTimeAgo(topic.created_at)}</span>
+                        <ContentMenu
+                          contentType="topic"
+                          contentId={topic.id as string}
+                          onHide={() => props.onTopicHide?.(topic.id as string)}
+                        />
                       </div>
                       <button
                         onClick={() => handleTopicClick(topic)}
@@ -469,7 +477,7 @@ export function ForumTopicsMode(props: any) {
                 return (
                   <button
                     key={o.value}
-                    onClick={() => setSortBy(o.value as any)}
+                    onClick={() => setSortBy(o.value)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                       sortBy === o.value
                         ? "bg-purple-50 text-purple-700 border border-purple-200"
@@ -496,7 +504,7 @@ export function ForumTopicsMode(props: any) {
               ].map((o) => (
                 <button
                   key={o.value}
-                  onClick={() => setTimeFilter(o.value as any)}
+                  onClick={() => setTimeFilter(o.value)}
                   className={`p-2 rounded-xl border text-xs font-medium transition-all ${
                     timeFilter === o.value
                       ? "bg-blue-50 border-blue-200 text-blue-700"

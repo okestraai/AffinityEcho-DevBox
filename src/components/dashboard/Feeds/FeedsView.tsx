@@ -6,11 +6,9 @@ import {
   Heart,
   Bookmark,
   Share2,
-  Users as UsersIcon,
   FileText,
   X,
   Lightbulb,
-  MoreHorizontal,
   Globe,
   Send,
   Zap,
@@ -22,11 +20,11 @@ import {
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
+import { ContentMenu } from "../../shared/ContentMenu";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   GetFeed,
   CreatePost,
-  ToggleLike,
   ToggleFeedReaction,
   AddComment,
   GetComments,
@@ -118,7 +116,7 @@ export function FeedsView() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [postContent, setPostContent] = useState("");
@@ -141,14 +139,10 @@ export function FeedsView() {
 
   useEffect(() => {
     loadFeed(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isEmojiAvatar = (avatar?: string | null): boolean => {
-    if (!avatar || avatar.startsWith("http") || avatar.startsWith("/") || avatar.startsWith("data:")) return false;
-    return true; // Emoji or short text like "📦"
-  };
-
-  const normalizeFeedItem = (item: any): FeedItem => {
+  const normalizeFeedItem = (item: Record<string, unknown>): FeedItem => {
     // Handle flat post structure where content is a string (from /feeds/users/:id/posts)
     const contentIsString = typeof item.content === "string";
     const contentObj = contentIsString ? null : item.content;
@@ -315,37 +309,6 @@ export function FeedsView() {
     navigate("/dashboard/messages", { state: { startChatWith: userId, contextType: "regular" } });
   };
 
-  const handleLike = async (itemId: string) => {
-    const item = feedItems.find((i) => i.id === itemId);
-    if (!item) return;
-
-    // Optimistic update — use callback form to avoid stale closure over feedItems
-    setFeedItems((prev) =>
-      prev.map((i) =>
-        i.id === itemId
-          ? {
-              ...i,
-              user_has_liked: !i.user_has_liked,
-              engagement: {
-                ...i.engagement,
-                likes: i.user_has_liked ? i.engagement.likes - 1 : i.engagement.likes + 1,
-              },
-            }
-          : i
-      )
-    );
-
-    try {
-      const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
-      await ToggleLike(contentType as "post" | "topic" | "nook_message", item.content_id);
-    } catch {
-      // Revert on failure
-      setFeedItems((prev) =>
-        prev.map((i) => (i.id === itemId ? item : i))
-      );
-    }
-  };
-
   const handleReaction = async (itemId: string, reactionType: "heard" | "validated" | "inspired") => {
     const item = feedItems.find((i) => i.id === itemId);
     if (!item) return;
@@ -433,7 +396,7 @@ export function FeedsView() {
   const fetchCommentsForItem = async (item: FeedItem) => {
     setLoadingComments((prev) => ({ ...prev, [item.id]: true }));
     try {
-      let raw: any[];
+      let raw: FeedComment[];
 
       if (item.content_type === "topic") {
         // Use forum API for topic comments
@@ -527,11 +490,6 @@ export function FeedsView() {
       viewers: viewersCount,
     });
     setShowViewersModal(true);
-  };
-
-  const handleLikeClick = (itemId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    handleLike(itemId);
   };
 
   const formatNumber = (num: number): string => {
@@ -784,8 +742,15 @@ export function FeedsView() {
                             className="text-gray-600 text-sm leading-relaxed line-clamp-2 block"
                           />
                         </div>
-                        <div className="flex items-center gap-1 ml-4">
+                        <div className="flex items-center gap-2 ml-4">
                           {getTemperatureIcon(item.content.nook_temperature)}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <ContentMenu
+                              contentType="nook"
+                              contentId={item.id}
+                              onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -901,6 +866,13 @@ export function FeedsView() {
                           <span>{formatTimeAgo(item.created_at)}</span>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                      <ContentMenu
+                        contentType="topic"
+                        contentId={item.id}
+                        onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                      />
                     </div>
                   </div>
 
@@ -1089,9 +1061,13 @@ export function FeedsView() {
                         </div>
                       </div>
                     </div>
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0" aria-label="More options">
-                      <MoreHorizontal className="w-5 h-5 text-gray-600" />
-                    </button>
+                    <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <ContentMenu
+                        contentType="post"
+                        contentId={item.id}
+                        onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                      />
+                    </div>
                   </div>
 
                   <div className="mb-3">
