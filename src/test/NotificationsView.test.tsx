@@ -406,7 +406,7 @@ describe('NotificationsView', () => {
     await user.click(screen.getByText('New Follower'));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard/profile?tab=profile');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard/profile/u2');
     });
   });
 

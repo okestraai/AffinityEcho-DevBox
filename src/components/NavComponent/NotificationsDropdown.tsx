@@ -193,10 +193,11 @@ export function NotificationsDropdown({ isOpen, onClose, unreadCount, onUnreadCo
     const { type, reference_id, reference_type, action_url, actor_id, metadata } = notification;
 
     switch (type) {
-      // Follow/unfollow → profile page with "follow" tab
+      // Follow/unfollow → actor's profile page
       case "follow":
       case "user_followed":
       case "user_unfollowed":
+        if (actor_id) return `/dashboard/profile/${actor_id}`;
         return "/dashboard/profile?tab=profile";
 
       // A followed user created a post → single post page

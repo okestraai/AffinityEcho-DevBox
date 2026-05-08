@@ -534,6 +534,10 @@ export function ForumsView() {
     }
   };
 
+  const handleTopicHide = (topicId: string) => {
+    setRecentDiscussions((prev) => prev.filter((t) => t.id !== topicId));
+  };
+
   const shared = {
     handleCommentClick,
     handleCommentSubmit,
@@ -588,6 +592,7 @@ export function ForumsView() {
     handleViewAllGlobalForums,
     handleForumMembershipChange,
     handleTopicCreated, // NEW: Pass topic refresh handler
+    onTopicHide: handleTopicHide,
   };
 
   if (error) {

@@ -715,7 +715,7 @@ export function TopicDetailPage() {
               </div>
 
               {topic.user_id !== currentUser?.id && (
-                <ContentMenu contentType="topic" contentId={topic.id} />
+                <ContentMenu contentType="topic" contentId={topic.id} onHide={() => navigate("/dashboard/forums")} />
               )}
             </div>
 

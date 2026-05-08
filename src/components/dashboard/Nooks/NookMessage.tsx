@@ -42,6 +42,7 @@ interface NookMessageProps {
   onReply: (messageId: string, messageContent: string) => void;
   onEdit?: (messageId: string, newContent: string) => Promise<void>;
   isReplying?: boolean;
+  onHide?: (messageId: string) => void;
 }
 
 /** Detects whether a string is an emoji (multi-codepoint or non-ASCII) */
@@ -60,6 +61,7 @@ export function NookMessage({
   onReply,
   onEdit,
   isReplying = false,
+  onHide,
 }: NookMessageProps) {
   const { user: authUser } = useAuth();
   const [showReplies, setShowReplies] = useState(false);
@@ -193,7 +195,7 @@ export function NookMessage({
               </span>
             )}
             {!message.is_mine && (
-              <ContentMenu contentType="nook_message" contentId={message.id} />
+              <ContentMenu contentType="nook_message" contentId={message.id} onHide={() => onHide?.(message.id)} />
             )}
             {canEdit && !isEditing && (
               <button

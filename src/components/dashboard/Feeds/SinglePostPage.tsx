@@ -489,7 +489,7 @@ export function SinglePostPage() {
               )}
             </div>
             {authorId && authorId !== user?.id && (
-              <ContentMenu contentType="post" contentId={post.id} />
+              <ContentMenu contentType="post" contentId={post.id} onHide={() => navigate(-1)} />
             )}
           </div>
 

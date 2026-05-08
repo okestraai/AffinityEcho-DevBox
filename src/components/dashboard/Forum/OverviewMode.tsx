@@ -122,6 +122,7 @@ interface OverviewModeProps {
   handleViewAllGlobalForums: () => void;
   handleTopicCreated?: () => Promise<void>;
   handleChat?: (userId: string) => void;
+  onTopicHide?: (topicId: string) => void;
 }
 
 export function OverviewMode(props: OverviewModeProps) {
@@ -356,7 +357,7 @@ export function OverviewMode(props: OverviewModeProps) {
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                     <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
-                      <ContentMenu contentType="topic" contentId={topic.id} />
+                      <ContentMenu contentType="topic" contentId={topic.id} onHide={() => props.onTopicHide?.(topic.id)} />
                     </div>
 
                     <div

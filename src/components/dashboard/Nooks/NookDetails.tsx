@@ -329,6 +329,7 @@ export function NookDetail({
               onReply={handleReply}
               onEdit={handleEditMessage}
               isReplying={replyingTo === msg.id}
+              onHide={(id) => setMessages((prev) => prev.filter((m) => m.id !== id))}
             />
           ))}
         </div>

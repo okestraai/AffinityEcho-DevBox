@@ -257,10 +257,11 @@ export function NotificationsView() {
 
     // 1. Specific type-based routing (highest priority)
     switch (type) {
-      // Follow/unfollow → profile page with "follow" tab
+      // Follow/unfollow → actor's profile page
       case "follow":
       case "user_followed":
       case "user_unfollowed":
+        if (actor_id) return `/dashboard/profile/${actor_id}`;
         return "/dashboard/profile?tab=profile";
 
       // A followed user created a post → single post page
