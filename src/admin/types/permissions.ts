@@ -65,6 +65,13 @@ export const PERMISSIONS = {
 
   // System Health
   HEALTH_VIEW: 'health:view',
+
+  // AI Moderation
+  AI_REVIEW_VIEW: 'ai_review:view',
+  AI_REVIEW_CLAIM: 'ai_review:claim',
+  AI_REVIEW_RESOLVE: 'ai_review:resolve',
+  AI_AUDIT_VIEW: 'ai_audit:view',
+  AI_DISAGREEMENTS_VIEW: 'ai_disagreements:view',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -349,6 +356,38 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       },
     ],
   },
+  {
+    id: 'ai_moderation',
+    label: 'AI Moderation',
+    icon: 'Bot',
+    permissions: [
+      {
+        key: PERMISSIONS.AI_REVIEW_VIEW,
+        label: 'View Review Queue',
+        description: 'Browse the AI moderation review queue and stats',
+      },
+      {
+        key: PERMISSIONS.AI_REVIEW_CLAIM,
+        label: 'Claim Review Items',
+        description: 'Claim AI-flagged items for manual review',
+      },
+      {
+        key: PERMISSIONS.AI_REVIEW_RESOLVE,
+        label: 'Resolve Review Items',
+        description: 'Confirm, reverse, or modify AI moderation decisions',
+      },
+      {
+        key: PERMISSIONS.AI_AUDIT_VIEW,
+        label: 'View AI Audit Trail',
+        description: 'Browse all AI moderation decisions and history',
+      },
+      {
+        key: PERMISSIONS.AI_DISAGREEMENTS_VIEW,
+        label: 'View Disagreements',
+        description: 'View cases where humans overruled AI decisions',
+      },
+    ],
+  },
 ];
 
 // ── Default permission sets ────────────────────────────────────────────────────
@@ -371,6 +410,9 @@ export const READ_ONLY_PERMISSIONS: Permission[] = [
   PERMISSIONS.LOGS_VIEW,
   PERMISSIONS.ANALYTICS_VIEW,
   PERMISSIONS.HEALTH_VIEW,
+  PERMISSIONS.AI_REVIEW_VIEW,
+  PERMISSIONS.AI_AUDIT_VIEW,
+  PERMISSIONS.AI_DISAGREEMENTS_VIEW,
 ];
 
 /** Standard moderator set */
@@ -383,4 +425,6 @@ export const MODERATOR_PERMISSIONS: Permission[] = [
   PERMISSIONS.CONTENT_HIDE,
   PERMISSIONS.CONTENT_RESTORE,
   PERMISSIONS.CONTENT_REMOVE,
+  PERMISSIONS.AI_REVIEW_CLAIM,
+  PERMISSIONS.AI_REVIEW_RESOLVE,
 ];

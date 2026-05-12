@@ -559,6 +559,17 @@ export const MSG = {
     // Health
     HEALTH_LOAD_FAILED: 'Unable to load health status, please try again',
     HEALTH_HISTORY_LOAD_FAILED: 'Unable to load health history, please try again',
+
+    // AI Moderation
+    AI_REVIEW_LOAD_FAILED: 'Unable to load review queue, please try again',
+    AI_REVIEW_STATS_FAILED: 'Unable to load review stats, please try again',
+    AI_REVIEW_CLAIMED: 'Item claimed',
+    AI_REVIEW_CLAIM_FAILED: 'Unable to claim item, please try again',
+    AI_REVIEW_RESOLVED: 'Item resolved',
+    AI_REVIEW_RESOLVE_FAILED: 'Unable to resolve item, please try again',
+    AI_AUDIT_LOAD_FAILED: 'Unable to load audit trail, please try again',
+    AI_AUDIT_DETAIL_FAILED: 'Unable to load item history, please try again',
+    AI_DISAGREEMENTS_LOAD_FAILED: 'Unable to load disagreements, please try again',
   },
 
   // ─── HARASSMENT REPORTS ─────────────────────────────────

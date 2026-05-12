@@ -602,3 +602,80 @@ export const ReviewContentFlag = async (
   const res = await api.patch(`${BASE}/flags/${flagId}`, { status });
   return unwrap(res);
 };
+
+/* ─── 13. AI Moderation ─── */
+
+/** List AI review queue items */
+export const GetAIReviewQueue = async (
+  params: {
+    status?: string;
+    priority?: string;
+    contentType?: string;
+    page?: number;
+    limit?: number;
+  } = {},
+) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/review${buildQS(params)}`);
+  return res.data;
+};
+
+/** Claim a review queue item */
+export const ClaimReviewItem = async (id: string) => {
+  const api = getAuthInstance();
+  const res = await api.patch(`${BASE}/moderation/review/${id}/claim`);
+  return unwrap(res);
+};
+
+/** Resolve a review queue item */
+export const ResolveReviewItem = async (
+  id: string,
+  payload: { resolution: "confirm" | "reverse" | "modify"; reason?: string },
+) => {
+  const api = getAuthInstance();
+  const res = await api.patch(`${BASE}/moderation/review/${id}/resolve`, payload);
+  return unwrap(res);
+};
+
+/** Get review queue statistics */
+export const GetAIReviewStats = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/review/stats`);
+  return unwrap(res);
+};
+
+/** List AI audit trail */
+export const GetAIAuditTrail = async (
+  params: {
+    page?: number;
+    limit?: number;
+    contentType?: string;
+  } = {},
+) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/audit${buildQS(params)}`);
+  return res.data;
+};
+
+/** Get single item moderation history */
+export const GetAIAuditItemHistory = async (
+  contentType: string,
+  contentId: string,
+) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/audit/${contentType}/${contentId}`);
+  return unwrap(res);
+};
+
+/** List AI vs human disagreements */
+export const GetAIDisagreements = async (
+  params: {
+    page?: number;
+    limit?: number;
+    contentType?: string;
+  } = {},
+) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/disagreements${buildQS(params)}`);
+  return res.data;
+};

@@ -253,6 +253,21 @@ const AdminHealthPage = React.lazy(() =>
     default: m.HealthPage,
   })),
 );
+const AdminAIReviewQueuePage = React.lazy(() =>
+  import("../admin/pages/AIReviewQueuePage").then((m) => ({
+    default: m.AIReviewQueuePage,
+  })),
+);
+const AdminAIAuditPage = React.lazy(() =>
+  import("../admin/pages/AIAuditPage").then((m) => ({
+    default: m.AIAuditPage,
+  })),
+);
+const AdminAIDisagreementsPage = React.lazy(() =>
+  import("../admin/pages/AIDisagreementsPage").then((m) => ({
+    default: m.AIDisagreementsPage,
+  })),
+);
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, hasCompletedOnboarding, isLoading, user } =
@@ -329,6 +344,9 @@ const AppRoutes: React.FC = () => {
           <Route path="my-notifications" element={<AdminNotificationsInboxPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="health" element={<AdminHealthPage />} />
+          <Route path="ai-moderation" element={<AdminAIReviewQueuePage />} />
+          <Route path="ai-moderation/audit" element={<AdminAIAuditPage />} />
+          <Route path="ai-moderation/disagreements" element={<AdminAIDisagreementsPage />} />
           <Route
             path="permissions"
             element={

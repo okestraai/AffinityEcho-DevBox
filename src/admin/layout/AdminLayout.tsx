@@ -21,6 +21,7 @@ import {
   BarChart3,
   HeartPulse,
   AlertTriangle,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
@@ -85,6 +86,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Moderation",
     icon: <EyeOff className="w-4.5 h-4.5" />,
     permission: PERMISSIONS.CONTENT_VIEW,
+    section: "Management",
+  },
+  {
+    to: "/admin/ai-moderation",
+    label: "AI Moderation",
+    icon: <Bot className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.AI_REVIEW_VIEW,
     section: "Management",
   },
   {
