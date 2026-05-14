@@ -191,23 +191,43 @@ export function AIReviewQueuePage() {
   useEffect(() => { fetchItems(); }, [fetchItems]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
+  /** Refresh list without showing the full loading spinner */
+  const refreshItems = useCallback(async () => {
+    try {
+      const params: Record<string, string | number> = { page, limit, status: statusFilter };
+      if (priorityFilter !== "all") params.priority = priorityFilter;
+      if (typeFilter !== "all") params.contentType = typeFilter;
+      if (stateFilter !== "all") params.currentState = stateFilter;
+      const res = await GetAIReviewQueue(params);
+      setItems(res.data || []);
+      setTotalPages(Math.ceil((res.pagination?.total || 0) / limit));
+      setTotal(res.pagination?.total || 0);
+    } catch { /* silent — user already saw success toast */ }
+  }, [page, statusFilter, priorityFilter, typeFilter, stateFilter]);
+
   const handleResolve = async () => {
     if (!resolveModal) return;
-    setActionLoading(resolveModal.item.id);
+    const itemId = resolveModal.item.id;
+    setActionLoading(itemId);
     try {
       const payload: { action: "reverse" | "confirm" | "hide"; reason?: string } = {
         action: resolveModal.action as "reverse" | "confirm" | "hide",
       };
       if (resolveReason.trim()) payload.reason = resolveReason.trim();
-      await ResolveReviewItem(resolveModal.item.id, payload);
-      showToast("success", MSG.ADMIN.AI_REVIEW_RESOLVED);
+      await ResolveReviewItem(itemId, payload);
+      // Close modal + clear form immediately
       setResolveModal(null);
       setResolveReason("");
-      fetchItems();
+      setActionLoading(null);
+      // Optimistically remove item from list
+      setItems((prev) => prev.filter((i) => i.id !== itemId));
+      setTotal((prev) => Math.max(0, prev - 1));
+      showToast("success", MSG.ADMIN.AI_REVIEW_RESOLVED);
+      // Background refresh to sync with server
+      refreshItems();
       fetchStats();
     } catch (err) {
       showToast("error", getApiError(err, MSG.ADMIN.AI_REVIEW_RESOLVE_FAILED));
-    } finally {
       setActionLoading(null);
     }
   };
