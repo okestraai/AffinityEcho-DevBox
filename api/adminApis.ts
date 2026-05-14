@@ -611,6 +611,7 @@ export const GetAIReviewQueue = async (
     status?: string;
     priority?: string;
     contentType?: string;
+    currentState?: string;
     page?: number;
     limit?: number;
   } = {},
@@ -620,17 +621,10 @@ export const GetAIReviewQueue = async (
   return res.data;
 };
 
-/** Claim a review queue item */
-export const ClaimReviewItem = async (id: string) => {
-  const api = getAuthInstance();
-  const res = await api.patch(`${BASE}/moderation/review/${id}/claim`);
-  return unwrap(res);
-};
-
-/** Resolve a review queue item */
+/** Resolve a review queue item (reverse / confirm / hide) */
 export const ResolveReviewItem = async (
   id: string,
-  payload: { resolution: "confirm" | "reverse" | "modify"; reason?: string },
+  payload: { action: "reverse" | "confirm" | "hide"; reason?: string },
 ) => {
   const api = getAuthInstance();
   const res = await api.patch(`${BASE}/moderation/review/${id}/resolve`, payload);
@@ -650,6 +644,7 @@ export const GetAIAuditTrail = async (
     page?: number;
     limit?: number;
     contentType?: string;
+    status?: string;
   } = {},
 ) => {
   const api = getAuthInstance();
@@ -664,6 +659,13 @@ export const GetAIAuditItemHistory = async (
 ) => {
   const api = getAuthInstance();
   const res = await api.get(`${BASE}/moderation/audit/${contentType}/${contentId}`);
+  return unwrap(res);
+};
+
+/** Get AI moderation stats (charts/dashboard) */
+export const GetAIModerationStats = async () => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/moderation/stats`);
   return unwrap(res);
 };
 

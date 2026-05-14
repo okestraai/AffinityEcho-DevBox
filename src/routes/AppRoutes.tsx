@@ -268,6 +268,11 @@ const AdminAIDisagreementsPage = React.lazy(() =>
     default: m.AIDisagreementsPage,
   })),
 );
+const AdminAIStatsPage = React.lazy(() =>
+  import("../admin/pages/AIStatsPage").then((m) => ({
+    default: m.AIStatsPage,
+  })),
+);
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, hasCompletedOnboarding, isLoading, user } =
@@ -344,7 +349,8 @@ const AppRoutes: React.FC = () => {
           <Route path="my-notifications" element={<AdminNotificationsInboxPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="health" element={<AdminHealthPage />} />
-          <Route path="ai-moderation" element={<AdminAIReviewQueuePage />} />
+          <Route path="ai-moderation" element={<AdminAIStatsPage />} />
+          <Route path="ai-moderation/review" element={<AdminAIReviewQueuePage />} />
           <Route path="ai-moderation/audit" element={<AdminAIAuditPage />} />
           <Route path="ai-moderation/disagreements" element={<AdminAIDisagreementsPage />} />
           <Route

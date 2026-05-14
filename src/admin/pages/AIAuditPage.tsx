@@ -11,7 +11,6 @@ import {
   X,
   Clock,
   History,
-  AlertTriangle,
   Scale,
 } from "lucide-react";
 import { GetAIAuditTrail, GetAIAuditItemHistory } from "../../../api/adminApis";
@@ -24,13 +23,16 @@ interface AuditItem {
   id: string;
   content_type: string;
   content_id: string;
+  content_preview: string;
+  content_title: string | null;
+  author: { id: string; username: string };
   moderation_status: string;
   moderation_reason: string;
-  reports_count: number;
   moderated_by: string;
   moderated_at: string;
   model_version: string;
   policy_version: string;
+  ai_confidence: number;
   raw_response: {
     verdict: string;
     confidence: number;
@@ -39,65 +41,78 @@ interface AuditItem {
     rationale: string;
     userFacingReason: string | null;
   };
-  ai_confidence: number;
+  was_reversed: boolean;
   created_at: string;
-  updated_at: string;
+}
+
+interface DetailContent {
+  type: string;
+  id: string;
+  preview: string;
+  title: string | null;
+  author: { id: string; username: string };
+  created_at: string;
+  current_state: string;
+}
+
+interface ModerationEntry {
+  action: string;
+  by: string;
+  by_username: string | null;
+  reason: string;
+  confidence: number;
+  at: string;
+}
+
+interface ReviewEntry {
+  id: string;
+  priority: string;
+  reason: string;
+  status: string;
+  resolution: string | null;
+  resolution_reason: string | null;
+  resolved_by_username: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+interface DisagreementEntry {
+  ai_said: string;
+  ai_confidence: number;
+  ai_categories: string[];
+  human_said: string;
+  human_reason: string;
+  reversed_by_username: string;
+  created_at: string;
 }
 
 interface ItemHistoryData {
-  moderation: AuditItem[];
-  reviews: Array<{
-    id: string;
-    content_type: string;
-    content_id: string;
-    priority: string;
-    reason: string;
-    ai_verdict: Record<string, unknown>;
-    current_state: string;
-    status: string;
-    claimed_by: string | null;
-    resolved_by: string | null;
-    resolution: string | null;
-    resolution_reason: string | null;
-    resolved_at: string | null;
-    created_at: string;
-  }>;
-  disagreements: Array<{
-    id: string;
-    content_type: string;
-    content_id: string;
-    ai_verdict: Record<string, unknown>;
-    human_resolution: string;
-    human_reason: string;
-    resolved_by: string;
-    created_at: string;
-  }>;
+  content: DetailContent;
+  moderation_history: ModerationEntry[];
+  review_history: ReviewEntry[];
+  disagreements: DisagreementEntry[];
 }
 
 const STATUS_STYLES: Record<string, string> = {
   allowed: "bg-green-50 text-green-700 border-green-200",
   visible: "bg-green-50 text-green-700 border-green-200",
-  hidden: "bg-amber-50 text-amber-700 border-amber-200",
-  removed: "bg-red-50 text-red-700 border-red-200",
-  pending_review: "bg-blue-50 text-blue-700 border-blue-200",
+  hidden: "bg-red-100 text-red-700 border-red-200",
+  removed: "bg-red-200 text-red-800 border-red-300",
+  pending_review: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
 const CONTENT_TYPES = [
-  "all",
-  "feed_post",
-  "feed_comment",
-  "forum_topic",
-  "forum_comment",
-  "nook",
-  "nook_message",
-  "referral_post",
-  "referral_comment",
+  "all", "feed_post", "feed_comment", "forum_topic", "forum_comment",
+  "nook", "nook_message", "referral_post", "referral_comment",
 ];
+
+const AUDIT_STATUSES = ["all", "allowed", "hidden", "removed", "pending_review"];
 
 export function AIAuditPage() {
   const [items, setItems] = useState<AuditItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -111,6 +126,7 @@ export function AIAuditPage() {
     try {
       const params: Record<string, string | number> = { page, limit };
       if (typeFilter !== "all") params.contentType = typeFilter;
+      if (statusFilter !== "all") params.status = statusFilter;
       const res = await GetAIAuditTrail(params);
       setItems(res.data || []);
       setTotalPages(Math.ceil((res.pagination?.total || 0) / limit));
@@ -120,11 +136,9 @@ export function AIAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, typeFilter]);
+  }, [page, typeFilter, statusFilter]);
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const openDetail = async (contentType: string, contentId: string) => {
     setDetailModal({ contentType, contentId });
@@ -142,19 +156,17 @@ export function AIAuditPage() {
 
   const formatType = (t: string) => t.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const isAI = (by: string) => by?.startsWith("ai:");
-  const moderatorLabel = (by: string) => {
-    if (!by) return "—";
-    if (by.startsWith("ai:")) return by.replace("ai:", "AI: ");
-    if (by.startsWith("human:")) return by.replace("human:", "Admin: ");
-    return by;
+  const confidenceColor = (c: number) => {
+    const pct = c * 100;
+    if (pct >= 90) return "text-green-700";
+    if (pct >= 75) return "text-amber-700";
+    return "text-red-700";
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <FileSearch className="w-6 h-6 text-violet-500" />
@@ -165,7 +177,6 @@ export function AIAuditPage() {
         </p>
       </div>
 
-      {/* Tab Navigation */}
       <AIModerationTabs />
 
       {/* Filters */}
@@ -174,17 +185,13 @@ export function AIAuditPage() {
           <Filter className="w-4 h-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-600">Filters:</span>
         </div>
-        <select
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-          title="Filter by content type"
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-        >
-          {CONTENT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t === "all" ? "All Types" : formatType(t)}
-            </option>
-          ))}
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          title="Filter by content type" className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+          {CONTENT_TYPES.map((t) => <option key={t} value={t}>{t === "all" ? "All Types" : formatType(t)}</option>)}
+        </select>
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          title="Filter by status" className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+          {AUDIT_STATUSES.map((s) => <option key={s} value={s}>{s === "all" ? "All Statuses" : formatType(s)}</option>)}
         </select>
       </div>
 
@@ -204,12 +211,13 @@ export function AIAuditPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Content</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Author</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Verdict</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Confidence</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Reason</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Moderated By</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Model</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Categories</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Reversed</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600">Details</th>
                 </tr>
@@ -217,40 +225,55 @@ export function AIAuditPage() {
               <tbody className="divide-y divide-gray-100">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
+                    <td className="px-4 py-3 max-w-xs">
+                      <p className="text-xs text-gray-700 truncate">{item.content_preview}</p>
+                      <span className="inline-flex mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
                         {formatType(item.content_type)}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-xs text-gray-600">@{item.author?.username}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${STATUS_STYLES[item.moderation_status] || STATUS_STYLES.allowed}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${
+                        item.raw_response?.verdict === "hide" ? "bg-red-100 text-red-800 border-red-200"
+                          : item.raw_response?.verdict === "allow" ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                      }`}>
+                        {item.raw_response?.verdict || "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-sm font-semibold ${confidenceColor(item.ai_confidence || 0)}`}>
+                        {Math.round((item.ai_confidence || 0) * 100)}%
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${STATUS_STYLES[item.moderation_status] || ""}`}>
                         {item.moderation_status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <ConfidenceBar value={item.ai_confidence || 0} />
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 max-w-xs truncate text-xs">
-                      {item.moderation_reason || "—"}
+                      <div className="flex flex-wrap gap-1 max-w-[140px]">
+                        {(item.raw_response?.categories || []).slice(0, 2).map((cat) => (
+                          <span key={cat} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600">{cat}</span>
+                        ))}
+                        {(item.raw_response?.categories || []).length > 2 && (
+                          <span className="text-[10px] text-gray-400">+{item.raw_response.categories.length - 2}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${isAI(item.moderated_by) ? "text-violet-600" : "text-blue-600"}`}>
-                        {isAI(item.moderated_by) ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                        {moderatorLabel(item.moderated_by)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                      {item.model_version || "—"}
+                      {item.was_reversed ? (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">Reversed</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">No</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                       {formatDate(item.moderated_at || item.created_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => openDetail(item.content_type, item.content_id)}
-                        className="px-2 py-1 text-xs font-medium text-violet-600 hover:bg-violet-50 rounded-md transition-colors"
-                      >
+                      <button type="button" onClick={() => openDetail(item.content_type, item.content_id)}
+                        className="px-2 py-1 text-xs font-medium text-violet-600 hover:bg-violet-50 rounded-md transition-colors">
                         History
                       </button>
                     </td>
@@ -261,29 +284,16 @@ export function AIAuditPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-            <span className="text-xs text-gray-500">
-              Page {page} of {totalPages} ({total.toLocaleString()} records)
-            </span>
+            <span className="text-xs text-gray-500">Page {page} of {totalPages} ({total.toLocaleString()} records)</span>
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                title="Previous page"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button type="button" title="Previous page" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                title="Next page"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button type="button" title="Next page" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -291,7 +301,7 @@ export function AIAuditPage() {
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail Modal — Timeline */}
       {detailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setDetailModal(null); setDetailData(null); }} />
@@ -301,123 +311,65 @@ export function AIAuditPage() {
                 <History className="w-5 h-5 text-violet-500" />
                 Item History
               </h3>
-              <button
-                type="button"
-                title="Close"
-                onClick={() => { setDetailModal(null); setDetailData(null); }}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
+              <button type="button" title="Close" onClick={() => { setDetailModal(null); setDetailData(null); }}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-gray-500 mb-4 font-mono">
-              {formatType(detailModal.contentType)} &middot; {detailModal.contentId}
-            </p>
 
             {detailLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
               </div>
             ) : detailData ? (
-              <div className="space-y-6">
-                {/* Moderation Timeline */}
-                {detailData.moderation.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      Moderation History
-                    </h4>
-                    <div className="space-y-2">
-                      {detailData.moderation.map((entry, idx) => (
-                        <div key={idx} className="flex gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                          <div className="flex-shrink-0 mt-0.5">
-                            {isAI(entry.moderated_by) ? (
-                              <Bot className="w-4 h-4 text-violet-500" />
-                            ) : (
-                              <User className="w-4 h-4 text-blue-500" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium border capitalize ${STATUS_STYLES[entry.moderation_status] || ""}`}>
-                                {entry.moderation_status}
-                              </span>
-                              <span className="text-[10px] text-gray-400">
-                                {moderatorLabel(entry.moderated_by)}
-                              </span>
-                              <span className="text-[10px] text-gray-400">
-                                {formatDate(entry.moderated_at || entry.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">{entry.moderation_reason}</p>
-                            {entry.ai_confidence > 0 && (
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                Confidence: {Math.round(entry.ai_confidence * 100)}%
-                                {entry.model_version && ` · ${entry.model_version}`}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              <div className="space-y-4">
+                {/* Content Info */}
+                {detailData.content && (
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    {detailData.content.title && <p className="text-xs font-medium text-gray-700 mb-1">{detailData.content.title}</p>}
+                    <p className="text-xs text-gray-800">{detailData.content.preview}</p>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {formatType(detailData.content.type)} by @{detailData.content.author?.username} &middot; Currently: {detailData.content.current_state}
+                    </p>
                   </div>
                 )}
 
-                {/* Reviews */}
-                {detailData.reviews.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      Review Queue Items
-                    </h4>
-                    <div className="space-y-2">
-                      {detailData.reviews.map((review) => (
-                        <div key={review.id} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium border capitalize ${STATUS_STYLES[review.status === "resolved" ? (review.resolution === "reverse" ? "hidden" : "allowed") : "pending_review"] || ""}`}>
-                              {review.status}
-                            </span>
-                            {review.resolution && (
-                              <span className="text-[10px] font-medium text-gray-600 capitalize">
-                                ({review.resolution})
-                              </span>
-                            )}
-                            <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
-                          </div>
-                          {review.resolution_reason && (
-                            <p className="text-xs text-gray-600 mt-1">{review.resolution_reason}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Timeline */}
+                <div className="relative pl-6 space-y-4">
+                  <div className="absolute left-2 top-2 bottom-2 w-px bg-gray-200" />
 
-                {/* Disagreements */}
-                {detailData.disagreements.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <Scale className="w-3.5 h-3.5" />
-                      Disagreements
-                    </h4>
-                    <div className="space-y-2">
-                      {detailData.disagreements.map((d) => (
-                        <div key={d.id} className="p-3 rounded-lg bg-orange-50 border border-orange-200">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-medium text-orange-700 capitalize">
-                              Human: {d.human_resolution}
-                            </span>
-                            <span className="text-[10px] text-orange-500">{formatDate(d.created_at)}</span>
-                          </div>
-                          <p className="text-xs text-orange-700 mt-1">{d.human_reason}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  {/* Content Created */}
+                  {detailData.content && (
+                    <TimelineItem icon="create" label={`Content created by @${detailData.content.author?.username}`} date={detailData.content.created_at} />
+                  )}
 
-                {detailData.moderation.length === 0 && detailData.reviews.length === 0 && detailData.disagreements.length === 0 && (
-                  <p className="text-sm text-gray-400 text-center py-8">No history found for this item.</p>
+                  {/* Moderation History */}
+                  {(detailData.moderation_history || []).map((entry, i) => (
+                    <TimelineItem key={`mod-${i}`}
+                      icon={entry.by.startsWith("ai:") ? "ai" : "human"}
+                      label={
+                        entry.by.startsWith("ai:")
+                          ? `AI: ${entry.action.toUpperCase()} (${Math.round(entry.confidence * 100)}% confidence)`
+                          : `${entry.by_username || "Admin"}: ${entry.action.toUpperCase()}`
+                      }
+                      detail={entry.reason}
+                      date={entry.at}
+                    />
+                  ))}
+
+                  {/* Disagreements */}
+                  {(detailData.disagreements || []).map((d, i) => (
+                    <TimelineItem key={`dis-${i}`}
+                      icon="disagree"
+                      label={`${d.reversed_by_username} overruled AI (${d.ai_said} → ${d.human_said})`}
+                      detail={d.human_reason}
+                      date={d.created_at}
+                    />
+                  ))}
+                </div>
+
+                {(detailData.moderation_history?.length ?? 0) === 0 && (detailData.disagreements?.length ?? 0) === 0 && (
+                  <p className="text-sm text-gray-400 text-center py-4">No moderation history for this item.</p>
                 )}
               </div>
             ) : null}
@@ -428,43 +380,46 @@ export function AIAuditPage() {
   );
 }
 
+function TimelineItem({ icon, label, detail, date }: { icon: string; label: string; detail?: string; date: string }) {
+  const iconEl = icon === "ai" ? <Bot className="w-3.5 h-3.5 text-violet-500" />
+    : icon === "human" ? <User className="w-3.5 h-3.5 text-blue-500" />
+      : icon === "disagree" ? <Scale className="w-3.5 h-3.5 text-orange-500" />
+        : <Clock className="w-3.5 h-3.5 text-gray-400" />;
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="relative flex gap-3">
+      <div className="absolute -left-4 top-1 w-4 h-4 rounded-full bg-white border border-gray-200 flex items-center justify-center">
+        {iconEl}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-gray-800">{label}</p>
+        {detail && <p className="text-xs text-gray-500 mt-0.5">{detail}</p>}
+        <p className="text-[10px] text-gray-400 mt-0.5">{formatDate(date)}</p>
+      </div>
+    </div>
+  );
+}
+
 function AIModerationTabs() {
   const tabs = [
-    { to: "/admin/ai-moderation", label: "Review Queue", end: true },
+    { to: "/admin/ai-moderation", label: "Stats", end: true },
+    { to: "/admin/ai-moderation/review", label: "Review Queue", end: false },
     { to: "/admin/ai-moderation/audit", label: "Audit Trail", end: false },
     { to: "/admin/ai-moderation/disagreements", label: "Disagreements", end: false },
   ];
   return (
     <div className="flex gap-1 border-b border-gray-200 -mt-2">
       {tabs.map((tab) => (
-        <NavLink
-          key={tab.to}
-          to={tab.to}
-          end={tab.end}
+        <NavLink key={tab.to} to={tab.to} end={tab.end}
           className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              isActive
-                ? "border-violet-500 text-violet-700"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`
-          }
-        >
+            `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${isActive ? "border-violet-500 text-violet-700" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`
+          }>
           {tab.label}
         </NavLink>
       ))}
-    </div>
-  );
-}
-
-function ConfidenceBar({ value }: { value: number }) {
-  const pct = Math.round(value * 100);
-  const color = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-amber-500" : "bg-red-500";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-gray-600 font-medium">{pct}%</span>
     </div>
   );
 }

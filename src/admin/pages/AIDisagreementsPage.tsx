@@ -23,51 +23,38 @@ interface AIVerdict {
   severity: string;
   categories: string[];
   rationale: string;
-  userFacingReason: string | null;
 }
 
 interface DisagreementItem {
   id: string;
   content_type: string;
   content_id: string;
+  content_preview: string;
+  content_title: string | null;
+  author: { id: string; username: string };
   ai_verdict: AIVerdict;
   human_resolution: string;
   human_reason: string;
-  resolved_by: string;
+  reversed_by: { id: string; username: string };
   created_at: string;
 }
 
-const VERDICT_STYLES: Record<string, string> = {
-  hide: "bg-red-50 text-red-700 border-red-200",
-  remove: "bg-red-100 text-red-800 border-red-300",
-  allow: "bg-green-50 text-green-700 border-green-200",
-  pending_review: "bg-amber-50 text-amber-700 border-amber-200",
-};
-
-const RESOLUTION_STYLES: Record<string, string> = {
-  reverse: "bg-orange-50 text-orange-700 border-orange-200",
-  confirm: "bg-green-50 text-green-700 border-green-200",
-  modify: "bg-blue-50 text-blue-700 border-blue-200",
-};
-
-const SEVERITY_STYLES: Record<string, string> = {
-  critical: "text-red-700 bg-red-50",
-  high: "text-orange-700 bg-orange-50",
-  medium: "text-amber-700 bg-amber-50",
-  low: "text-blue-700 bg-blue-50",
-  none: "text-gray-500 bg-gray-50",
+const CATEGORY_COLORS: Record<string, string> = {
+  harassment: "bg-red-100 text-red-700",
+  spam: "bg-gray-100 text-gray-600",
+  hate_speech: "bg-red-200 text-red-800",
+  threat: "bg-red-100 text-red-700",
+  doxing: "bg-orange-100 text-orange-700",
+  self_harm: "bg-purple-100 text-purple-700",
+  crisis_signal: "bg-purple-100 text-purple-700",
+  misinformation: "bg-orange-100 text-orange-700",
+  legal_risk: "bg-amber-100 text-amber-700",
+  names_individual: "bg-amber-100 text-amber-700",
 };
 
 const CONTENT_TYPES = [
-  "all",
-  "feed_post",
-  "feed_comment",
-  "forum_topic",
-  "forum_comment",
-  "nook",
-  "nook_message",
-  "referral_post",
-  "referral_comment",
+  "all", "feed_post", "feed_comment", "forum_topic", "forum_comment",
+  "nook", "nook_message", "referral_post", "referral_comment",
 ];
 
 export function AIDisagreementsPage() {
@@ -96,17 +83,23 @@ export function AIDisagreementsPage() {
     }
   }, [page, typeFilter]);
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const formatType = (t: string) => t.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const confidenceColor = (c: number) => {
+    const pct = c * 100;
+    if (pct >= 90) return "text-green-700";
+    if (pct >= 75) return "text-amber-700";
+    return "text-red-700";
+  };
+
+  const categoryColor = (cat: string) => CATEGORY_COLORS[cat] || "bg-gray-100 text-gray-600";
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Scale className="w-6 h-6 text-orange-500" />
@@ -117,7 +110,6 @@ export function AIDisagreementsPage() {
         </p>
       </div>
 
-      {/* Tab Navigation */}
       <AIModerationTabs />
 
       {/* Filters */}
@@ -126,17 +118,9 @@ export function AIDisagreementsPage() {
           <Filter className="w-4 h-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-600">Filters:</span>
         </div>
-        <select
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-          title="Filter by content type"
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-        >
-          {CONTENT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t === "all" ? "All Types" : formatType(t)}
-            </option>
-          ))}
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          title="Filter by content type" className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+          {CONTENT_TYPES.map((t) => <option key={t} value={t}>{t === "all" ? "All Types" : formatType(t)}</option>)}
         </select>
       </div>
 
@@ -158,57 +142,60 @@ export function AIDisagreementsPage() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-4 py-3 font-medium text-gray-600 w-8"><span className="sr-only">Expand</span></th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">AI Verdict</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Confidence</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Human Resolution</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Content</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">AI Said</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">AI Confidence</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Human Said</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Human Reason</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Reversed By</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.map((item) => (
                   <React.Fragment key={item.id}>
-                    <tr
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                    >
+                    <tr className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
                       <td className="px-4 py-3">
-                        {expandedId === item.id ? (
-                          <ChevronUp className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        )}
+                        {expandedId === item.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        <p className="text-xs text-gray-700 truncate">{item.content_preview}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-gray-400">@{item.author?.username}</span>
+                          <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
+                            {formatType(item.content_type)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
-                          {formatType(item.content_type)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${VERDICT_STYLES[item.ai_verdict?.verdict] || ""}`}>
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200 capitalize">
                           {item.ai_verdict?.verdict || "—"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <ConfidenceBar value={item.ai_verdict?.confidence || 0} />
+                        <span className={`text-sm font-semibold ${confidenceColor(item.ai_verdict?.confidence || 0)}`}>
+                          {Math.round((item.ai_verdict?.confidence || 0) * 100)}%
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${RESOLUTION_STYLES[item.human_resolution] || ""}`}>
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200 capitalize">
                           {item.human_resolution}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-600 max-w-xs truncate text-xs">
                         {item.human_reason || "—"}
                       </td>
+                      <td className="px-4 py-3 text-xs text-gray-600">
+                        @{item.reversed_by?.username}
+                      </td>
                       <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                         {formatDate(item.created_at)}
                       </td>
                     </tr>
-                    {/* Expanded Detail Row */}
                     {expandedId === item.id && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-4 bg-gray-50/50 border-b border-gray-200">
+                        <td colSpan={8} className="px-4 py-4 bg-gray-50/50 border-b border-gray-200">
                           <div className="grid md:grid-cols-2 gap-4">
                             {/* AI Side */}
                             <div className="space-y-2">
@@ -219,26 +206,25 @@ export function AIDisagreementsPage() {
                               <div className="bg-white rounded-lg border border-gray-100 p-3 space-y-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500 text-xs w-16">Severity:</span>
-                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${SEVERITY_STYLES[item.ai_verdict?.severity] || SEVERITY_STYLES.none}`}>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                    item.ai_verdict?.severity === "high" || item.ai_verdict?.severity === "critical" ? "bg-red-100 text-red-700"
+                                      : item.ai_verdict?.severity === "medium" ? "bg-amber-100 text-amber-700"
+                                        : "bg-gray-100 text-gray-600"
+                                  }`}>
                                     {item.ai_verdict?.severity || "—"}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500 text-xs">Rationale:</span>
-                                  <p className="text-xs text-gray-800 mt-1 leading-relaxed">
-                                    {item.ai_verdict?.rationale || "—"}
-                                  </p>
+                                  <p className="text-xs text-gray-800 mt-1 leading-relaxed">{item.ai_verdict?.rationale || "—"}</p>
                                 </div>
                                 <div className="flex flex-wrap gap-1">
                                   {(item.ai_verdict?.categories || []).map((cat) => (
-                                    <span key={cat} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
-                                      {cat}
-                                    </span>
+                                    <span key={cat} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${categoryColor(cat)}`}>{cat}</span>
                                   ))}
                                 </div>
                               </div>
                             </div>
-
                             {/* Human Side */}
                             <div className="space-y-2">
                               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -248,16 +234,21 @@ export function AIDisagreementsPage() {
                               <div className="bg-white rounded-lg border border-orange-200 p-3 space-y-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-500 text-xs w-16">Action:</span>
-                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border capitalize ${RESOLUTION_STYLES[item.human_resolution] || ""}`}>
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-800 border border-orange-200 capitalize">
                                     {item.human_resolution}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500 text-xs">Reason:</span>
-                                  <p className="text-xs text-gray-800 mt-1 leading-relaxed">
-                                    {item.human_reason || "—"}
-                                  </p>
+                                  <p className="text-xs text-gray-800 mt-1 leading-relaxed">{item.human_reason || "—"}</p>
                                 </div>
+                                <p className="text-[10px] text-gray-400">by @{item.reversed_by?.username}</p>
+                              </div>
+                              {/* Content Preview */}
+                              <div className="bg-white rounded-lg border border-gray-100 p-3">
+                                {item.content_title && <p className="text-xs font-medium text-gray-700 mb-1">{item.content_title}</p>}
+                                <p className="text-xs text-gray-600 line-clamp-4">{item.content_preview}</p>
+                                <p className="text-[10px] text-gray-400 mt-1">by @{item.author?.username}</p>
                               </div>
                             </div>
                           </div>
@@ -271,29 +262,16 @@ export function AIDisagreementsPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-            <span className="text-xs text-gray-500">
-              Page {page} of {totalPages} ({total} disagreements)
-            </span>
+            <span className="text-xs text-gray-500">Page {page} of {totalPages} ({total} disagreements)</span>
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                title="Previous page"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button type="button" title="Previous page" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                title="Next page"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button type="button" title="Next page" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                className="p-1.5 rounded-md hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -306,41 +284,21 @@ export function AIDisagreementsPage() {
 
 function AIModerationTabs() {
   const tabs = [
-    { to: "/admin/ai-moderation", label: "Review Queue", end: true },
+    { to: "/admin/ai-moderation", label: "Stats", end: true },
+    { to: "/admin/ai-moderation/review", label: "Review Queue", end: false },
     { to: "/admin/ai-moderation/audit", label: "Audit Trail", end: false },
     { to: "/admin/ai-moderation/disagreements", label: "Disagreements", end: false },
   ];
   return (
     <div className="flex gap-1 border-b border-gray-200 -mt-2">
       {tabs.map((tab) => (
-        <NavLink
-          key={tab.to}
-          to={tab.to}
-          end={tab.end}
+        <NavLink key={tab.to} to={tab.to} end={tab.end}
           className={({ isActive }) =>
-            `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              isActive
-                ? "border-violet-500 text-violet-700"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`
-          }
-        >
+            `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${isActive ? "border-violet-500 text-violet-700" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`
+          }>
           {tab.label}
         </NavLink>
       ))}
-    </div>
-  );
-}
-
-function ConfidenceBar({ value }: { value: number }) {
-  const pct = Math.round(value * 100);
-  const color = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-amber-500" : "bg-red-500";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-gray-600 font-medium">{pct}%</span>
     </div>
   );
 }

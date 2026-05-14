@@ -563,12 +563,11 @@ export const MSG = {
     // AI Moderation
     AI_REVIEW_LOAD_FAILED: 'Unable to load review queue, please try again',
     AI_REVIEW_STATS_FAILED: 'Unable to load review stats, please try again',
-    AI_REVIEW_CLAIMED: 'Item claimed',
-    AI_REVIEW_CLAIM_FAILED: 'Unable to claim item, please try again',
-    AI_REVIEW_RESOLVED: 'Item resolved',
-    AI_REVIEW_RESOLVE_FAILED: 'Unable to resolve item, please try again',
+    AI_REVIEW_RESOLVED: 'Action completed',
+    AI_REVIEW_RESOLVE_FAILED: 'Unable to complete action, please try again',
     AI_AUDIT_LOAD_FAILED: 'Unable to load audit trail, please try again',
     AI_AUDIT_DETAIL_FAILED: 'Unable to load item history, please try again',
+    AI_STATS_LOAD_FAILED: 'Unable to load AI stats, please try again',
     AI_DISAGREEMENTS_LOAD_FAILED: 'Unable to load disagreements, please try again',
   },
 

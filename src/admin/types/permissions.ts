@@ -68,7 +68,6 @@ export const PERMISSIONS = {
 
   // AI Moderation
   AI_REVIEW_VIEW: 'ai_review:view',
-  AI_REVIEW_CLAIM: 'ai_review:claim',
   AI_REVIEW_RESOLVE: 'ai_review:resolve',
   AI_AUDIT_VIEW: 'ai_audit:view',
   AI_DISAGREEMENTS_VIEW: 'ai_disagreements:view',
@@ -367,11 +366,6 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         description: 'Browse the AI moderation review queue and stats',
       },
       {
-        key: PERMISSIONS.AI_REVIEW_CLAIM,
-        label: 'Claim Review Items',
-        description: 'Claim AI-flagged items for manual review',
-      },
-      {
         key: PERMISSIONS.AI_REVIEW_RESOLVE,
         label: 'Resolve Review Items',
         description: 'Confirm, reverse, or modify AI moderation decisions',
@@ -425,6 +419,5 @@ export const MODERATOR_PERMISSIONS: Permission[] = [
   PERMISSIONS.CONTENT_HIDE,
   PERMISSIONS.CONTENT_RESTORE,
   PERMISSIONS.CONTENT_REMOVE,
-  PERMISSIONS.AI_REVIEW_CLAIM,
   PERMISSIONS.AI_REVIEW_RESOLVE,
 ];
