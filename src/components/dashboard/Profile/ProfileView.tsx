@@ -51,9 +51,9 @@ import {
   UpdateCompanyVerificationEmail,
   GetCompanyVerificationStatus,
 } from '../../../../api/profileApis';
-import { GetUserPosts, GetBookmarks } from '../../../../api/feedApis';
-import { GetMyForumTopics, GetBookmarkedForumTopics } from '../../../../api/forumApis';
-import { GetMyNooks, GetBookmarkedNooks } from '../../../../api/nookApis';
+import { GetUserPosts, GetBookmarks, DeletePost } from '../../../../api/feedApis';
+import { GetMyForumTopics, GetBookmarkedForumTopics, DeleteForumTopic } from '../../../../api/forumApis';
+import { GetMyNooks, GetBookmarkedNooks, DeleteNooksById } from '../../../../api/nookApis';
 import { GetMyActivity, GetMyBookmarks } from '../../../../api/profileApis';
 import { GetFollowers, GetFollowing, UnfollowUser } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
@@ -64,6 +64,9 @@ import { DecryptData } from '../../../../api/EncrytionApis';
 import { resolveAuthorName } from '../../../utils/nameUtils';
 import { validateEmailDomain, getDomainsForCompany } from '../../../utils/companyDomains';
 import { VerifiedBadge } from '../../shared/VerifiedBadge';
+import { ContentMenu } from '../../shared/ContentMenu';
+import { ConfirmModal } from '../../shared/ConfirmModal';
+import { EditContentModal } from '../../shared/EditContentModal';
 
 interface PrivacySettings {
   profileVisibility: 'public' | 'connections' | 'private';
@@ -184,6 +187,11 @@ export function ProfileView() {
   const [followersTotal, setFollowersTotal] = useState(0);
   const [followingTotal, setFollowingTotal] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+
+  // Edit/delete content from activity (must be before early returns)
+  const [editingActivityItem, setEditingActivityItem] = useState<{ item: any; type: 'post' | 'topic' | 'nook' } | null>(null);
+  const [deletingActivityItem, setDeletingActivityItem] = useState<{ id: string; contentId: string; type: string } | null>(null);
+  const [deleteActivityLoading, setDeleteActivityLoading] = useState(false);
 
   // Decrypt first_name and last_name
   useEffect(() => {
@@ -637,7 +645,36 @@ export function ProfileView() {
     }
   };
 
-  // Delete account handler
+  // ── Edit content from activity ──────────────────────────────────────
+  const handleEditActivitySuccess = (updatedData: any) => {
+    setAggregatedItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== editingActivityItem?.item.id) return i;
+        return { ...i, ...updatedData, is_edited: true };
+      })
+    );
+    setEditingActivityItem(null);
+  };
+
+  // ── Delete content from activity ─────────────────────────────────────
+  const handleDeleteActivityItem = async () => {
+    if (!deletingActivityItem) return;
+    setDeleteActivityLoading(true);
+    try {
+      const { contentId, type } = deletingActivityItem;
+      if (type === 'post') await DeletePost(contentId);
+      else if (type === 'topic') await DeleteForumTopic(contentId);
+      else await DeleteNooksById(contentId);
+      setAggregatedItems((prev) => prev.filter((i) => i.id !== deletingActivityItem.id));
+      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`, 'success');
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete', 'error');
+    } finally {
+      setDeleteActivityLoading(false);
+      setDeletingActivityItem(null);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     try {
       setDeletingAccount(true);
@@ -887,10 +924,19 @@ export function ProfileView() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5 sm:mt-1">
-                                <span>{getTimeAgo(item.created_at)}</span>
+                                <span>{getTimeAgo(item.created_at)}{item.is_edited && <span className="text-xs text-gray-400 italic ml-1">(edited)</span>}</span>
                               </div>
                             </div>
                           </div>
+                          {profileTab === 'my_posts' && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <ContentMenu
+                                isOwner
+                                onEdit={() => setEditingActivityItem({ item, type: 'post' })}
+                                onDelete={() => setDeletingActivityItem({ id: item.id, contentId: item.content_id || item.id, type: 'post' })}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="mb-2 sm:mb-3">
                           <p className="text-gray-800 leading-relaxed text-sm sm:text-base">{displayText}</p>
@@ -960,6 +1006,15 @@ export function ProfileView() {
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="relative z-10">
                         <div className="flex items-start gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
+                          {profileTab === 'my_posts' && (
+                            <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
+                              <ContentMenu
+                                isOwner
+                                onEdit={() => setEditingActivityItem({ item, type: 'topic' })}
+                                onDelete={() => setDeletingActivityItem({ id: item.id, contentId: item.content_id || item.id, type: 'topic' })}
+                              />
+                            </div>
+                          )}
                           <button aria-label="View user profile" className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-base sm:text-lg md:text-xl shadow-sm border border-purple-200/50 flex-shrink-0 hover:bg-blue-200 transition-colors min-w-[44px] min-h-[44px]">
                             {avatarEmoji}
                           </button>
@@ -987,7 +1042,7 @@ export function ProfileView() {
                                 </span>
                               )}
                               <span className="text-gray-400 font-medium">&middot;</span>
-                              <span className="text-gray-500 font-medium">{getTimeAgo(item.created_at)}</span>
+                              <span className="text-gray-500 font-medium">{getTimeAgo(item.created_at)}{item.is_edited && <span className="text-xs text-gray-400 italic ml-1">(edited)</span>}</span>
                             </div>
                             <div className="text-sm sm:text-base md:text-xl font-bold text-gray-900 mb-1.5 sm:mb-2 group-hover:text-purple-700 transition-colors leading-tight text-left break-words">
                               {item.title}
@@ -1067,7 +1122,7 @@ export function ProfileView() {
                                 <MessageCircle className="w-3 h-3" />
                                 <span>Comment</span>
                               </div>
-                              <span className="text-xs text-gray-400">{getTimeAgo(item.created_at)}</span>
+                              <span className="text-xs text-gray-400">{getTimeAgo(item.created_at)}{item.is_edited && <span className="italic ml-1">(edited)</span>}</span>
                             </div>
                             <p className="text-xs text-gray-500 mb-2">
                               Commented on <span className="font-medium text-purple-600">{topicTitle}</span>
@@ -1109,8 +1164,17 @@ export function ProfileView() {
                                 {item.description}
                               </p>
                             </div>
-                            <div className="flex items-center gap-1 ml-3 sm:ml-4">
+                            <div className="flex items-center gap-2 ml-3 sm:ml-4">
                               <TempIcon className={`w-4 h-4 ${tempColor}`} />
+                              {profileTab === 'my_posts' && (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <ContentMenu
+                                    isOwner
+                                    onEdit={() => setEditingActivityItem({ item, type: 'nook' })}
+                                    onDelete={() => setDeletingActivityItem({ id: item.id, contentId: item.nook_id || item.id, type: 'nook' })}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                           {item.hashtags && item.hashtags.length > 0 && (
@@ -2002,6 +2066,30 @@ export function ProfileView() {
       {showEditProfilePanel && (
         <EditProfilePanel onClose={() => setShowEditProfilePanel(false)} />
       )}
+
+      {editingActivityItem && (
+        <EditContentModal
+          isOpen={!!editingActivityItem}
+          onClose={() => setEditingActivityItem(null)}
+          onSuccess={handleEditActivitySuccess}
+          contentType={editingActivityItem.type}
+          item={editingActivityItem.item}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={!!deletingActivityItem}
+        title={`Delete ${deletingActivityItem?.type === 'post' ? 'Post' : deletingActivityItem?.type === 'topic' ? 'Topic' : 'Nook'}`}
+        message={
+          deletingActivityItem?.type === 'nook'
+            ? 'Delete this nook? All messages will also be deleted. This cannot be undone.'
+            : `Delete this ${deletingActivityItem?.type || 'content'}? All comments and replies will also be deleted. This cannot be undone.`
+        }
+        confirmLabel="Delete"
+        loading={deleteActivityLoading}
+        onConfirm={handleDeleteActivityItem}
+        onCancel={() => setDeletingActivityItem(null)}
+      />
     </div>
   );
 }
