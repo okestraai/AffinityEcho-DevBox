@@ -102,6 +102,16 @@ export function TopicDetailPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const commentSentinelRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // These must be before any early returns (loading/!topic guards)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'topic' | 'comment'; id: string; message: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [editTopicTitle, setEditTopicTitle] = useState("");
+  const [editTopicContent, setEditTopicContent] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
   // Reset visible count when topic changes
   useEffect(() => { setVisibleCommentCount(15); }, [topicId]);
 
@@ -480,10 +490,6 @@ export function TopicDetailPage() {
     }
   };
 
-  // ── Delete confirmation state ─────────────────────────────────────────
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'topic' | 'comment'; id: string; message: string } | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
   // ISOLATED COMMENT DELETE - Only removes specific comment
   const handleDeleteComment = async (commentId: string) => {
     setDeleteConfirm({
@@ -543,10 +549,6 @@ export function TopicDetailPage() {
   };
 
   // ── Edit/Delete topic ───────────────────────────────────────────────────
-  const [editingTopic, setEditingTopic] = useState(false);
-  const [editTopicTitle, setEditTopicTitle] = useState("");
-  const [editTopicContent, setEditTopicContent] = useState("");
-
   const handleEditTopic = () => {
     if (!topic) return;
     setEditTopicTitle(topic.title);
@@ -613,10 +615,6 @@ export function TopicDetailPage() {
   };
 
   // ── Edit comment ───────────────────────────────────────────────────────
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editCommentText, setEditCommentText] = useState("");
-  const [savingComment, setSavingComment] = useState(false);
-
   const handleEditComment = async (commentId: string, newContent: string) => {
     setSavingComment(true);
     try {
