@@ -9,11 +9,8 @@ import {
   Lightbulb,
   Bookmark,
   Share2,
-  MoreVertical,
   Clock,
   Send,
-  Flag,
-  Trash2,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -28,6 +25,9 @@ import {
   TopicsCommentsReactions,
   DeleteTopicsComments,
   ToggleTopicBookmark,
+  UpdateForumTopic,
+  DeleteForumTopic,
+  UpdateTopicComment,
 } from "../../../../api/forumApis";
 import { shareContent } from "../../../utils/shareUtils";
 import { getTimeAgo } from "../../../utils/forumUtils";
@@ -42,12 +42,15 @@ import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { ContentMenu } from "../../shared/ContentMenu";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { MentionText } from "../../shared/MentionText";
+import { ConfirmModal } from "../../shared/ConfirmModal";
 
 interface ForumComment {
   id: string;
   user_id: string;
   content: string;
   created_at: string;
+  updated_at?: string;
+  is_edited?: boolean;
   parent_comment_id: string | null;
   helpful_count?: number;
   userReactions?: Record<string, boolean | undefined>;
@@ -477,9 +480,20 @@ export function TopicDetailPage() {
     }
   };
 
+  // ── Delete confirmation state ─────────────────────────────────────────
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'topic' | 'comment'; id: string; message: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // ISOLATED COMMENT DELETE - Only removes specific comment
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
+    setDeleteConfirm({
+      type: 'comment',
+      id: commentId,
+      message: 'Delete this comment? All replies under it will also be deleted. This cannot be undone.',
+    });
+  };
+
+  const executeDeleteComment = async (commentId: string) => {
 
     try {
       // Optimistically remove comment from UI
@@ -525,6 +539,101 @@ export function TopicDetailPage() {
       const freshComments = Array.isArray(result) ? result : (result?.comments || []);
       const nestedComments = buildCommentTree(freshComments);
       setComments(nestedComments);
+    }
+  };
+
+  // ── Edit/Delete topic ───────────────────────────────────────────────────
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [editTopicTitle, setEditTopicTitle] = useState("");
+  const [editTopicContent, setEditTopicContent] = useState("");
+
+  const handleEditTopic = () => {
+    if (!topic) return;
+    setEditTopicTitle(topic.title);
+    setEditTopicContent(topic.content);
+    setEditingTopic(true);
+  };
+
+  const handleSaveEditTopic = async () => {
+    if (!topic || !editTopicTitle.trim()) return;
+    try {
+      const res = await UpdateForumTopic(topic.id, {
+        title: editTopicTitle.trim(),
+        content: editTopicContent.trim(),
+      });
+      const updated = (res as { data?: ForumTopic })?.data || res;
+      setTopic((prev) =>
+        prev ? {
+          ...prev,
+          title: (updated as ForumTopic)?.title || editTopicTitle.trim(),
+          content: (updated as ForumTopic)?.content || editTopicContent.trim(),
+          is_edited: true,
+        } as ForumTopic : prev
+      );
+      setEditingTopic(false);
+      showToast("Topic updated", "success");
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update topic", "error");
+    }
+  };
+
+  const handleDeleteTopic = () => {
+    if (!topic) return;
+    setDeleteConfirm({
+      type: 'topic',
+      id: topic.id,
+      message: 'Delete this topic? All comments and replies will also be deleted. This cannot be undone.',
+    });
+  };
+
+  const executeDeleteTopic = async () => {
+    if (!topic) return;
+    try {
+      await DeleteForumTopic(topic.id);
+      showToast("Topic deleted", "success");
+      navigate("/dashboard/forums");
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to delete topic", "error");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    try {
+      if (deleteConfirm.type === 'comment') {
+        await executeDeleteComment(deleteConfirm.id);
+      } else {
+        await executeDeleteTopic();
+      }
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm(null);
+    }
+  };
+
+  // ── Edit comment ───────────────────────────────────────────────────────
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
+
+  const handleEditComment = async (commentId: string, newContent: string) => {
+    setSavingComment(true);
+    try {
+      await UpdateTopicComment(commentId, { content: newContent });
+      const updateInTree = (list: ForumComment[]): ForumComment[] =>
+        list.map((c) => {
+          if (c.id === commentId) return { ...c, content: newContent, is_edited: true, updated_at: new Date().toISOString() } as ForumComment;
+          if (c.replies?.length) return { ...c, replies: updateInTree(c.replies) };
+          return c;
+        });
+      setComments((prev) => updateInTree(prev));
+      setEditingCommentId(null);
+      showToast("Comment updated", "success");
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update comment", "error");
+    } finally {
+      setSavingComment(false);
     }
   };
 
@@ -583,9 +692,18 @@ export function TopicDetailPage() {
                 <span className="text-gray-400">•</span>
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {getTimeAgo(comment.created_at)}
+                  {getTimeAgo(comment.created_at as string)}
+                  {(comment.is_edited || (comment.updated_at && comment.updated_at !== comment.created_at)) && (
+                    <span className="text-xs text-gray-400 italic ml-1">(edited)</span>
+                  )}
                 </span>
-                {!isAuthor && (
+                {isAuthor ? (
+                  <ContentMenu
+                    isOwner
+                    onEdit={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); }}
+                    onDelete={() => handleDeleteComment(comment.id)}
+                  />
+                ) : (
                   <ContentMenu
                     contentType="comment"
                     contentId={comment.id}
@@ -594,10 +712,39 @@ export function TopicDetailPage() {
                 )}
               </div>
 
-              <MentionText
-                text={comment.content}
-                className="text-gray-700 leading-relaxed mb-3 whitespace-pre-wrap block"
-              />
+              {editingCommentId === comment.id ? (
+                <div className="mb-3">
+                  <MentionTextarea
+                    value={editCommentText}
+                    onChange={setEditCommentText}
+                    placeholder="Edit comment... Use @ to mention someone"
+                    className="w-full text-sm text-gray-700 border border-purple-300 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200"
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleEditComment(comment.id, editCommentText.trim())}
+                      disabled={savingComment || !editCommentText.trim() || editCommentText.trim() === comment.content}
+                      className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {savingComment ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCommentId(null)}
+                      className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <MentionText
+                  text={comment.content}
+                  className="text-gray-700 leading-relaxed mb-3 whitespace-pre-wrap block"
+                />
+              )}
 
               <div className="flex items-center gap-4 flex-wrap">
                 <button
@@ -643,16 +790,6 @@ export function TopicDetailPage() {
                   </button>
                 )}
 
-                {isAuthor && (
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="flex items-center text-sm text-gray-400 hover:text-red-500 transition-colors"
-                    title="Delete comment"
-                    aria-label="Delete comment"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -714,21 +851,69 @@ export function TopicDetailPage() {
                 </div>
               </div>
 
-              {topic.user_id !== currentUser?.id && (
+              {topic.user_id === currentUser?.id ? (
+                <ContentMenu
+                  isOwner
+                  isLocked={!!(topic as Record<string, unknown>).is_locked}
+                  onEdit={handleEditTopic}
+                  onDelete={handleDeleteTopic}
+                />
+              ) : (
                 <ContentMenu contentType="topic" contentId={topic.id} onHide={() => navigate("/dashboard/forums")} />
               )}
             </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-              {topic.title}
-            </h1>
+            {editingTopic ? (
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={editTopicTitle}
+                  onChange={(e) => setEditTopicTitle(e.target.value)}
+                  className="w-full text-xl sm:text-2xl font-bold text-gray-900 border border-purple-300 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  placeholder="Topic title"
+                  autoFocus
+                />
+                <MentionTextarea
+                  value={editTopicContent}
+                  onChange={setEditTopicContent}
+                  placeholder="Edit topic content... Use @ to mention someone"
+                  className="w-full border border-purple-300 rounded-lg px-3 py-2 text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200 min-h-[100px]"
+                />
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveEditTopic}
+                    disabled={!editTopicTitle.trim()}
+                    className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingTopic(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                  {topic.title}
+                </h1>
 
-            <div className="prose max-w-none mb-6">
-              <MentionText
-                text={topic.content}
-                className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg block"
-              />
-            </div>
+                <div className="prose max-w-none mb-6">
+                  <MentionText
+                    text={topic.content as string}
+                    className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg block"
+                  />
+                  {(topic as Record<string, unknown>).is_edited && (
+                    <span className="text-xs text-gray-400 italic">(edited)</span>
+                  )}
+                </div>
+              </>
+            )}
 
             {topic.tags && topic.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-6">
@@ -959,6 +1144,16 @@ export function TopicDetailPage() {
         onClose={() => setShowOkestraPanel(false)}
         topic={topic as unknown as Parameters<typeof OkestraPanel>[0]['topic']}
         comments={comments as unknown as Parameters<typeof OkestraPanel>[0]['comments']}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        title={deleteConfirm?.type === 'topic' ? 'Delete Topic' : 'Delete Comment'}
+        message={deleteConfirm?.message || ''}
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
       />
     </div>
   );

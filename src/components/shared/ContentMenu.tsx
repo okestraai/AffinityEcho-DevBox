@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Flag, EyeOff, Loader2 } from 'lucide-react';
+import { MoreVertical, Flag, EyeOff, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { FlagContent, HideContent } from '../../../api/contentApis';
 import { showToast } from '../../Helper/ShowToast';
 
@@ -13,12 +13,24 @@ const REASONS = [
 ];
 
 interface Props {
-  contentType: string;
-  contentId: string;
+  contentType?: string;
+  contentId?: string;
+  isOwner?: boolean;
+  isLocked?: boolean;
   onHide?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function ContentMenu({ contentType, contentId, onHide }: Props) {
+export function ContentMenu({
+  contentType,
+  contentId,
+  isOwner,
+  isLocked,
+  onHide,
+  onEdit,
+  onDelete,
+}: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [reason, setReason] = useState('');
@@ -40,6 +52,7 @@ export function ContentMenu({ contentType, contentId, onHide }: Props) {
 
   const handleHide = async () => {
     setShowMenu(false);
+    if (!contentType || !contentId) return;
     try {
       await HideContent(contentType, contentId);
       onHide?.();
@@ -49,8 +62,20 @@ export function ContentMenu({ contentType, contentId, onHide }: Props) {
     }
   };
 
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onEdit?.();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.();
+  };
+
   const handleFlag = async () => {
-    if (!reason) {
+    if (!reason || !contentType || !contentId) {
       showToast('Please select a reason', 'error');
       return;
     }
@@ -82,29 +107,62 @@ export function ContentMenu({ contentType, contentId, onHide }: Props) {
 
         {showMenu && (
           <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 w-40">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowFlagModal(true); }}
-              className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-red-50 transition-colors text-left"
-            >
-              <Flag className="w-4 h-4 text-red-500" />
-              <span className="text-sm font-medium text-red-600">Report</span>
-            </button>
-            <div className="h-px bg-gray-100" />
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); handleHide(); }}
-              className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-            >
-              <EyeOff className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Hide</span>
-            </button>
+            {isOwner ? (
+              <>
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    disabled={isLocked}
+                    className={`w-full flex items-center gap-2.5 px-4 py-3 transition-colors text-left ${
+                      isLocked
+                        ? 'opacity-40 cursor-not-allowed'
+                        : 'hover:bg-blue-50'
+                    }`}
+                  >
+                    <Pencil className={`w-4 h-4 ${isLocked ? 'text-gray-300' : 'text-blue-500'}`} />
+                    <span className={`text-sm font-medium ${isLocked ? 'text-gray-300' : 'text-blue-600'}`}>Edit</span>
+                  </button>
+                )}
+                {onEdit && onDelete && <div className="h-px bg-gray-100" />}
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-red-50 transition-colors text-left"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span className="text-sm font-medium text-red-600">Delete</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowFlagModal(true); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-red-50 transition-colors text-left"
+                >
+                  <Flag className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-600">Report</span>
+                </button>
+                <div className="h-px bg-gray-100" />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleHide(); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <EyeOff className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">Hide</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* Flag Modal */}
-      {showFlagModal && (
+      {showFlagModal && contentType && contentId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowFlagModal(false)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-4">

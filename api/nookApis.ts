@@ -262,3 +262,21 @@ export const EditNookMessage = async (
   );
   return unwrap(res);
 };
+
+/**
+ * Update a nook's metadata
+ */
+export const UpdateNook = async (
+  nookId: string,
+  payload: {
+    title?: string;
+    description?: string;
+    urgency?: 'high' | 'medium' | 'low';
+    scope?: 'global' | 'company';
+    hashtags?: string[];
+  }
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(`${API_URL}/nooks/${nookId}`, payload);
+  return unwrap(res);
+};

@@ -18,7 +18,12 @@ import {
   PostNookMessageByNookId,
   toggleMessageReaction, // ← Use the toggle function (POST only)
   EditNookMessage,
+  DeleteNooksMessageById,
+  DeleteNooksById,
 } from "../../../../api/nookApis";
+import { ContentMenu } from "../../shared/ContentMenu";
+import { ConfirmModal } from "../../shared/ConfirmModal";
+import { EditContentModal } from "../../shared/EditContentModal";
 
 import { NookMessageSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
@@ -235,6 +240,55 @@ export function NookDetail({
     }
   };
 
+  // ── Delete message ─────────────────────────────────────────────────────
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDeleteMessage = (messageId: string) => {
+    setDeletingMessageId(messageId);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deletingMessageId) return;
+    setDeleteLoading(true);
+    try {
+      await DeleteNooksMessageById(nook.id, deletingMessageId);
+      const removeFromList = (list: typeof messages): typeof messages =>
+        list.filter((m) => m.id !== deletingMessageId).map((m) => ({
+          ...m,
+          replies: m.replies ? removeFromList(m.replies as typeof messages) : [],
+        }));
+      setMessages((prev) => removeFromList(prev));
+      showToast("Message deleted", "success");
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to delete message", "error");
+    } finally {
+      setDeleteLoading(false);
+      setDeletingMessageId(null);
+    }
+  };
+
+  // ── Edit nook ────────────────────────────────────────────────────────
+  const [showEditNook, setShowEditNook] = useState(false);
+
+  // ── Delete nook ───────────────────────────────────────────────────────
+  const [showDeleteNook, setShowDeleteNook] = useState(false);
+  const [deleteNookLoading, setDeleteNookLoading] = useState(false);
+
+  const confirmDeleteNook = async () => {
+    setDeleteNookLoading(true);
+    try {
+      await DeleteNooksById(nook.id);
+      showToast("Nook deleted", "success");
+      onBack();
+    } catch (err: unknown) {
+      showToast((err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to delete nook", "error");
+    } finally {
+      setDeleteNookLoading(false);
+      setShowDeleteNook(false);
+    }
+  };
+
   // ── RENDER ───────────────────────────────────────────────────────────────
 
   return (
@@ -252,6 +306,13 @@ export function NookDetail({
             <div className="flex items-center gap-2 text-sm sm:text-base">
               {getTemperatureIcon(nook.temperature)}
               <span className="capitalize font-medium">{nook.temperature}</span>
+              {nook.isCreator && (
+                <ContentMenu
+                  isOwner
+                  onEdit={() => setShowEditNook(true)}
+                  onDelete={() => setShowDeleteNook(true)}
+                />
+              )}
             </div>
           </div>
 
@@ -328,8 +389,10 @@ export function NookDetail({
               onReact={handleReact}
               onReply={handleReply}
               onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
               isReplying={replyingTo === msg.id}
               onHide={(id) => setMessages((prev) => prev.filter((m) => m.id !== id))}
+              isNookCreator={nook.isCreator}
             />
           ))}
         </div>
@@ -437,6 +500,37 @@ export function NookDetail({
           />
         );
       })()}
+
+      <ConfirmModal
+        isOpen={!!deletingMessageId}
+        title="Delete Message"
+        message="Delete this message? All replies under it will also be deleted. This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onConfirm={confirmDeleteMessage}
+        onCancel={() => setDeletingMessageId(null)}
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteNook}
+        title="Delete Nook"
+        message="Delete this nook? All messages will also be deleted. This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteNookLoading}
+        onConfirm={confirmDeleteNook}
+        onCancel={() => setShowDeleteNook(false)}
+      />
+
+      <EditContentModal
+        isOpen={showEditNook}
+        onClose={() => setShowEditNook(false)}
+        onSuccess={() => {
+          setShowEditNook(false);
+          onNookUpdated?.();
+        }}
+        contentType="nook"
+        item={{ id: nook.id, name: nook.title, description: nook.description }}
+      />
     </div>
   );
 }

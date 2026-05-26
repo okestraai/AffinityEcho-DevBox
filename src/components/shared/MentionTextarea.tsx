@@ -219,6 +219,7 @@ export function MentionTextarea({
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         className={className}
+        style={{ overflowWrap: "break-word", wordBreak: "break-word", ...textareaProps.style }}
       />
 
       {showSuggestions && (searchQuery.length > 0 || searching) && (
@@ -256,13 +257,8 @@ export function MentionTextarea({
                 </div>
                 <div className="min-w-0">
                   <div className="font-medium truncate">
-                    {user.display_name || user.username}
+                    @{user.username}
                   </div>
-                  {user.display_name && (
-                    <div className="text-xs text-gray-500 truncate">
-                      @{user.username}
-                    </div>
-                  )}
                 </div>
               </button>
             ))
@@ -504,13 +500,8 @@ export function MentionInput({
                 </div>
                 <div className="min-w-0">
                   <div className="font-medium truncate">
-                    {user.display_name || user.username}
+                    @{user.username}
                   </div>
-                  {user.display_name && (
-                    <div className="text-xs text-gray-500 truncate">
-                      @{user.username}
-                    </div>
-                  )}
                 </div>
               </button>
             ))

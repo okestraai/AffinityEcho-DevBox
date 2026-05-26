@@ -514,6 +514,13 @@ export function ProfileView() {
     return `${days}d`;
   };
 
+  const getNookTimeLeft = (item: Record<string, any>) => {
+    const nested = typeof item.content === 'object' ? item.content : null;
+    const timeLeft = nested?.nook_time_left || item.nook_time_left;
+    if (timeLeft) return timeLeft;
+    return getTimeLeft(item.expires_at || nested?.expires_at) || item.timeLeft || '—';
+  };
+
   // Filter items by content type (comments are grouped under topics)
   const filteredItems = contentFilter === 'all'
     ? aggregatedItems
@@ -1197,7 +1204,7 @@ export function ProfileView() {
                             <div className="text-[10px] sm:text-xs text-gray-500 font-medium">Messages</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-base sm:text-lg font-bold text-green-600">{getTimeLeft(item.expires_at) || item.timeLeft || '—'}</div>
+                            <div className="text-base sm:text-lg font-bold text-green-600">{getNookTimeLeft(item)}</div>
                             <div className="text-[10px] sm:text-xs text-gray-500 font-medium">Remaining</div>
                           </div>
                         </div>

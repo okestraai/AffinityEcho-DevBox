@@ -25,12 +25,15 @@ import { useAuth } from "../../../hooks/useAuth";
 import {
   GetFeed,
   CreatePost,
+  UpdatePost,
+  DeletePost,
   ToggleFeedReaction,
   AddComment,
   GetComments,
   ToggleBookmark,
 } from "../../../../api/feedApis";
-import { GetAllCommentsForATopic, CreateForumTopicsComments } from "../../../../api/forumApis";
+import { GetAllCommentsForATopic, CreateForumTopicsComments, DeleteForumTopic } from "../../../../api/forumApis";
+import { DeleteNooksById } from "../../../../api/nookApis";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
@@ -40,6 +43,7 @@ import { InlineCommentInput } from "../Forum/InlineCommentInput";
 import { MentionTextarea } from "../../shared/MentionTextarea";
 import { FeedSkeleton } from "../../../Helper/SkeletonLoader";
 import { MentionText } from "../../shared/MentionText";
+import { ConfirmModal } from "../../shared/ConfirmModal";
 
 interface FeedItem {
   id: string;
@@ -269,18 +273,35 @@ export function FeedsView() {
 
     try {
       setSubmitting(true);
-      await CreatePost({
-        content: postContent,
-        visibility: "global",
-      });
+      if (editingPost) {
+        const res = await UpdatePost(editingPost.content_id || editingPost.id, {
+          content: postContent.trim(),
+        });
+        const updated = (res as { data?: { content?: string } })?.data || res;
+        setFeedItems((prev) =>
+          prev.map((f) =>
+            f.id === editingPost.id
+              ? { ...f, content: { ...f.content, text: (updated as { content?: string })?.content || postContent.trim() } }
+              : f
+          )
+        );
+        showToast("Post updated", "success");
+        setEditingPost(null);
+      } else {
+        await CreatePost({
+          content: postContent,
+          visibility: "global",
+        });
+        showToast(MSG.FEED.POST_CREATED, "success");
+        loadFeed(1);
+      }
 
-      showToast(MSG.FEED.POST_CREATED, "success");
       setPostContent("");
       setShowCreatePost(false);
-      loadFeed(1);
-    } catch (error) {
-      console.error("Error creating post:", error);
-      showToast(MSG.FEED.CREATE_FAILED, "error");
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (editingPost ? "Failed to update post" : MSG.FEED.CREATE_FAILED);
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -390,6 +411,50 @@ export function FeedsView() {
           return i;
         })
       );
+    }
+  };
+
+  // ── Edit/Delete content ──────────────────────────────────────────────
+  const [editingPost, setEditingPost] = useState<FeedItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<FeedItem | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleEditContent = (item: FeedItem) => {
+    if (item.content_type === "post") {
+      setEditingPost(item);
+      setPostContent(item.content.text || "");
+      setShowCreatePost(true);
+    } else if (item.content_type === "topic") {
+      navigate(`/dashboard/forums/topic/${item.content_id}`);
+    }
+  };
+
+  const handleDeleteContent = (item: FeedItem) => {
+    setDeletingItem(item);
+  };
+
+  const confirmDeleteContent = async () => {
+    if (!deletingItem) return;
+    const item = deletingItem;
+    const label = item.content_type === "post" ? "post" : item.content_type === "topic" ? "topic" : "nook";
+
+    setDeleteLoading(true);
+    try {
+      if (item.content_type === "post") {
+        await DeletePost(item.content_id || item.id);
+      } else if (item.content_type === "topic") {
+        await DeleteForumTopic(item.content_id || item.id);
+      } else if (item.content_type === "nook") {
+        await DeleteNooksById(item.content_id || item.id);
+      }
+      setFeedItems((prev) => prev.filter((f) => f.id !== item.id));
+      showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} deleted`, "success");
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to delete";
+      showToast(message, "error");
+    } finally {
+      setDeleteLoading(false);
+      setDeletingItem(null);
     }
   };
 
@@ -616,10 +681,10 @@ export function FeedsView() {
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center justify-between">
               <h2 className="text-lg md:text-xl font-bold text-gray-900">
-                Share Your Thoughts
+                {editingPost ? "Edit Post" : "Share Your Thoughts"}
               </h2>
               <button
-                onClick={() => setShowCreatePost(false)}
+                onClick={() => { setShowCreatePost(false); setEditingPost(null); setPostContent(""); }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Close"
               >
@@ -664,7 +729,8 @@ export function FeedsView() {
                 </p>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <button
-                    onClick={() => setShowCreatePost(false)}
+                    type="button"
+                    onClick={() => { setShowCreatePost(false); setEditingPost(null); setPostContent(""); }}
                     className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Cancel
@@ -675,7 +741,7 @@ export function FeedsView() {
                     className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <Send className="w-4 h-4" />
-                    {submitting ? "Posting..." : "Post"}
+                    {submitting ? (editingPost ? "Updating..." : "Posting...") : (editingPost ? "Update" : "Post")}
                   </button>
                 </div>
               </div>
@@ -745,11 +811,18 @@ export function FeedsView() {
                         <div className="flex items-center gap-2 ml-4">
                           {getTemperatureIcon(item.content.nook_temperature)}
                           <div onClick={(e) => e.stopPropagation()}>
-                            <ContentMenu
-                              contentType="nook"
-                              contentId={item.id}
-                              onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
-                            />
+                            {user?.id === item.user_id ? (
+                              <ContentMenu
+                                isOwner
+                                onDelete={() => handleDeleteContent(item)}
+                              />
+                            ) : (
+                              <ContentMenu
+                                contentType="nook"
+                                contentId={item.id}
+                                onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -814,7 +887,7 @@ export function FeedsView() {
                       </div>
                       <div className="text-xs text-gray-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {formatTimeAgo(item.created_at)}
+                        {formatTimeAgo(item.created_at)}{(item as any).is_edited && <span className="text-xs text-gray-400 italic ml-1">(edited)</span>}
                       </div>
                     </div>
                   </div>
@@ -864,15 +937,24 @@ export function FeedsView() {
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           <span>{formatTimeAgo(item.created_at)}</span>
+                          {(item as any).is_edited && <span className="text-xs text-gray-400 italic">(edited)</span>}
                         </div>
                       </div>
                     </div>
                     <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
-                      <ContentMenu
-                        contentType="topic"
-                        contentId={item.id}
-                        onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
-                      />
+                      {user?.id === item.user_id ? (
+                        <ContentMenu
+                          isOwner
+                          onEdit={() => handleEditContent(item)}
+                          onDelete={() => handleDeleteContent(item)}
+                        />
+                      ) : (
+                        <ContentMenu
+                          contentType="topic"
+                          contentId={item.id}
+                          onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -1058,15 +1140,24 @@ export function FeedsView() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
                           <span>{formatTimeAgo(item.created_at)}</span>
+                          {(item as any).is_edited && <span className="text-xs text-gray-400 italic">(edited)</span>}
                         </div>
                       </div>
                     </div>
                     <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <ContentMenu
-                        contentType="post"
-                        contentId={item.id}
-                        onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
-                      />
+                      {user?.id === item.user_id ? (
+                        <ContentMenu
+                          isOwner
+                          onEdit={() => handleEditContent(item)}
+                          onDelete={() => handleDeleteContent(item)}
+                        />
+                      ) : (
+                        <ContentMenu
+                          contentType="post"
+                          contentId={item.id}
+                          onHide={() => setFeedItems((prev) => prev.filter((f) => f.id !== item.id))}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -1266,6 +1357,20 @@ export function FeedsView() {
         onClose={() => setShowUserProfileModal(false)}
         userId={selectedUserId}
         onChat={handleChat}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingItem}
+        title={`Delete ${deletingItem?.content_type === "post" ? "Post" : deletingItem?.content_type === "topic" ? "Topic" : "Nook"}`}
+        message={
+          deletingItem?.content_type === "nook"
+            ? "Delete this nook? All messages will also be deleted. This cannot be undone."
+            : `Delete this ${deletingItem?.content_type || "content"}? All comments and replies will also be deleted. This cannot be undone.`
+        }
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onConfirm={confirmDeleteContent}
+        onCancel={() => setDeletingItem(null)}
       />
     </div>
   );

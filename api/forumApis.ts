@@ -167,3 +167,47 @@ export const ToggleTopicBookmark = async (topicId: string) => {
   const res = await authFetch.post(`${API_URL}/forum/topics/${topicId}/bookmark`);
   return unwrap(res);
 };
+
+/**
+ * Update a forum topic
+ */
+export const UpdateForumTopic = async (
+  topicId: string,
+  payload: {
+    title?: string;
+    content?: string;
+    tags?: string[];
+    isAnonymous?: boolean;
+  }
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(
+    `${API_URL}/forum/topics/${topicId}`,
+    payload
+  );
+  return unwrap(res);
+};
+
+/**
+ * Delete a forum topic (cascades to all comments)
+ */
+export const DeleteForumTopic = async (topicId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.delete(`${API_URL}/forum/topics/${topicId}`);
+  return unwrap(res);
+};
+
+/**
+ * Update a forum comment
+ */
+export const UpdateTopicComment = async (
+  commentId: string,
+  payload: { content: string }
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(
+    `${API_URL}/forum/comments/${commentId}`,
+    payload
+  );
+  return unwrap(res);
+};

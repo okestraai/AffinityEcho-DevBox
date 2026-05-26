@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, Users, Eye, FileText, AlertTriangle, Scale, Pencil, Bell, Mail } from "lucide-react";
+import { ArrowLeft, Shield, Users, Eye, FileText, AlertTriangle, Scale, Pencil, Bell, Mail, Trash2, Database, Clock } from "lucide-react";
 
 const sections = [
   {
@@ -62,10 +62,42 @@ const sections = [
       "You retain ownership of content you post on Affinity Echo. By posting, you grant us a non-exclusive, worldwide license to display, distribute, and store your content as necessary to operate the Platform. You may delete your content at any time.",
   },
   {
+    icon: Trash2,
+    color: "from-red-100 to-orange-100",
+    iconColor: "text-red-600",
+    title: "7. User Content & Deletion",
+    content:
+      "When you post content on Affinity Echo \u2014 including posts, topics, comments, replies, nook messages, and nooks \u2014 you retain ownership of your content. You may edit or delete your content at any time through the app.",
+  },
+  {
+    icon: AlertTriangle,
+    color: "from-amber-100 to-yellow-100",
+    iconColor: "text-amber-600",
+    title: "8. Cascade Deletion Policy",
+    content:
+      "When you delete content that other users have replied to, all replies and nested responses under that content will also be permanently removed from the platform. By replying to another user\u2019s content, you acknowledge and agree that: your reply may be removed if the parent content is deleted by its author; Affinity Echo is not responsible for the loss of replies caused by another user deleting their content; you are encouraged to save any important information you post, as it may be removed at any time due to parent content deletion. Similarly, when a post, topic, or nook is deleted by its creator, all associated comments, replies, and messages within that content will be permanently removed.",
+  },
+  {
+    icon: Database,
+    color: "from-cyan-100 to-blue-100",
+    iconColor: "text-cyan-600",
+    title: "9. Data Retention",
+    content:
+      "When content is deleted, it is immediately removed from public view. Affinity Echo retains deleted content in its systems for up to 6 months for the following purposes: compliance with applicable laws and legal obligations; responding to legal requests, court orders, or law enforcement inquiries; investigating violations of our Community Guidelines; resolving content moderation appeals and user disputes. After 6 months, deleted content is permanently and irreversibly removed from our systems.",
+  },
+  {
+    icon: Clock,
+    color: "from-emerald-100 to-teal-100",
+    iconColor: "text-emerald-600",
+    title: "10. Edited Content",
+    content:
+      "When you edit content, the original version is not retained. Only the most recent version is stored. An \u201C(edited)\u201D indicator will be displayed to inform other users that the content has been modified.",
+  },
+  {
     icon: Shield,
     color: "from-purple-100 to-pink-100",
     iconColor: "text-purple-600",
-    title: "7. Moderation and Enforcement",
+    title: "11. Moderation and Enforcement",
     content:
       "Affinity Echo has zero tolerance for objectionable content or abusive users. We actively monitor and review reported content to maintain a safe community. Objectionable content will be removed within 24 hours of being reported. Users who post objectionable, abusive, or harmful content will have their accounts suspended or permanently terminated. All users can flag or report content and other users directly within the app. Users can restrict other users to prevent seeing their content or receiving messages from them. Users can hide individual posts or content they find objectionable from their personal feed. We reserve the right to remove any content, suspend, or terminate accounts at our sole discretion. For urgent concerns, contact us at support@affinityecho.com.",
   },
@@ -73,7 +105,7 @@ const sections = [
     icon: Users,
     color: "from-teal-100 to-cyan-100",
     iconColor: "text-teal-600",
-    title: "8. Mentorship Disclaimer",
+    title: "12. Mentorship Disclaimer",
     content:
       "Mentorship connections facilitated through Affinity Echo are informal and voluntary. The Platform does not guarantee the quality, accuracy, or outcomes of mentorship relationships. Users participate in mentorship at their own discretion.",
   },
@@ -81,7 +113,7 @@ const sections = [
     icon: AlertTriangle,
     color: "from-gray-100 to-slate-100",
     iconColor: "text-gray-600",
-    title: "9. Limitation of Liability",
+    title: "13. Limitation of Liability",
     content:
       "Affinity Echo is provided \"as is\" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the Platform. Our total liability shall not exceed the amount you paid to use the Platform in the 12 months preceding the claim.",
   },
@@ -89,7 +121,7 @@ const sections = [
     icon: Bell,
     color: "from-yellow-100 to-amber-100",
     iconColor: "text-yellow-600",
-    title: "10. Changes to Terms",
+    title: "14. Changes to Terms",
     content:
       "We may update these Terms from time to time. Continued use of the Platform after changes constitutes acceptance of the updated Terms. We will notify users of material changes via email or in-app notification.",
   },

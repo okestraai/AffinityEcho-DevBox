@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
-  Pencil,
   Check,
   X,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { ContentMenu } from "../../shared/ContentMenu";
 import { useAuth } from "../../../hooks/useAuth";
 import { MentionText } from "../../shared/MentionText";
+import { MentionTextarea } from "../../shared/MentionTextarea";
 
 interface NookMessageProps {
   message: {
@@ -41,8 +41,10 @@ interface NookMessageProps {
   onReact: (messageId: string, reactionType: string) => void;
   onReply: (messageId: string, messageContent: string) => void;
   onEdit?: (messageId: string, newContent: string) => Promise<void>;
+  onDelete?: (messageId: string) => void;
   isReplying?: boolean;
   onHide?: (messageId: string) => void;
+  isNookCreator?: boolean;
 }
 
 /** Detects whether a string is an emoji (multi-codepoint or non-ASCII) */
@@ -60,8 +62,10 @@ export function NookMessage({
   onReact,
   onReply,
   onEdit,
+  onDelete,
   isReplying = false,
   onHide,
+  isNookCreator,
 }: NookMessageProps) {
   const { user: authUser } = useAuth();
   const [showReplies, setShowReplies] = useState(false);
@@ -72,6 +76,7 @@ export function NookMessage({
   const hasReplies = !!message.replies && message.replies.length > 0;
   const isEdited = !!message.updated_at && message.updated_at !== message.created_at;
   const canEdit = onEdit && message.is_mine;
+  const canDelete = message.is_mine || isNookCreator;
 
   // Safe user data with fallbacks
   const user = message.user ?? null;
@@ -194,33 +199,25 @@ export function NookMessage({
                 Replying
               </span>
             )}
-            {!message.is_mine && (
+            {(canEdit || canDelete) ? (
+              <ContentMenu
+                isOwner
+                onEdit={canEdit ? () => { setEditContent(message.content); setIsEditing(true); } : undefined}
+                onDelete={canDelete ? () => onDelete?.(message.id) : undefined}
+              />
+            ) : (
               <ContentMenu contentType="nook_message" contentId={message.id} onHide={() => onHide?.(message.id)} />
-            )}
-            {canEdit && !isEditing && (
-              <button
-                onClick={() => { setEditContent(message.content); setIsEditing(true); }}
-                className="ml-auto p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
-                aria-label="Edit message"
-                title="Edit message"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
             )}
           </div>
 
           {isEditing ? (
             <div className="mb-3">
-              <textarea
+              <MentionTextarea
                 value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={3}
+                onChange={setEditContent}
+                placeholder="Edit message... Use @ to mention someone"
                 className="w-full text-sm text-gray-700 border border-purple-300 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200"
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSaveEdit();
-                  if (e.key === "Escape") handleCancelEdit();
-                }}
               />
               <div className="flex items-center gap-2 mt-1.5">
                 <button
@@ -361,7 +358,9 @@ export function NookMessage({
                       onReact={onReact}
                       onReply={onReply}
                       onEdit={onEdit}
+                      onDelete={onDelete}
                       isReplying={false}
+                      isNookCreator={isNookCreator}
                     />
                   ))}
                 </div>

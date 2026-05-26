@@ -225,6 +225,32 @@ export const ToggleBookmark = async (
 };
 
 /**
+ * Update a feed comment
+ */
+export const UpdateFeedComment = async (
+  commentId: string,
+  payload: { content: string }
+) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.put(
+    `${API_URL}/feeds/comments/${commentId}`,
+    payload
+  );
+  return unwrap(res);
+};
+
+/**
+ * Delete a feed comment (cascades to nested replies)
+ */
+export const DeleteFeedComment = async (commentId: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.delete(
+    `${API_URL}/feeds/comments/${commentId}`
+  );
+  return unwrap(res);
+};
+
+/**
  * Get user's bookmarks
  */
 export const GetBookmarks = async (page: number = 1, limit: number = 20) => {
