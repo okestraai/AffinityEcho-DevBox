@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Bell,
   Heart,
@@ -125,24 +125,16 @@ export function NotificationsView() {
       setHasMore(pagination ? pagination.page < pagination.totalPages : allNotifications.length >= limit);
 
       // Client-side filtering for types not covered by API filter
-      let filteredNotifications = allNotifications;
-      if (filter === "follows") {
-        filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["follow", "user_followed"].includes(n.type)
-        );
-      } else if (filter === "mentions") {
-        filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["mention"].includes(n.type)
-        );
-      } else if (filter === "posts") {
-        filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["forum_post", "nook_post", "referral_post", "forum_comment", "forum_like", "feed_like", "post_reaction", "topic_comment", "nook_reply", "nook_comment"].includes(n.type)
-        );
-      } else if (filter === "mentorship") {
-        filteredNotifications = allNotifications.filter((n: Notification) =>
-          ["mentorship_request", "mentorship_accepted", "mentorship_message", "mentorship_declined", "identity_reveal_request", "identity_reveal", "identity_reveal_rejected"].includes(n.type)
-        );
-      }
+      const FILTER_TYPES: Record<string, Set<string>> = {
+        follows: new Set(["follow", "user_followed"]),
+        mentions: new Set(["mention"]),
+        posts: new Set(["forum_post", "nook_post", "referral_post", "forum_comment", "forum_like", "feed_like", "post_reaction", "topic_comment", "nook_reply", "nook_comment"]),
+        mentorship: new Set(["mentorship_request", "mentorship_accepted", "mentorship_message", "mentorship_declined", "identity_reveal_request", "identity_reveal", "identity_reveal_rejected"]),
+      };
+      const validTypes = FILTER_TYPES[filter];
+      const filteredNotifications = validTypes
+        ? allNotifications.filter((n: Notification) => validTypes.has(n.type))
+        : allNotifications;
 
       setNotifications(filteredNotifications);
     } catch (error) {
@@ -535,7 +527,7 @@ export function NotificationsView() {
     return `${Math.floor(seconds / 31536000)}y ago`;
   };
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
 
   const renderNotificationActions = (notification: Notification) => {
     switch (notification.type) {

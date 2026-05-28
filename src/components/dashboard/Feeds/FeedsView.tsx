@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { resolveDisplayName, resolveAuthorName } from "../../../utils/nameUtils";
 import {
@@ -118,6 +118,7 @@ export function FeedsView() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const feedItemMap = useMemo(() => new Map(feedItems.map((i) => [i.id, i])), [feedItems]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [, setCurrentPage] = useState(1);
@@ -331,7 +332,7 @@ export function FeedsView() {
   };
 
   const handleReaction = async (itemId: string, reactionType: "heard" | "validated" | "inspired") => {
-    const item = feedItems.find((i) => i.id === itemId);
+    const item = feedItemMap.get(itemId);
     if (!item) return;
 
     const wasActive = item.user_reactions[reactionType];
@@ -364,7 +365,7 @@ export function FeedsView() {
   };
 
   const handleBookmark = async (itemId: string) => {
-    const item = feedItems.find((i) => i.id === itemId);
+    const item = feedItemMap.get(itemId);
     if (!item) return;
 
     // Optimistic update — use callback form
@@ -389,7 +390,7 @@ export function FeedsView() {
 
   const handleShare = async (itemId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const item = feedItems.find((i) => i.id === itemId);
+    const item = feedItemMap.get(itemId);
     if (!item) return;
 
     const contentType = item.content_type === "nook" ? "nook_message" : item.content_type;
@@ -493,7 +494,7 @@ export function FeedsView() {
 
     // Fetch comments when expanding
     if (isOpening) {
-      const item = feedItems.find((i) => i.id === itemId);
+      const item = feedItemMap.get(itemId);
       if (item && !expandedComments[itemId]) {
         fetchCommentsForItem(item);
       }
@@ -501,7 +502,7 @@ export function FeedsView() {
   };
 
   const handleCommentSubmit = async (itemId: string, comment: string) => {
-    const item = feedItems.find((i) => i.id === itemId);
+    const item = feedItemMap.get(itemId);
     if (!item) return;
 
     try {

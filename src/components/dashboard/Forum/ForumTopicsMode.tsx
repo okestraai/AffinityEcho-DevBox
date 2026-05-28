@@ -1,5 +1,5 @@
 // src/components/forums/forum/ForumTopicsMode.tsx - GLOBAL VIEW FIXED
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ArrowLeft,
   Search,
@@ -27,6 +27,13 @@ import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { ContentMenu } from "../../shared/ContentMenu";
+
+const REACTION_BUTTONS = [
+  { key: "seen", Icon: Eye, active: "text-green-600 bg-green-50", hover: "hover:text-green-600 hover:bg-green-50", label: "Seen" },
+  { key: "heard", Icon: HeartIcon, active: "text-red-500 bg-red-50", hover: "hover:text-red-500 hover:bg-red-50", label: "Heard" },
+  { key: "validated", Icon: ClapIcon, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50", label: "Validated" },
+  { key: "inspired", Icon: Lightbulb, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50", label: "Inspired" },
+] as const;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ForumTopicsMode(props: any) {
@@ -65,6 +72,17 @@ export function ForumTopicsMode(props: any) {
   } = props;
 
   const isGlobalView = viewMode === "global";
+
+  const filteredGlobalForums = useMemo(
+    () =>
+      globalForums?.filter((forum: Record<string, unknown>) =>
+        searchTerm
+          ? (forum.name as string).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (forum.description as string)?.toLowerCase().includes(searchTerm.toLowerCase())
+          : true
+      ) ?? [],
+    [globalForums, searchTerm],
+  );
 
   // Infinite scroll sentinel
   const loadMore = useCallback(() => {
@@ -169,16 +187,7 @@ export function ForumTopicsMode(props: any) {
 
         {/* Global Forums Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {globalForums
-            .filter((forum: Record<string, unknown>) =>
-              searchTerm
-                ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  forum.description
-                    ?.toLowerCase()
-                    .includes(searchTerm.toLowerCase())
-                : true
-            )
-            .map((forum: Record<string, unknown>) => (
+          {filteredGlobalForums.map((forum: Record<string, unknown>) => (
               <button
                 key={forum.id}
                 onClick={() => handleForumSelect(forum.id)}
@@ -230,14 +239,7 @@ export function ForumTopicsMode(props: any) {
             ))}
         </div>
 
-        {globalForums.filter((forum: Record<string, unknown>) =>
-          searchTerm
-            ? forum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              forum.description
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase())
-            : true
-        ).length === 0 && (
+        {filteredGlobalForums.length === 0 && (
           <div className="text-center py-8 md:py-12">
             <Globe className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-500 text-lg">No forums found</p>
@@ -376,12 +378,7 @@ export function ForumTopicsMode(props: any) {
                   </div>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-1 flex-wrap">
-                      {[
-                        { key: "seen", Icon: Eye, active: "text-green-600 bg-green-50", hover: "hover:text-green-600 hover:bg-green-50", label: "Seen" },
-                        { key: "heard", Icon: HeartIcon, active: "text-red-500 bg-red-50", hover: "hover:text-red-500 hover:bg-red-50", label: "Heard" },
-                        { key: "validated", Icon: ClapIcon, active: "text-blue-600 bg-blue-50", hover: "hover:text-blue-600 hover:bg-blue-50", label: "Validated" },
-                        { key: "inspired", Icon: Lightbulb, active: "text-yellow-500 bg-yellow-50", hover: "hover:text-yellow-500 hover:bg-yellow-50", label: "Inspired" },
-                      ].map(({ key, Icon, active, hover, label }) => (
+                      {REACTION_BUTTONS.map(({ key, Icon, active, hover, label }) => (
                         <button
                           key={key}
                           onClick={(e) => handleReaction(topic.id, key, e)}

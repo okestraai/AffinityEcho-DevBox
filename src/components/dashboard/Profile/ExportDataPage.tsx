@@ -211,7 +211,8 @@ export function ExportDataPage() {
 
   const buildPdfTemplate = (data: unknown): string => {
     const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const selectedNames = selectedData.map(id => dataCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ');
+    const categoryMap = new Map(dataCategories.map(c => [c.id, c.name]));
+    const selectedNames = selectedData.map(id => categoryMap.get(id)).filter(Boolean).join(', ');
 
     // Build the body sections from the export data
     let sectionsHtml = '';
