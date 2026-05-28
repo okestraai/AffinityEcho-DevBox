@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Timer,
   Users,
@@ -69,6 +69,7 @@ export function NookDetail({
     {}
   );
   const [silentRefreshing, setSilentRefreshing] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localMemberCount] = useState(nook.members_count);
   const [showOkestraPanel, setShowOkestraPanel] = useState(false);
   const [localMessageCount, setLocalMessageCount] = useState(
@@ -87,6 +88,11 @@ export function NookDetail({
         return <Eye className="w-4 h-4 text-gray-500" />;
     }
   };
+
+  // Cleanup scroll timeouts on unmount
+  useEffect(() => {
+    return () => { if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); };
+  }, []);
 
   useEffect(() => {
     fetchMessages();
@@ -155,7 +161,8 @@ export function NookDetail({
       onNookUpdated?.();
 
       // Auto-scroll to bottom after new message loads
-      setTimeout(() => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
         document.querySelector(".space-y-4.mb-6")?.scrollTo({
           top: document.querySelector(".space-y-4.mb-6")!.scrollHeight,
           behavior: "smooth",
@@ -210,7 +217,8 @@ export function NookDetail({
     } else {
       setReplyingTo(messageId);
       setReplyingToContent(content);
-      setTimeout(() => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
         document.querySelector(".message-input")?.scrollIntoView({
           behavior: "smooth",
           block: "center",

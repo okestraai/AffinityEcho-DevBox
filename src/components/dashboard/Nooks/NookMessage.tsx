@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
-import { useState } from "react";
+import React, { useState } from "react";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
 import { ContentMenu } from "../../shared/ContentMenu";
@@ -45,6 +45,7 @@ interface NookMessageProps {
   isReplying?: boolean;
   onHide?: (messageId: string) => void;
   isNookCreator?: boolean;
+  depth?: number;
 }
 
 /** Detects whether a string is an emoji (multi-codepoint or non-ASCII) */
@@ -54,7 +55,7 @@ function isEmoji(str: string): boolean {
   return str.length > 1 || str.charCodeAt(0) > 127;
 }
 
-export function NookMessage({
+export const NookMessage = React.memo(function NookMessage({
   message,
   currentUserId,
   userReactions = [],
@@ -66,6 +67,7 @@ export function NookMessage({
   isReplying = false,
   onHide,
   isNookCreator,
+  depth = 0,
 }: NookMessageProps) {
   const { user: authUser } = useAuth();
   const [showReplies, setShowReplies] = useState(false);
@@ -73,7 +75,8 @@ export function NookMessage({
   const [editContent, setEditContent] = useState(message.content);
   const [isSaving, setIsSaving] = useState(false);
 
-  const hasReplies = !!message.replies && message.replies.length > 0;
+  const maxDepth = 3;
+  const hasReplies = !!message.replies && message.replies.length > 0 && depth < maxDepth;
   const isEdited = !!message.updated_at && message.updated_at !== message.created_at;
   const canEdit = onEdit && message.is_mine;
   const canDelete = message.is_mine || isNookCreator;
@@ -361,6 +364,7 @@ export function NookMessage({
                       onDelete={onDelete}
                       isReplying={false}
                       isNookCreator={isNookCreator}
+                      depth={depth + 1}
                     />
                   ))}
                 </div>
@@ -371,4 +375,4 @@ export function NookMessage({
       </div>
     </div>
   );
-}
+});

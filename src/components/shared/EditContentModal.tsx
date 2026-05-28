@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { MentionTextarea } from './MentionTextarea';
 import { UpdatePost } from '../../../api/feedApis';
@@ -37,9 +37,10 @@ export function EditContentModal({
   const [hashtagInput, setHashtagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const itemKey = isOpen ? JSON.stringify({ id: item?.id, cid: item?.content_id, t: item?.title, n: item?.name }) : '';
+  const itemKey = useMemo(() => isOpen ? `${item?.id}-${item?.content_id}-${item?.title}` : '', [isOpen, item?.id, item?.content_id, item?.title]);
   useEffect(() => {
     if (!isOpen || !item) return;
+    let cancelled = false;
     const nested = typeof item.content === 'object' ? item.content : null;
 
     if (contentType === 'post') {
@@ -62,11 +63,14 @@ export function EditContentModal({
       } else {
         const nookId = item.content_id || item.id;
         GetNookById(nookId).then((res: any) => {
+          if (cancelled) return;
           const nookData = res?.nook || res;
           if (nookData?.hashtags) setHashtags(nookData.hashtags);
         }).catch(() => {});
       }
     }
+
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, itemKey, contentType]);
 

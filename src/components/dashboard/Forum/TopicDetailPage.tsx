@@ -1,5 +1,5 @@
 // src/pages/TopicDetailPage.tsx - ISOLATED ACTIONS VERSION
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -803,9 +803,11 @@ export function TopicDetailPage() {
     );
   };
 
-  // Build comment tree for rendering
-  const nestedComments = buildCommentTree(comments);
-  const rootComments = nestedComments.filter((c) => !c.parent_comment_id);
+  // Build comment tree for rendering (memoized to avoid O(n) rebuild on every render)
+  const rootComments = useMemo(() => {
+    const nested = buildCommentTree(comments);
+    return nested.filter((c) => !c.parent_comment_id);
+  }, [comments]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">

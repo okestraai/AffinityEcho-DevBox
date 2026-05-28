@@ -193,17 +193,23 @@ export function ProfileView() {
   const [deletingActivityItem, setDeletingActivityItem] = useState<{ id: string; contentId: string; type: string } | null>(null);
   const [deleteActivityLoading, setDeleteActivityLoading] = useState(false);
 
-  // Decrypt first_name and last_name
+  // Decrypt first_name and last_name (cached in sessionStorage)
   useEffect(() => {
     const decryptNames = async () => {
       if (!user?.first_name && !user?.last_name) return;
+      const cacheKey = `dn_${user.first_name}_${user.last_name}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) { setDisplayName(cached); return; }
       try {
         const [first, last] = await Promise.all([
           user.first_name ? DecryptData({ encryptedData: user.first_name }).then(r => r?.decryptedData ?? '') : Promise.resolve(''),
           user.last_name ? DecryptData({ encryptedData: user.last_name }).then(r => r?.decryptedData ?? '') : Promise.resolve(''),
         ]);
         const full = `${first} ${last}`.trim();
-        if (full) setDisplayName(full);
+        if (full) {
+          setDisplayName(full);
+          sessionStorage.setItem(cacheKey, full);
+        }
       } catch {
         // Silent failure — username will be shown as fallback
       }
