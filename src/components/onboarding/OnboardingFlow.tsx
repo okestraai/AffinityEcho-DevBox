@@ -90,8 +90,8 @@ export function OnboardingFlow() {
 
    
       const payload = {
-        ...(formData.firstName && { firstName: formData.firstName }),
-        ...(formData.lastName && { lastName: formData.lastName }),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         ...(formData.race && { race: formData.race }),
         ...(formData.gender && { gender: formData.gender }),
         ...(formData.careerLevel && { careerLevel: formData.careerLevel }),
@@ -135,8 +135,8 @@ export function OnboardingFlow() {
   const getNextButtonDisabled = () => {
     if (isSubmitting) return true;
 
-    // For demographics step, require age confirmation
-    if (currentStep === 0 && !formData.ageConfirmed) return true;
+    // For demographics step, require first name, last name, and age confirmation
+    if (currentStep === 0 && (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.ageConfirmed)) return true;
 
     // For company step, disable if custom company but no company name
     if (

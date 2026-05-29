@@ -240,6 +240,12 @@ export function TopicDetailPage() {
     return rootComments;
   };
 
+  // Build comment tree for rendering (memoized to avoid O(n) rebuild on every render)
+  const rootComments = useMemo(() => {
+    const nested = buildCommentTree(comments);
+    return nested.filter((c) => !c.parent_comment_id);
+  }, [comments]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
@@ -802,12 +808,6 @@ export function TopicDetailPage() {
       </div>
     );
   };
-
-  // Build comment tree for rendering (memoized to avoid O(n) rebuild on every render)
-  const rootComments = useMemo(() => {
-    const nested = buildCommentTree(comments);
-    return nested.filter((c) => !c.parent_comment_id);
-  }, [comments]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">

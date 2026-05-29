@@ -83,10 +83,11 @@ export function DemographicsStep({ data, updateData }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-2">
-              First Name
+              First Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
+              required
               value={data.firstName ?? ""}
               onChange={(e) => handleFirstNameChange(e.target.value)}
               placeholder="First name"
@@ -96,10 +97,11 @@ export function DemographicsStep({ data, updateData }: Props) {
 
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-2">
-              Last Name
+              Last Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
+              required
               value={data.lastName ?? ""}
               onChange={(e) => handleLastNameChange(e.target.value)}
               placeholder="Last name"
