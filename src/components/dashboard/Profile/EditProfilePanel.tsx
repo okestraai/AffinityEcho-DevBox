@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { GetEditableProfile, UpdateEditableProfile } from '../../../../api/profileApis';
-import { GetFilterOptions } from '../../../../api/mentorshipApis';
+import { GetFilterOptions, type FilterOptions } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
 import { MSG } from '../../../constants/messages';
 
@@ -61,6 +61,7 @@ const AFFINITY_TAGS = [
   { id: 'military-veterans', label: 'Military Veterans', icon: '🇺🇸' },
   { id: 'disabled-professionals', label: 'Disabled Professionals', icon: '♿' },
   { id: 'immigrant-professionals', label: 'Immigrant Professionals', icon: '🌍' },
+  { id: 'allies-advocates', label: 'Allies & Advocates', icon: '🤝' },
 ];
 
 const STATIC_COMPANIES = [
@@ -204,7 +205,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const originalRef = useRef<Record<string, unknown> | null>(null);
-  const [filterOptions, setFilterOptions] = useState<Record<string, unknown> | null>(null);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [showCompanyConfirm, setShowCompanyConfirm] = useState(false);
   const pendingPayloadRef = useRef<Record<string, unknown> | null>(null);
 
@@ -264,7 +265,8 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
       // Fetch filter options for mentor/mentee dropdowns
       try {
         const filtersRes = await GetFilterOptions();
-        setFilterOptions(filtersRes?.data ?? filtersRes);
+        // API helper already unwraps; keep the legacy `.data` fallback defensively.
+        setFilterOptions((filtersRes as { data?: FilterOptions })?.data ?? filtersRes);
       } catch { /* ignore filter options failure */ }
       const res = await GetEditableProfile();
       const data = res?.data ?? res;

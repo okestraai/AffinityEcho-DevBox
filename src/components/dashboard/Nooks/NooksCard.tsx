@@ -60,10 +60,10 @@ export function NookCard({ nook, onClick, onBookmark, onHide }: NookCardProps) {
         <div className="bg-white/95 backdrop-blur-sm p-3 md:p-4 rounded-t-xl">
           <div className="flex items-start justify-between mb-2 md:mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 group-hover:text-purple-600 transition-colors truncate">
+              <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1 group-hover:text-purple-600 transition-colors break-words">
                 {nook.title}
               </h3>
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed line-clamp-2 h-8 md:h-10">
+              <p className="text-gray-600 text-xs md:text-sm leading-relaxed break-words">
                 {nook.description}
               </p>
             </div>

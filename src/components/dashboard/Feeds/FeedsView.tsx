@@ -147,7 +147,9 @@ export function FeedsView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const normalizeFeedItem = (item: Record<string, unknown>): FeedItem => {
+  // Source is loose API JSON; `any` lets us read/normalize nested fields into the typed FeedItem.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalizeFeedItem = (item: Record<string, any>): FeedItem => {
     // Handle flat post structure where content is a string (from /feeds/users/:id/posts)
     const contentIsString = typeof item.content === "string";
     const contentObj = contentIsString ? null : item.content;
@@ -155,6 +157,7 @@ export function FeedsView() {
     return {
     ...item,
     id: item.id,
+    created_at: item.created_at,
     content_type: item.content_type === "nook_message" ? "nook" : (item.content_type ?? "post"),
     content_id: item.content_id ?? item.id,
     user_id: item.user_id,
@@ -806,7 +809,7 @@ export function FeedsView() {
                           </h3>
                           <MentionText
                             text={item.content.text}
-                            className="text-gray-600 text-sm leading-relaxed line-clamp-2 block"
+                            className="text-gray-600 text-sm leading-relaxed break-words block"
                           />
                         </div>
                         <div className="flex items-center gap-2 ml-4">

@@ -1607,9 +1607,16 @@ export function ProfileView() {
                   {user.demographics?.affinityTags?.map((tag) => {
                     const groupNames: { [key: string]: string } = {
                       'black-professionals': 'Black Professionals',
-                      'women-leadership': 'Women in Leadership',
                       'latino-leaders': 'Latino Leaders',
-                      'lgbtq-finance': 'LGBTQ+ in Finance'
+                      'lgbtq-finance': 'LGBTQ+ in Finance',
+                      'asian-entrepreneurs': 'Asian Entrepreneurs',
+                      'women-leadership': 'Women in Leadership',
+                      'first-gen-college': 'First-Gen College Grads',
+                      'working-parents': 'Working Parents',
+                      'military-veterans': 'Military Veterans',
+                      'disabled-professionals': 'Disabled Professionals',
+                      'immigrant-professionals': 'Immigrant Professionals',
+                      'allies-advocates': 'Allies & Advocates'
                     };
 
                     return (
