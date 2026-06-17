@@ -1,10 +1,18 @@
 // src/routes/AppRoutes.tsx
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./publicOnlyRoute";
 import { ProtectedAdminRoute } from "../admin/layout/AdminLayout";
+
+// Redirects the short share links sent by the mobile app
+// (e.g. /feeds/:id) to their canonical in-app dashboard route.
+// Used for users who open a shared link without the app installed.
+const ShareRedirect = ({ build }: { build: (id: string) => string }) => {
+  const { id } = useParams();
+  return <Navigate to={build(id ?? "")} replace />;
+};
 
 // Branded loading screen with animated logo
 const PageLoader = () => (
@@ -308,6 +316,13 @@ const AppRoutes: React.FC = () => {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/faq" element={<FAQPage />} />
+
+        {/* SHARE DEEP LINKS — short links from the mobile app's share sheet.
+            These paths are also whitelisted in the universal-link / app-link
+            files so installed apps open natively; the web falls back here. */}
+        <Route path="/feeds/:id" element={<ShareRedirect build={(id) => `/dashboard/feeds/post/${id}`} />} />
+        <Route path="/forums/:id" element={<ShareRedirect build={(id) => `/dashboard/forums/topic/${id}`} />} />
+        <Route path="/nooks/:id" element={<ShareRedirect build={(id) => `/dashboard/nooks/${id}`} />} />
 
         {/* ONBOARDING — only for logged-in users who haven't completed it */}
         <Route

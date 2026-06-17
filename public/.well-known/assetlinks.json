@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.okestra.affinityecho",
+      "sha256_cert_fingerprints": [
+        "2E:B4:9A:31:E6:9B:F3:F1:41:D9:C7:6A:1F:E6:E0:62:B4:5A:00:04:41:FD:00:54:27:CD:45:09:0A:1E:2B:58",
+        "AE:26:97:39:67:F9:A3:34:41:CB:39:79:20:91:BA:D1:74:7A:1F:28:44:39:26:8A:82:E5:38:3D:BC:16:3C:2F"
+      ]
+    }
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["P222KYJ9H8.com.okestra.affinityecho"],
+        "components": [
+          { "/": "/feeds/*", "comment": "Shared posts" },
+          { "/": "/forums/*", "comment": "Shared forum topics" },
+          { "/": "/nooks/*", "comment": "Shared nooks" }
+        ]
+      }
+    ]
+  }
+}
