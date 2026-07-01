@@ -22,6 +22,7 @@ import {
   HeartPulse,
   AlertTriangle,
   Bot,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
@@ -78,6 +79,13 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/content-flags",
     label: "Content Flags",
     icon: <AlertTriangle className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.REPORTS_VIEW,
+    section: "Management",
+  },
+  {
+    to: "/admin/safety-tickets",
+    label: "Safety Tickets",
+    icon: <ShieldAlert className="w-4.5 h-4.5" />,
     permission: PERMISSIONS.REPORTS_VIEW,
     section: "Management",
   },

@@ -18,6 +18,46 @@ function buildQS(
 // List endpoints return res.data (includes both .data and .meta at top level)
 // Detail/action endpoints return unwrap(res) (just the inner data)
 
+/* ─── Coaching safety support tickets (harm to self/others) ─── */
+export interface CoachingSupportTicket {
+  reference: string;
+  userId: string;
+  handle: string | null;
+  category: string;
+  severity: string;
+  status: string;
+  sessionId: string | null;
+  createdAt: string;
+  transcript: string | null;
+}
+
+export const GetCoachingSupportTickets = async (): Promise<
+  CoachingSupportTicket[]
+> => {
+  const api = getAuthInstance();
+  const res = await api.get(`${API_URL}/coaching/support-tickets`);
+  return unwrap(res);
+};
+
+export interface CoachingSafetyEvals {
+  counts: { classifier_miss: number; regex_gap: number };
+  items: {
+    kind: "classifier_miss" | "regex_gap";
+    regexCategory: string | null;
+    classifierCategory: string | null;
+    classifierSeverity: string | null;
+    message: string | null;
+    createdAt: string;
+  }[];
+}
+
+export const GetCoachingSafetyEvals =
+  async (): Promise<CoachingSafetyEvals> => {
+    const api = getAuthInstance();
+    const res = await api.get(`${API_URL}/coaching/safety-evals`);
+    return unwrap(res);
+  };
+
 /* ─── 1. Dashboard ─── */
 export const GetAdminDashboard = async () => {
   const api = getAuthInstance();

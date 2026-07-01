@@ -8,6 +8,7 @@ import { GetUnreadCount } from '../../api/notificationApis';
 import { GetMessageUnreadCount } from '../../api/messaging';
 import { webSocketService } from '../services/websocket.service';
 import { TestLLMButton } from '../components/dashboard/TestLLMButton';
+import { CoachDock } from '../components/dashboard/Coach/CoachDock';
 
 export function DashboardLayout() {
   const { user } = useAuth();
@@ -122,6 +123,9 @@ export function DashboardLayout() {
       </div>
 
       {import.meta.env.DEV && <TestLLMButton />}
+
+      {/* Echo AI coaching — floating launcher + slide-in panel */}
+      <CoachDock />
     </div>
   );
 }

@@ -241,6 +241,11 @@ const AdminPermissionsPage = React.lazy(() =>
     default: m.AdminPermissionsPage,
   })),
 );
+const AdminSafetyTicketsPage = React.lazy(() =>
+  import("../admin/pages/SafetyTicketsPage").then((m) => ({
+    default: m.SafetyTicketsPage,
+  })),
+);
 const AdminNotificationsInboxPage = React.lazy(() =>
   import("../admin/pages/AdminNotificationsInboxPage").then((m) => ({
     default: m.AdminNotificationsInboxPage,
@@ -352,6 +357,7 @@ const AppRoutes: React.FC = () => {
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:userId" element={<AdminUserDetailPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="safety-tickets" element={<AdminSafetyTicketsPage />} />
           <Route path="moderation" element={<AdminModerationPage />} />
           <Route path="content-flags" element={<AdminContentFlagsPage />} />
           <Route path="forums" element={<AdminForumsPage />} />
