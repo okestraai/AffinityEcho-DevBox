@@ -15,6 +15,7 @@ import {
   Play,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CoachResourceCards } from "./CoachResourceCards";
 import { useCoachTurn } from "./useCoachTurn";
 import { CoachFeedbackCard } from "./CoachFeedbackCard";
 import { CoachStage } from "../../../../api/coachApis";
@@ -56,6 +57,13 @@ export function CoachPanel({ isOpen, onClose, onMinimize }: CoachPanelProps) {
     // feedback card instead of closing.
     const keepOpenForFeedback = await coach.endSession();
     if (!keepOpenForFeedback) onClose();
+  };
+
+  // Opening a recommended resource minimizes the panel (keeps the session alive
+  // so they can resume) and routes to the real in-product page.
+  const openResource = (path: string) => {
+    onMinimize();
+    navigate(path);
   };
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -251,7 +259,7 @@ export function CoachPanel({ isOpen, onClose, onMinimize }: CoachPanelProps) {
           {coach.messages.map((m, i) => (
             <div
               key={i}
-              className={`flex ${m.role === "client" ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col ${m.role === "client" ? "items-end" : "items-start"}`}
             >
               <div
                 className={`rounded-2xl px-4 py-3 text-[15px] leading-7 shadow-sm whitespace-pre-wrap break-words ${
@@ -262,6 +270,12 @@ export function CoachPanel({ isOpen, onClose, onMinimize }: CoachPanelProps) {
               >
                 {m.content}
               </div>
+              {m.role === "coach" && m.resources && (
+                <CoachResourceCards
+                  resources={m.resources}
+                  onOpen={openResource}
+                />
+              )}
             </div>
           ))}
 

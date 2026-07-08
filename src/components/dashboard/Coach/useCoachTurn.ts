@@ -15,6 +15,7 @@ import {
   SubmitCoachFeedback,
   SynthesizeCoachSpeech,
   CoachStage,
+  CoachResourceLinks,
 } from "../../../../api/coachApis";
 
 export type CoachPhase =
@@ -29,6 +30,7 @@ export type CoachPhase =
 export interface CoachMessage {
   role: "coach" | "client";
   content: string;
+  resources?: CoachResourceLinks;
 }
 
 // Inactivity flow timings (ms). Generous, because coaching involves real
@@ -231,7 +233,10 @@ export function useCoachTurn() {
       try {
         const r = await SendCoachTurn(sid, msg, voiceRef.current ? "voice" : "text");
         setStage(r.stage);
-        setMessages((prev) => [...prev, { role: "coach", content: r.coachMessage }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "coach", content: r.coachMessage, resources: r.resources },
+        ]);
         if (r.safety?.status === "crisis") {
           setCrisis(true);
           setComplete(true);

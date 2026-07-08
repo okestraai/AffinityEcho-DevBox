@@ -11,6 +11,12 @@ export type CoachStage =
   | "WILL"
   | "CLOSING";
 
+export interface CoachResourceLinks {
+  mentors: { handle: string; expertise: string; userId: string }[];
+  topics: { title: string; forum: string; topicId: string }[];
+  posts: { snippet: string; postId: string }[];
+}
+
 export interface CoachTurnResult {
   sessionId: string;
   coachMessage: string;
@@ -19,6 +25,7 @@ export interface CoachTurnResult {
   isComplete: boolean;
   advicePending: boolean;
   askFeedback?: boolean;
+  resources?: CoachResourceLinks;
   safety: {
     status: "ok" | "flagged" | "crisis";
     category: string;
