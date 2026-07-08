@@ -59,7 +59,11 @@ export interface LatestCoachSession {
   stage: CoachStage;
   status: string;
   resumable: boolean;
-  messages: { role: "coach" | "client"; content: string }[];
+  messages: {
+    role: "coach" | "client";
+    content: string;
+    resources?: CoachResourceLinks;
+  }[];
 }
 
 // Most recent session + transcript, so the user can continue where they left off.
