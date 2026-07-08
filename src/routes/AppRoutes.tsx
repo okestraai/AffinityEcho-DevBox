@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./publicOnlyRoute";
 import { ProtectedAdminRoute } from "../admin/layout/AdminLayout";
+import { VisitorTracker } from "../components/VisitorTracker";
 
 // Redirects the short share links sent by the mobile app
 // (e.g. /feeds/:id) to their canonical in-app dashboard route.
@@ -266,6 +267,11 @@ const AdminHealthPage = React.lazy(() =>
     default: m.HealthPage,
   })),
 );
+const AdminVisitorAnalyticsPage = React.lazy(() =>
+  import("../admin/pages/VisitorAnalyticsPage").then((m) => ({
+    default: m.VisitorAnalyticsPage,
+  })),
+);
 const AdminAIReviewQueuePage = React.lazy(() =>
   import("../admin/pages/AIReviewQueuePage").then((m) => ({
     default: m.AIReviewQueuePage,
@@ -302,6 +308,7 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Suspense fallback={<PageLoader />}>
+      <VisitorTracker />
       <Routes>
         {/* PUBLIC ROUTES — ALWAYS accessible */}
         <Route
@@ -369,6 +376,7 @@ const AppRoutes: React.FC = () => {
           <Route path="content/:contentType/:contentId" element={<AdminContentDetailPage />} />
           <Route path="my-notifications" element={<AdminNotificationsInboxPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="visitor-analytics" element={<AdminVisitorAnalyticsPage />} />
           <Route path="health" element={<AdminHealthPage />} />
           <Route path="ai-moderation" element={<AdminAIStatsPage />} />
           <Route path="ai-moderation/review" element={<AdminAIReviewQueuePage />} />
