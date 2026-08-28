@@ -36,6 +36,15 @@ const PageLoader = () => (
 // --- Lazy-loaded routes ---
 
 // Auth (only needed before login)
+// Public marketing surfaces. `PublicLayout` carries the header and is used ONLY here — the
+// dashboard and admin trees render their own, so the marketing nav cannot appear behind auth.
+const PublicLayout = React.lazy(() =>
+  import("../components/public/PublicLayout").then((m) => ({ default: m.PublicLayout })),
+);
+const SolutionPage = React.lazy(() =>
+  import("../components/public/SolutionPage").then((m) => ({ default: m.SolutionPage })),
+);
+
 const LoginScreen = React.lazy(() =>
   import("../components/auth/LoginScreen").then((m) => ({
     default: m.LoginScreen,
@@ -315,7 +324,9 @@ const AppRoutes: React.FC = () => {
           path="/login"
           element={
             <PublicOnlyRoute>
-              <LoginScreen />
+              <PublicLayout>
+                <LoginScreen />
+              </PublicLayout>
             </PublicOnlyRoute>
           }
         />
@@ -458,22 +469,32 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* ROOT REDIRECT - check for admin first */}
+        {/* Solution marketing pages — one component, six slugs (see solutionsContent.ts). */}
+        <Route
+          path="/:slug"
+          element={
+            <PublicLayout>
+              <SolutionPage />
+            </PublicLayout>
+          }
+        />
+
+        {/* ROOT — a signed-out visitor now LANDS here instead of being bounced to /login: the
+            login screen already carries the hero and feature grid, so it is the landing page.
+            Authenticated routing is unchanged. */}
         <Route
           path="/"
           element={
-            <Navigate
-              to={
-                isAuthenticated
-                  ? isAdmin
-                    ? "/admin"
-                    : hasCompletedOnboarding
-                      ? "/dashboard"
-                      : "/onboarding"
-                  : "/login"
-              }
-              replace
-            />
+            isAuthenticated ? (
+              <Navigate
+                to={isAdmin ? "/admin" : hasCompletedOnboarding ? "/dashboard" : "/onboarding"}
+                replace
+              />
+            ) : (
+              <PublicLayout>
+                <LoginScreen />
+              </PublicLayout>
+            )
           }
         />
 

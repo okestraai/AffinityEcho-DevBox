@@ -98,16 +98,8 @@ export function LoginScreen() {
           {/* Left Side - Branding & Features */}
           <div className="space-y-8">
             <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-               <img
-                  src="/affinity-echo-logo-hd.png"
-                  alt="Affinity Echo Logo"
-                  className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain"
-                />
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                  Affinity Echo
-                </span>
-              </div>
+              {/* The brand lockup lives in PublicHeader now — repeating it here put the logo and
+                  wordmark on screen twice, a few hundred pixels apart. */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
                 Your Safe Space in
                 <span className="block bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
