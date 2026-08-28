@@ -32,7 +32,7 @@ export function SolutionPage() {
     <main className="container mx-auto px-4 py-10 sm:py-14">
       <Link
         to="/"
-        className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-purple-700"
+        className="mb-6 -ml-1 inline-flex min-h-[44px] items-center gap-1.5 px-1 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:text-purple-700"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Affinity Echo
       </Link>
@@ -81,7 +81,7 @@ export function SolutionPage() {
               key={faq.q}
               className="group rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm"
             >
-              <summary className="cursor-pointer list-none font-semibold text-gray-900 marker:content-none">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center font-semibold text-gray-900 marker:content-none">
                 <span className="flex items-start justify-between gap-4">
                   {faq.q}
                   <Check className="mt-1 h-4 w-4 shrink-0 text-purple-600 opacity-0 transition-opacity group-open:opacity-100" />

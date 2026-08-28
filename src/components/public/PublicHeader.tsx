@@ -52,7 +52,7 @@ export function PublicHeader() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Brand */}
-          <Link to="/" className="flex shrink-0 items-center gap-2.5" onClick={() => setMobileOpen(false)}>
+          <Link to="/" className="flex min-h-[44px] shrink-0 items-center gap-2.5" onClick={() => setMobileOpen(false)}>
             <img
               src="/affinity-echo-logo-hd.png"
               alt=""
@@ -72,7 +72,7 @@ export function PublicHeader() {
                 aria-expanded={solutionsOpen}
                 aria-haspopup="true"
                 onClick={() => setSolutionsOpen((v) => !v)}
-                className="flex cursor-pointer items-center gap-1 rounded-lg px-4 py-2 font-medium text-slate-700 transition-all hover:bg-purple-50 hover:text-purple-700"
+                className="flex min-h-[44px] cursor-pointer items-center gap-1 rounded-lg px-4 py-2 font-medium text-slate-700 transition-all hover:bg-purple-50 hover:text-purple-700"
               >
                 Solutions
                 <ChevronDown
@@ -117,13 +117,13 @@ export function PublicHeader() {
 
             <Link
               to="/faq"
-              className="rounded-lg px-4 py-2 font-medium text-slate-700 transition-all hover:bg-purple-50 hover:text-purple-700"
+              className="flex min-h-[44px] items-center rounded-lg px-4 py-2 font-medium text-slate-700 transition-all hover:bg-purple-50 hover:text-purple-700"
             >
               FAQ
             </Link>
             <Link
               to="/login"
-              className="ml-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="ml-2 flex min-h-[44px] items-center rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
               Get started
             </Link>
@@ -135,7 +135,7 @@ export function PublicHeader() {
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="cursor-pointer rounded-lg p-2 text-slate-700 transition-colors hover:bg-purple-50 lg:hidden"
+            className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-purple-50 lg:hidden"
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
