@@ -3,6 +3,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // Overrides Tailwind's default `sans`, which resolved to ui-sans-serif/system-ui.
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       keyframes: {
         'reaction-pop': {
           '0%': { transform: 'scale(1)' },

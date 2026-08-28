@@ -29,7 +29,7 @@ export function SolutionPage() {
   if (!solution) return <Navigate to="/" replace />;
 
   return (
-    <main className="container mx-auto px-4 py-10 sm:py-14">
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14">
       <Link
         to="/"
         className="mb-6 -ml-1 inline-flex min-h-[44px] items-center gap-1.5 px-1 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:text-purple-700"
@@ -38,7 +38,7 @@ export function SolutionPage() {
       </Link>
 
       {/* Hero */}
-      <div className="max-w-3xl">
+      <div>
         <h1 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl lg:text-5xl">
           {solution.h1}
         </h1>
@@ -53,27 +53,38 @@ export function SolutionPage() {
         </Link>
       </div>
 
-      {/* Sections */}
-      <div className="mt-12 grid gap-5 sm:mt-16 sm:grid-cols-2">
-        {solution.sections.map((section) => {
-          const Icon = section.icon;
-          return (
-            <section
-              key={section.h2}
-              className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm"
-            >
-              <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100">
-                <Icon className="h-5 w-5 text-purple-600" />
+      {/*
+        Editorial rows, not a card grid.
+
+        This was four white cards, each with an icon in a tinted rounded tile above a bold title and
+        two lines of copy, laid out 2x2. That is the single most recognisable AI-generated layout
+        going, and the icons were pure decoration — none of them told the reader anything the heading
+        did not. Numbering the points gives real information (there are four, this is the second),
+        the hairline rules carry the structure the card borders were carrying, and with the shadows
+        and tiles gone the page has to stand on its type. Icons stay in the nav dropdown, where they
+        genuinely help someone scan a menu.
+      */}
+      <div className="mt-14 sm:mt-20">
+        <ol className="divide-y divide-slate-900/10 border-y border-slate-900/10">
+          {solution.sections.map((section, i) => (
+            <li key={section.h2} className="grid gap-x-8 gap-y-2 py-7 sm:grid-cols-[3rem_1fr]">
+              <span
+                aria-hidden="true"
+                className="font-mono text-sm tabular-nums text-purple-600/70"
+              >
+                {String(i + 1).padStart(2, '0')}
               </span>
-              <h2 className="text-lg font-semibold text-gray-900">{section.h2}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">{section.p}</p>
-            </section>
-          );
-        })}
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-gray-900">{section.h2}</h2>
+                <p className="mt-1.5 leading-relaxed text-gray-600">{section.p}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
 
       {/* FAQ — real <details> so it works before hydration and is keyboard-operable for free. */}
-      <div className="mt-14 max-w-3xl sm:mt-20">
+      <div className="mt-14 sm:mt-20">
         <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Frequently asked questions</h2>
         <div className="mt-6 space-y-3">
           {solution.faqs.map((faq) => (
