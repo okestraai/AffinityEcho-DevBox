@@ -25,7 +25,8 @@ vi.mock('../components/dashboard/Nooks/NooksStats', () => ({
   NooksStats: (props: any) => (
     <div data-testid="nooks-stats">
       <span data-testid="active-nooks">{props.activeNooks}</span>
-      <span data-testid="anonymous-users">{props.anonymousUsers}</span>
+      <span data-testid="in-a-nook-now">{props.inANookNow}</span>
+      <span data-testid="all-time-created">{props.allTimeNooksCreated}</span>
     </div>
   ),
 }));
@@ -103,10 +104,14 @@ function setup() {
     user: { id: 'u1', username: 'TestUser', avatar: '🚀' },
   } as any);
 
+  // Mirrors what NooksView actually maps (NooksView.tsx:104). The old payload used
+  // `anonymousUsers`/`totalMessageParticipants`, which the component never reads, so every stat
+  // fell through to its `|| 0` default while the test asserted 100.
   mockedGetNookMetrics.mockResolvedValue({
     activeNooks: 5,
-    anonymousUsers: 100,
-    totalMessageParticipants: 50,
+    inANookNow: 100,
+    allTimeNooksCreated: 42,
+    allTimeNookInteractions: 7,
   });
 
   mockedGetNooks.mockResolvedValue({
@@ -156,7 +161,8 @@ describe('NooksView', () => {
       expect(screen.getByTestId('active-nooks')).toHaveTextContent('5');
     });
 
-    expect(screen.getByTestId('anonymous-users')).toHaveTextContent('100');
+    expect(screen.getByTestId('in-a-nook-now')).toHaveTextContent('100');
+    expect(screen.getByTestId('all-time-created')).toHaveTextContent('42');
   });
 
   it('fetches and displays nooks in grid', async () => {

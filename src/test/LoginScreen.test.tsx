@@ -249,10 +249,15 @@ describe('LoginScreen', () => {
         target: { value: 'StrongPass1!' },
       });
 
+      // Accept the terms — the submit button is disabled without it, so a signup that skips this
+      // is a path no real user can take. The test used to submit the form directly, bypassing the
+      // disabled button, and then assert two arguments while the component passes three.
+      fireEvent.click(screen.getByRole('checkbox'));
+
       const form = screen.getByRole('button', { name: 'Create Account' }).closest('form')!;
       fireEvent.submit(form);
 
-      expect(mockSignup).toHaveBeenCalledWith('new@test.com', 'StrongPass1!');
+      expect(mockSignup).toHaveBeenCalledWith('new@test.com', 'StrongPass1!', true);
     });
 
     it('does not call login when only email is filled', async () => {

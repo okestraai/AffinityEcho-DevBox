@@ -56,6 +56,13 @@ export function LoginScreen() {
         setError(pwError);
         return;
       }
+      // Terms were enforced ONLY by disabling the submit button, which a programmatic submit walks
+      // straight past. Guard the handler too, so consent is a precondition of signing up rather
+      // than a property of one button's disabled state.
+      if (!termsAccepted) {
+        setError("Please accept the Terms of Service to continue");
+        return;
+      }
     }
 
     try {
