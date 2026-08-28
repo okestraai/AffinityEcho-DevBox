@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, Lock, Eye, Database, Share2, Clock, Download, Cookie, UserCheck, Bell, Mail } from "lucide-react";
 
 const sections = [
@@ -151,16 +151,16 @@ export function PrivacyPolicyPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex min-h-[44px] items-center gap-3">
             <img
               src="/affinity-echo-logo-hd.png"
-              alt="Affinity Echo"
+              alt="Affinity Echo home"
               className="w-8 h-8 rounded-xl object-contain"
             />
             <span className="text-lg font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
               Affinity Echo
             </span>
-          </div>
+          </Link>
         </div>
       </div>
 
