@@ -23,3 +23,18 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.gstack/
+
+# Env files. `.env` alone was ignored, so a `.env.local` or `.env.production` — the exact files
+# Vite encourages you to create — would have been committed with whatever keys were in them.
+# The `!.env.example` exception keeps a checked-in template possible.
+.env.*
+!.env.example
+
+# Test coverage output (@vitest/coverage-v8)
+coverage/
+
+# Build caches
+.vite/
+*.tsbuildinfo
+
