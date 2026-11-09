@@ -1,17 +1,22 @@
 // src/routes/AppRoutes.tsx
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate, useParams } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./publicOnlyRoute";
 import { ProtectedAdminRoute } from "../admin/layout/AdminLayout";
 import { VisitorTracker } from "../components/VisitorTracker";
+import { AppLinkPrompt } from "../components/getApp/AppLinkPrompt";
+import { rememberAppLinkArrival } from "../utils/getApp";
 
 // Redirects the short share links sent by the mobile app
 // (e.g. /feeds/:id) to their canonical in-app dashboard route.
 // Used for users who open a shared link without the app installed.
-const ShareRedirect = ({ build }: { build: (id: string) => string }) => {
+export const ShareRedirect = ({ build }: { build: (id: string) => string }) => {
   const { id } = useParams();
+  const { pathname } = useLocation();
+  // Keep the shared link so a phone visitor is offered the app wherever they land.
+  rememberAppLinkArrival(pathname);
   return <Navigate to={build(id ?? "")} replace />;
 };
 
@@ -49,6 +54,9 @@ const LoginScreen = React.lazy(() =>
   import("../components/auth/LoginScreen").then((m) => ({
     default: m.LoginScreen,
   })),
+);
+const GetAppPage = React.lazy(() =>
+  import("../components/getApp/GetAppPage").then((m) => ({ default: m.GetAppPage })),
 );
 const VerifyCompany = React.lazy(() =>
   import("../components/auth/VerifyCompany").then((m) => ({
@@ -318,6 +326,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <VisitorTracker />
+      <AppLinkPrompt />
       <Routes>
         {/* PUBLIC ROUTES — ALWAYS accessible */}
         <Route
@@ -332,6 +341,7 @@ const AppRoutes: React.FC = () => {
         />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/verify-company" element={<VerifyCompany />} />
+        <Route path="/get-app" element={<GetAppPage />} />
         <Route path="/verify-otp" element={<OTPVerificationPage />} />
         <Route path="/verify-otp/*" element={<OTPVerificationPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
