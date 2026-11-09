@@ -19,6 +19,13 @@ export function platformOf(
   return 'other';
 }
 
+export type Store = 'ios' | 'android';
+
+// Phones see their own store first.
+export function storeOrder(platform: Platform): Store[] {
+  return platform === 'android' ? ['android', 'ios'] : ['ios', 'android'];
+}
+
 export function storeLinkFor(platform: Platform): string | null {
   return platform === 'other' ? null : STORE_LINKS[platform];
 }

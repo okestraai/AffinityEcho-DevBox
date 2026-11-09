@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { solutionBySlug } from './solutionsContent';
+import { StoreBadges } from '../getApp/StoreBadges';
 
 /**
  * One presentational component serving EVERY solution page, driven by the content map.
@@ -51,6 +52,7 @@ export function SolutionPage() {
         >
           Join anonymously
         </Link>
+        <StoreBadges size="sm" className="mt-6" />
       </div>
 
       {/*

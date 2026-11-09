@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PublicHeader } from './PublicHeader';
+import { GetAppBand } from '../getApp/GetAppBand';
 
 /**
  * Wrapper for PUBLIC (unauthenticated) routes: the marketing header plus the page.
@@ -14,6 +15,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <PublicHeader />
       {children}
+      <GetAppBand />
     </div>
   );
 }
