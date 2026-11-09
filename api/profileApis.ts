@@ -613,6 +613,15 @@ export const SendCompanyVerificationEmail = async (email: string) => {
 };
 
 /**
+ * Confirm company verification with the 6-digit code from the email
+ */
+export const VerifyCompanyCode = async (code: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/user/verify-company-code`, { code });
+  return unwrap(res);
+};
+
+/**
  * Update pending verification email and resend (PUT)
  * Use after a verification request is already in progress.
  */

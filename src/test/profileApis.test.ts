@@ -43,6 +43,7 @@ import {
   SendCompanyVerificationEmail,
   UpdateCompanyVerificationEmail,
   GetCompanyVerificationStatus,
+  VerifyCompanyCode,
 } from '../../api/profileApis';
 
 // Mock the base module
@@ -370,6 +371,11 @@ describe('Profile API - Company Verification', () => {
   it('UpdateCompanyVerificationEmail calls PUT', async () => {
     await UpdateCompanyVerificationEmail('new@corp.com');
     expect(mockPut).toHaveBeenCalledWith('https://api.test.com/user/company-verification-email', { email: 'new@corp.com' });
+  });
+
+  it('VerifyCompanyCode posts the code', async () => {
+    await VerifyCompanyCode('482913');
+    expect(mockPost).toHaveBeenCalledWith('https://api.test.com/user/verify-company-code', { code: '482913' });
   });
 
   it('GetCompanyVerificationStatus calls GET', async () => {

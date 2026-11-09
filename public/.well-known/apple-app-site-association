@@ -6,8 +6,7 @@
         "components": [
           { "/": "/feeds/*", "comment": "Shared posts" },
           { "/": "/forums/*", "comment": "Shared forum topics" },
-          { "/": "/nooks/*", "comment": "Shared nooks" },
-          { "/": "/verify-company", "comment": "Company verification email" }
+          { "/": "/nooks/*", "comment": "Shared nooks" }
         ]
       }
     ]

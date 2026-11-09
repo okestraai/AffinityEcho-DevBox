@@ -50,6 +50,7 @@ import {
   SendCompanyVerificationEmail,
   UpdateCompanyVerificationEmail,
   GetCompanyVerificationStatus,
+  VerifyCompanyCode,
 } from '../../../../api/profileApis';
 import { GetUserPosts, GetBookmarks, DeletePost } from '../../../../api/feedApis';
 import { GetMyForumTopics, GetBookmarkedForumTopics, DeleteForumTopic } from '../../../../api/forumApis';
@@ -91,7 +92,7 @@ interface NotificationSettings {
 }
 
 export function ProfileView() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -158,6 +159,8 @@ export function ProfileView() {
   const [verificationEligible, setVerificationEligible] = useState(false);
   const [verificationCompany, setVerificationCompany] = useState('');
   const [verificationTokenExpiry, setVerificationTokenExpiry] = useState<string | null>(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [newVerificationEmail, setNewVerificationEmail] = useState('');
 
@@ -589,6 +592,29 @@ export function ProfileView() {
       setVerificationError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to send verification email');
     } finally {
       setVerificationSending(false);
+    }
+  };
+
+  // Check the 6-digit code from the email, right here in the profile.
+  const handleVerifyCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const code = verificationCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setVerificationError('Enter the 6-digit code from the email');
+      return;
+    }
+    setVerifyingCode(true);
+    setVerificationError('');
+    try {
+      await VerifyCompanyCode(code);
+      setVerificationStatus('verified');
+      setVerificationCode('');
+      updateUser({ is_company_verified: true } as Partial<NonNullable<typeof user>>);
+      showToast('Your company has been verified!', 'success');
+    } catch (error: unknown) {
+      setVerificationError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Could not check the code. Please try again.');
+    } finally {
+      setVerifyingCode(false);
     }
   };
 
@@ -1426,7 +1452,7 @@ export function ProfileView() {
                             </p>
                             {verificationTokenExpiry && (
                               <p className="text-xs text-amber-500 mt-0.5">
-                                Link expires {new Date(verificationTokenExpiry).toLocaleString()}
+                                Code expires {new Date(verificationTokenExpiry).toLocaleString()}
                               </p>
                             )}
                           </div>
@@ -1444,6 +1470,27 @@ export function ProfileView() {
                             Resend
                           </button>
                         </div>
+                        <form onSubmit={handleVerifyCode} className="mt-3 ml-7 flex gap-2">
+                          <input
+                            value={verificationCode}
+                            onChange={(e) => { setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setVerificationError(''); }}
+                            placeholder="6-digit code"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            aria-label="Verification code"
+                            className="flex-1 min-w-0 px-3 py-1.5 text-sm tracking-widest border border-amber-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          />
+                          <button
+                            type="submit"
+                            disabled={verifyingCode || verificationCode.length !== 6}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            {verifyingCode && <Loader2 className="w-3 h-3 animate-spin" />}
+                            Verify
+                          </button>
+                        </form>
+                        <p className="mt-1 ml-7 text-xs text-amber-600">Enter the 6-digit code from the email.</p>
                         <button
                           type="button"
                           onClick={() => { setShowChangeEmail((v) => !v); setVerificationError(''); setNewVerificationEmail(''); }}
