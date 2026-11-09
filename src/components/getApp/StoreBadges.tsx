@@ -31,7 +31,7 @@ export function StoreBadges({ size = 'lg', className = '', platform = platformOf
           aria-label={BADGES[store].label}
           className="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
         >
-          <img src={BADGES[store].src} alt={BADGES[store].label} className={`${HEIGHTS[size][store]} w-auto`} loading="lazy" decoding="async" />
+          <img src={BADGES[store].src} alt={BADGES[store].label} className={`${HEIGHTS[size][store]} w-auto`} loading="lazy" decoding="async" width={store === 'ios' ? 120 : 646} height={store === 'ios' ? 40 : 250} />
         </a>
       ))}
     </div>

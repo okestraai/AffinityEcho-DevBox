@@ -13,8 +13,8 @@ export function GetAppBand() {
           <p className="mt-3 text-gray-600">
             Forums, Nooks and mentorship on your phone, with the same anonymous account as the website.
           </p>
-          <div className="mt-7 flex items-center gap-6">
-            <StoreBadges className="shrink-0" />
+          <div className="mt-7 flex flex-wrap items-center gap-6">
+            <StoreBadges />
             <div className="hidden items-center gap-3 border-l border-slate-200 pl-6 lg:flex">
               <img src="/badges/get-app-qr.svg" alt="QR code to get the Affinity Echo app" className="h-20 w-20 rounded-md border border-slate-200 bg-white p-1" loading="lazy" />
               <p className="whitespace-nowrap text-sm text-gray-500">Scan to download</p>
