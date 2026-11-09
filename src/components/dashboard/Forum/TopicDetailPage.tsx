@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   MessageCircle,
   Heart,
-  Eye,
   Lightbulb,
   Bookmark,
   Share2,
@@ -14,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { useAuth } from "../../../hooks/useAuth";
@@ -973,7 +973,7 @@ export function TopicDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-2 text-gray-600">
-                  <Eye className="w-5 h-5" />
+                  <BarChart3 className="w-5 h-5" aria-label="Views" />
                   <span className="font-semibold">
                     {topic.views_count || 0}
                   </span>
@@ -1135,7 +1135,7 @@ export function TopicDetailPage() {
           onClose={() => setShowViewersModal(false)}
           contentId={topic.id}
           contentType="topic"
-          totalViewers={topic.reactions?.seen || 0}
+          totalViewers={topic.views_count || 0}
         />
       )}
 

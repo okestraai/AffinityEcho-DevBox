@@ -17,6 +17,7 @@ import {
   Flame,
   Building,
   Loader2,
+  BarChart3,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { VerifiedBadge } from "../../shared/VerifiedBadge";
@@ -977,7 +978,7 @@ export function FeedsView() {
                           className="flex items-center gap-2 text-sm hover:text-green-600 transition-colors text-gray-600"
                           aria-label="Viewers"
                         >
-                          <Eye className="w-4 h-4" />
+                          <BarChart3 className="w-4 h-4" />
                           <span>{formatNumber(item.engagement.seen ?? 0)}</span>
                         </button>
                       )}

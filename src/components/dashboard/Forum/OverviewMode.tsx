@@ -67,6 +67,7 @@ interface TopicItem {
   tags?: string[];
   reactions?: { seen?: number; validated?: number; inspired?: number; heard?: number };
   reaction_heard_count?: number;
+  reaction_seen_count?: number;
   reaction_validated_count?: number;
   reaction_inspired_count?: number;
   views_count?: number;
@@ -455,7 +456,7 @@ export function OverviewMode(props: OverviewModeProps) {
                           >
                             <Eye className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
-                              {topic.views_count || 0}
+                              {topic.reactions?.seen || topic.reaction_seen_count || 0}
                             </span>
                           </button>
                           <button
