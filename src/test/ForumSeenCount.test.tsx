@@ -52,7 +52,8 @@ function show() {
 describe('Forum overview Seen button', () => {
   it('shows how many people reacted Seen, not how many times the topic was opened', () => {
     show();
-    const seen = screen.getByRole('button', { name: 'Seen' });
+    // Screen readers hear the label and the number together.
+    const seen = screen.getByRole('button', { name: /^Seen\s*3$/ });
     expect(seen).toHaveTextContent('3');
     expect(seen).not.toHaveTextContent('57');
   });

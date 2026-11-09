@@ -511,7 +511,7 @@ export function ForumDetailView({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-100 gap-2">
                   <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 text-sm">
-                      <BarChart3 className="w-4 h-4 text-gray-400" aria-label="Views" />
+                      <BarChart3 className="w-4 h-4 text-gray-400" role="img" aria-label="Views" />
                       <span className="text-gray-600">{topic.views}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">

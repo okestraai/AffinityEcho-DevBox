@@ -976,8 +976,8 @@ export function FeedsView() {
                             )
                           }
                           className="flex items-center gap-2 text-sm hover:text-green-600 transition-colors text-gray-600"
-                          aria-label="Viewers"
                         >
+                          <span className="sr-only">Viewers </span>
                           <BarChart3 className="w-4 h-4" />
                           <span>{formatNumber(item.engagement.seen ?? 0)}</span>
                         </button>
@@ -987,8 +987,8 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.heard ? "text-red-500 font-semibold" : "text-gray-600 hover:text-red-500"
                         }`}
-                        aria-label="Heard"
                       >
+                        <span className="sr-only">Heard </span>
                         <Heart className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.heard)}</span>
                       </button>
@@ -997,8 +997,8 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.validated ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-600"
                         }`}
-                        aria-label="Validated"
                       >
+                        <span className="sr-only">Validated </span>
                         <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.validated ? "animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.validated)}</span>
                       </button>
@@ -1007,8 +1007,8 @@ export function FeedsView() {
                         className={`flex items-center gap-1.5 text-sm transition-all duration-200 hover:scale-110 active:scale-95 ${
                           item.user_reactions.inspired ? "text-yellow-500 font-semibold" : "text-gray-600 hover:text-yellow-500"
                         }`}
-                        aria-label="Inspired"
                       >
+                        <span className="sr-only">Inspired </span>
                         <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${item.user_reactions.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                         <span>{formatNumber(item.reaction_counts.inspired)}</span>
                       </button>

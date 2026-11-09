@@ -25,6 +25,12 @@ interface OkestraInsight {
   sentiment: 'positive' | 'neutral' | 'concerned' | 'supportive';
 }
 
+// Seen, Heard, Validated and Inspired added up; a missing count counts as 0.
+function reactionTotal(topic: Topic): number {
+  const r = topic.reactions ?? ({} as Partial<Topic['reactions']>);
+  return (r.seen ?? 0) + (r.heard ?? 0) + (r.validated ?? 0) + (r.inspired ?? 0);
+}
+
 export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -92,8 +98,7 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
       console.error('[OkestraPanel] Backend API failed, using local fallback', err);
       setError(err instanceof Error ? err.message : 'Failed to generate insights');
       const allComments = getAllComments(comments);
-      const totalEngagement = topic.reactions.seen + topic.reactions.validated +
-                             topic.reactions.inspired + topic.reactions.heard;
+      const totalEngagement = reactionTotal(topic);
       setInsight({
         summary: generateSummary(topic, allComments),
         keyThemes: extractKeyThemes(topic, allComments),
@@ -121,11 +126,10 @@ export function OkestraPanel({ isOpen, onClose, topic, comments }: OkestraPanelP
 
   const generateSummary = (topic: Topic, allComments: Comment[]): string => {
     const commentCount = allComments.length;
-    const hasHighEngagement = (topic.reactions.seen + topic.reactions.validated +
-                                topic.reactions.inspired + topic.reactions.heard) > 20;
+    const hasHighEngagement = reactionTotal(topic) > 20;
 
     if (commentCount === 0) {
-      return `This topic titled "${topic.title}" focuses on ${topic.tags.join(', ')}. While it hasn't received comments yet, it has generated ${topic.reactions.seen} views and meaningful reactions from the community, indicating strong interest in this subject.`;
+      return `This topic titled "${topic.title}" focuses on ${(topic.tags ?? []).join(', ') || 'a shared experience'}. While it hasn't received comments yet, it has ${reactionTotal(topic)} reactions from the community, indicating strong interest in this subject.`;
     }
 
     if (commentCount < 3) {

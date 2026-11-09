@@ -937,8 +937,8 @@ export function TopicDetailPage() {
                       ? "text-red-500 bg-red-50"
                       : "text-gray-500 hover:text-red-500"
                   }`}
-                  aria-label="Heard"
                 >
+                  <span className="sr-only">Heard </span>
                   <Heart className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_heard_count || topic.reactions?.heard || 0}</span>
                 </button>
@@ -949,8 +949,8 @@ export function TopicDetailPage() {
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-500 hover:text-blue-600"
                   }`}
-                  aria-label="Validated"
                 >
+                  <span className="sr-only">Validated </span>
                   <ClapIcon className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_validated_count || topic.reactions?.validated || 0}</span>
                 </button>
@@ -961,8 +961,8 @@ export function TopicDetailPage() {
                       ? "text-yellow-500 bg-yellow-50"
                       : "text-gray-500 hover:text-yellow-500"
                   }`}
-                  aria-label="Inspired"
                 >
+                  <span className="sr-only">Inspired </span>
                   <Lightbulb className={`w-5 h-5 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                   <span className="text-sm">{topic.reaction_inspired_count || topic.reactions?.inspired || 0}</span>
                 </button>
@@ -973,7 +973,7 @@ export function TopicDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-2 text-gray-600">
-                  <BarChart3 className="w-5 h-5" aria-label="Views" />
+                  <BarChart3 className="w-5 h-5" role="img" aria-label="Views" />
                   <span className="font-semibold">
                     {topic.views_count || 0}
                   </span>

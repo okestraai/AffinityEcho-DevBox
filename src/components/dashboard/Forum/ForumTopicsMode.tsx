@@ -385,8 +385,8 @@ export function ForumTopicsMode(props: any) {
                           className={`flex items-center gap-1 transition-all duration-200 font-medium hover:scale-110 active:scale-95 px-2 py-1.5 rounded-lg text-xs ${
                             topic.userReactions?.[key] ? active : `text-gray-500 ${hover}`
                           }`}
-                          aria-label={label}
                         >
+                          <span className="sr-only">{label} </span>
                           <Icon className={`w-3.5 h-3.5 ${topic.userReactions?.[key] ? "fill-current" : ""}`} />
                           <span>{topic.reactions?.[key] || topic[`reaction_${key}_count`] || 0}</span>
                         </button>

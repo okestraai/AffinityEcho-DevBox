@@ -452,8 +452,8 @@ export function OverviewMode(props: OverviewModeProps) {
                                 ? "text-green-600 bg-green-50"
                                 : "text-gray-500 hover:text-green-600"
                             }`}
-                            aria-label="Seen"
                           >
+                            <span className="sr-only">Seen </span>
                             <Eye className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.seen ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.seen || topic.reaction_seen_count || 0}
@@ -466,8 +466,8 @@ export function OverviewMode(props: OverviewModeProps) {
                                 ? "text-red-500 bg-red-50"
                                 : "text-gray-500 hover:text-red-500"
                             }`}
-                            aria-label="Heard"
                           >
+                            <span className="sr-only">Heard </span>
                             <HeartIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.heard ? "fill-red-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.heard ||
@@ -482,8 +482,8 @@ export function OverviewMode(props: OverviewModeProps) {
                                 ? "text-blue-600 bg-blue-50"
                                 : "text-gray-500 hover:text-blue-600"
                             }`}
-                            aria-label="Validated"
                           >
+                            <span className="sr-only">Validated </span>
                             <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.validated ? "animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.validated ||
@@ -498,8 +498,8 @@ export function OverviewMode(props: OverviewModeProps) {
                                 ? "text-yellow-500 bg-yellow-50"
                                 : "text-gray-500 hover:text-yellow-500"
                             }`}
-                            aria-label="Inspired"
                           >
+                            <span className="sr-only">Inspired </span>
                             <Lightbulb className={`w-4 h-4 transition-transform duration-200 ${topic.userReactions?.inspired ? "fill-yellow-500 animate-reaction-pop" : ""}`} />
                             <span className="text-sm">
                               {topic.reactions?.inspired ||

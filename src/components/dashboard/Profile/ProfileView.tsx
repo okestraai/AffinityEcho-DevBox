@@ -1102,19 +1102,23 @@ export function ProfileView() {
                         </div>
                         <div className="relative z-20 flex items-center justify-between flex-wrap gap-1 sm:gap-2 md:gap-4 mt-3 sm:mt-4">
                           <div className="flex items-center gap-0 sm:gap-1 md:gap-4 flex-wrap">
-                            <button aria-label="Views" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-green-600 min-h-[44px]">
+                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-green-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-green-600 min-h-[44px]">
+                              <span className="sr-only">Views </span>
                               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.engagement?.views || item.views_count || 0}</span>
                             </button>
-                            <button aria-label="Heard" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-red-500 min-h-[44px]">
+                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-red-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-red-500 min-h-[44px]">
+                              <span className="sr-only">Heard </span>
                               <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.heard || item.reactions?.heard || 0}</span>
                             </button>
-                            <button aria-label="Validated" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-blue-600 min-h-[44px]">
+                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-blue-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-blue-600 min-h-[44px]">
+                              <span className="sr-only">Validated </span>
                               <ClapIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.validated || item.reactions?.validated || 0}</span>
                             </button>
-                            <button aria-label="Inspired" className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-yellow-500 min-h-[44px]">
+                            <button className="flex items-center gap-1 md:gap-2 transition-all duration-200 font-medium hover:bg-yellow-50 hover:scale-110 active:scale-95 px-1.5 sm:px-2 md:px-3 py-2 md:py-2 rounded-lg text-gray-500 hover:text-yellow-500 min-h-[44px]">
+                              <span className="sr-only">Inspired </span>
                               <Lightbulb className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               <span className="text-xs sm:text-sm">{item.reaction_counts?.inspired || item.reactions?.inspired || 0}</span>
                             </button>

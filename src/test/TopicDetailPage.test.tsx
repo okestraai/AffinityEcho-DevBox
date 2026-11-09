@@ -200,12 +200,12 @@ describe('TopicDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Test Topic Title')).toBeInTheDocument();
     });
-    // Topic-level reaction buttons have aria-labels
-    const heardBtns = screen.getAllByLabelText('Heard');
+    // Topic-level reaction buttons are named by their hidden label and count
+    const heardBtns = screen.getAllByRole('button', { name: /^Heard/ });
     expect(heardBtns[0]).toHaveTextContent('5');
-    const validatedBtns = screen.getAllByLabelText('Validated');
+    const validatedBtns = screen.getAllByRole('button', { name: /^Validated/ });
     expect(validatedBtns[0]).toHaveTextContent('3');
-    const inspiredBtns = screen.getAllByLabelText('Inspired');
+    const inspiredBtns = screen.getAllByRole('button', { name: /^Inspired/ });
     expect(inspiredBtns[0]).toHaveTextContent('1');
   });
 
@@ -243,7 +243,7 @@ describe('TopicDetailPage', () => {
       expect(screen.getByText('Test Topic Title')).toBeInTheDocument();
     });
 
-    const heardBtn = screen.getByLabelText('Heard');
+    const heardBtn = screen.getByRole('button', { name: /^Heard/ });
     await user.click(heardBtn);
 
     expect(mockedReactions).toHaveBeenCalledWith({
@@ -349,7 +349,7 @@ describe('TopicDetailPage', () => {
       expect(screen.getByText('Test Topic Title')).toBeInTheDocument();
     });
 
-    const validatedBtn = screen.getByLabelText('Validated');
+    const validatedBtn = screen.getByRole('button', { name: /^Validated/ });
     await user.click(validatedBtn);
 
     expect(mockedReactions).toHaveBeenCalledWith({
@@ -365,7 +365,7 @@ describe('TopicDetailPage', () => {
       expect(screen.getByText('Test Topic Title')).toBeInTheDocument();
     });
 
-    const inspiredBtn = screen.getByLabelText('Inspired');
+    const inspiredBtn = screen.getByRole('button', { name: /^Inspired/ });
     await user.click(inspiredBtn);
 
     expect(mockedReactions).toHaveBeenCalledWith({
@@ -382,7 +382,7 @@ describe('TopicDetailPage', () => {
       expect(screen.getByText('Test Topic Title')).toBeInTheDocument();
     });
 
-    const heardBtn = screen.getByLabelText('Heard');
+    const heardBtn = screen.getByRole('button', { name: /^Heard/ });
     await user.click(heardBtn);
 
     await waitFor(() => {

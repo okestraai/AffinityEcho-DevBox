@@ -715,12 +715,12 @@ export function UserProfilePage() {
                   <div className="relative z-10">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-9 h-9 bg-gradient-to-br from-purple-100 via-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-base shadow-sm border border-purple-200/50 flex-shrink-0 select-none">
-                        {topic.is_anonymous ? '👤' : profile.avatar}
+                        {profile.avatar || '👤'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="text-xs text-purple-700 font-bold bg-gradient-to-r from-purple-100 to-indigo-100 px-2.5 py-1 rounded-full border border-purple-200">
-                            {topic.is_anonymous ? 'Anonymous' : displayName}
+                            {displayName || 'Anonymous'}
                           </span>
                           {topic.content.forum_name && (
                             <span className="text-xs text-blue-600 font-medium">{topic.content.forum_name}</span>

@@ -257,9 +257,9 @@ export const NookMessage = React.memo(function NookMessage({
                     ? "text-red-500 bg-red-50"
                     : "text-gray-500 hover:text-red-500 hover:bg-red-50"
                 }`}
-                aria-label="Heard"
                 title="Heard"
               >
+                <span className="sr-only">Heard </span>
                 <Heart className={`w-4 h-4 transition-transform duration-200 ${hasReacted("heard") ? "fill-red-500 animate-reaction-pop" : ""}`} />
                 {getReactionCount("heard") > 0 && (
                   <span>{getReactionCount("heard")}</span>
@@ -273,9 +273,9 @@ export const NookMessage = React.memo(function NookMessage({
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                 }`}
-                aria-label="Validated"
                 title="Validated"
               >
+                <span className="sr-only">Validated </span>
                 <ClapIcon className={`w-4 h-4 transition-transform duration-200 ${hasReacted("validated") ? "animate-reaction-pop" : ""}`} />
                 {getReactionCount("validated") > 0 && (
                   <span>{getReactionCount("validated")}</span>
