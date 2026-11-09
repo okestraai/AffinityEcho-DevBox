@@ -9,23 +9,24 @@ import {
   storeLinkFor,
 } from '../../utils/getApp';
 
-// Shown on a phone that opened a shared link in the browser: open the app, get it, or stay here.
+// Shown on a phone that opened a shared link in the browser, above the bottom menu: open the app, get it, or stay here.
 export function AppLinkPrompt() {
   // Read again on every navigation: the share redirect records the arrival as it runs.
   useLocation();
-  const [closed, setClosed] = useState(false);
-  const path = closed ? null : appLinkArrival();
+  const [closedFor, setClosedFor] = useState<string | null>(null);
+  const arrival = appLinkArrival();
+  const path = arrival === closedFor ? null : arrival;
   const store = storeLinkFor(platformOf());
   if (!path || !store) return null;
 
   const openUrl = androidOpenPathUrl(path);
   const close = () => {
     forgetAppLinkArrival();
-    setClosed(true);
+    setClosedFor(path);
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[60] p-3" role="dialog" aria-label="Open in the Affinity Echo app">
+    <div className="fixed inset-x-0 bottom-24 md:bottom-0 z-[60] p-3" role="dialog" aria-label="Open in the Affinity Echo app">
       <div className="mx-auto max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1">
