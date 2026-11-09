@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
@@ -10,17 +10,40 @@ export function VerifyCompany() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
+  // The token works once, so never send it twice (React runs effects twice in development).
+  const started = useRef(false);
+
   useEffect(() => {
     const token = searchParams.get("token");
+    // Older email links verify on the server first, then land here with the result.
+    const result = searchParams.get("status");
+    if (!token && result) {
+      const reason = searchParams.get("reason");
+      setStatus(result === "success" ? "success" : "error");
+      setMessage(
+        result === "success"
+          ? "Your company has been verified! You now have a verified badge."
+          : reason === "expired"
+            ? "This verification link has expired. Request a new one from your profile."
+            : reason === "invalid_token"
+              ? "This verification link is invalid or has already been used."
+              : "Something went wrong. Please try again.",
+      );
+      return;
+    }
     if (!token) {
       setStatus("error");
       setMessage("Invalid verification link. No token provided.");
       return;
     }
+    if (started.current) return;
+    started.current = true;
 
     const verify = async () => {
       try {
-        const res = await fetch(`${API_URL}/user/verify-company/${token}`);
+        const res = await fetch(`${API_URL}/user/verify-company/${encodeURIComponent(token)}`, {
+          headers: { Accept: "application/json" },
+        });
         const data = await res.json();
         if (res.ok && data?.success) {
           setStatus("success");
