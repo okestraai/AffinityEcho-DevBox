@@ -211,9 +211,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     TokenUtils.setTokens(access, refresh);
   };
 
-  const clearAuth = () => {
+  // The cookies are shared by every tab, so every other tab is told when they're cleared.
+  const clearAuth = (reason?: "idle") => {
     TokenUtils.clearTokens();
     setUser(null);
+    sessionSync.broadcastLogout(reason ? { reason } : {});
   };
 
   const loadUser = async (): Promise<User | null> => {
@@ -468,31 +470,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = () => {
     clearAuth();
-    sessionSync.broadcastLogout();
     showToast(MSG.AUTH.LOGGED_OUT, "info");
     navigate("/login", { replace: true });
   };
 
   const logoutAfterIdle = () => {
-    clearAuth();
-    sessionSync.broadcastLogout({ reason: "idle" });
+    clearAuth("idle");
     showToast(MSG.AUTH.LOGGED_OUT_IDLE, "info");
     navigate("/login", { replace: true });
   };
 
-  // Another tab signed out, so this one drops its sign-in; the route guards send it to the login page.
+  // Another tab signed out and cleared the cookies, so this one only drops its user; the route guards send it to login.
   const userRef = useRef<User | null>(null);
   userRef.current = user;
   useEffect(() => {
     registerSession({
       isSignedIn: () => userRef.current !== null,
-      logOutLocally: () => {
-        clearAuth();
-        showToast(MSG.AUTH.LOGGED_OUT, "info");
+      logOutLocally: (reason) => {
+        setUser(null);
+        showToast(reason === "idle" ? MSG.AUTH.LOGGED_OUT_IDLE : MSG.AUTH.LOGGED_OUT, "info");
       },
     });
     sessionSync.installLogoutSync();
   }, []);
+
+  // Use of any signed-in tab keeps the admin idle clock from running out.
+  const signedIn = user !== null;
+  useEffect(() => {
+    if (!signedIn) return;
+    const onActivity = () => sessionSync.shareActivity();
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
+    events.forEach((name) => window.addEventListener(name, onActivity, { passive: true }));
+    return () => events.forEach((name) => window.removeEventListener(name, onActivity));
+  }, [signedIn]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const completeOnboarding = async (_onboardingData?: unknown) => {

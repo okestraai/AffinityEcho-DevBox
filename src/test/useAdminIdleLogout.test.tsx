@@ -82,6 +82,27 @@ describe('admin idle sign-out', () => {
     expect(onIdle).toHaveBeenCalledTimes(1);
   });
 
+  it('does not count opening a tab as activity for other tabs', () => {
+    const listener = new FakeBroadcastChannel('affinityecho-auth');
+    const got: unknown[] = [];
+    listener.addEventListener('message', (event) => got.push(event.data));
+    renderHook(() => useIdleLogout(10 * MINUTE, vi.fn(), { sync: newSync() }));
+    expect(got).toEqual([]);
+    expect(localStorage.getItem('affinityecho-last-activity')).toBeNull();
+  });
+
+  it('keeps the idle time already used when the setting arrives', () => {
+    const onIdle = vi.fn();
+    const sync = newSync();
+    const { rerender } = renderHook(({ ms }) => useIdleLogout(ms, onIdle, { sync }), {
+      initialProps: { ms: 60 * MINUTE },
+    });
+    act(() => vi.advanceTimersByTime(12 * MINUTE));
+    rerender({ ms: 15 * MINUTE });
+    act(() => vi.advanceTimersByTime(3 * MINUTE));
+    expect(onIdle).toHaveBeenCalledTimes(1);
+  });
+
   it('reads the timeout from the admin settings', async () => {
     getSettings.mockResolvedValue({ security: { session_timeout_minutes: 15 } });
     const onIdle = vi.fn();

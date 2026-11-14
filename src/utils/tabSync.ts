@@ -7,7 +7,7 @@ type LogoutReason = 'idle';
 interface TabSyncOptions {
   app: string;
   isSignedIn: () => boolean;
-  logOutLocally: () => void;
+  logOutLocally: (reason?: LogoutReason) => void;
   isKeepAlive?: () => boolean;
 }
 
@@ -60,7 +60,7 @@ export function createTabSync({ app, isSignedIn, logOutLocally, isKeepAlive = ()
     // A tab doing must-not-stop work ignores another tab's idle sign-out, but not a real one.
     if (reason === 'idle' && isKeepAlive()) return;
     if (!isSignedIn()) return;
-    logOutLocally();
+    logOutLocally(reason === 'idle' ? 'idle' : undefined);
   };
 
   const installLogoutSync = () => {
@@ -129,17 +129,16 @@ export function createTabSync({ app, isSignedIn, logOutLocally, isKeepAlive = ()
 }
 
 // The sign-in is one set of cookies for the whole app, so one channel serves every tab.
-const handlers: { isSignedIn: () => boolean; logOutLocally: () => void; isKeepAlive: () => boolean } = {
+// No tab ignores an idle sign-out here: the idle tab has already cleared the shared cookies.
+const handlers: { isSignedIn: () => boolean; logOutLocally: (reason?: LogoutReason) => void } = {
   isSignedIn: () => false,
   logOutLocally: () => {},
-  isKeepAlive: () => false,
 };
 
 export const sessionSync = createTabSync({
   app: 'affinityecho',
   isSignedIn: () => handlers.isSignedIn(),
-  logOutLocally: () => handlers.logOutLocally(),
-  isKeepAlive: () => handlers.isKeepAlive(),
+  logOutLocally: (reason) => handlers.logOutLocally(reason),
 });
 
 export function registerSession(next: Partial<typeof handlers>): void {

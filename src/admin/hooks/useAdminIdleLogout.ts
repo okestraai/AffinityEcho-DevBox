@@ -19,13 +19,14 @@ export function useIdleLogout(
   { sync = sessionSync, isKeepAlive = () => false }: { sync?: TabSync; isKeepAlive?: () => boolean } = {},
 ): void {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Kept across timeout changes, so loading the setting doesn't count as activity.
+  const lastLocalRef = useRef(Date.now());
   const onIdleRef = useRef(onIdle);
   onIdleRef.current = onIdle;
   const keepAliveRef = useRef(isKeepAlive);
   keepAliveRef.current = isKeepAlive;
 
   useEffect(() => {
-    let lastLocal = Date.now();
     let done = false;
 
     const schedule = (ms: number) => {
@@ -39,7 +40,7 @@ export function useIdleLogout(
         schedule(timeoutMs);
         return;
       }
-      const remaining = Math.max(lastLocal, sync.lastSharedActivity()) + timeoutMs - Date.now();
+      const remaining = Math.max(lastLocalRef.current, sync.lastSharedActivity()) + timeoutMs - Date.now();
       if (remaining > 0) {
         schedule(remaining);
         return;
@@ -49,8 +50,8 @@ export function useIdleLogout(
     }
 
     const onActivity = () => {
-      lastLocal = Date.now();
-      sync.shareActivity(lastLocal);
+      lastLocalRef.current = Date.now();
+      sync.shareActivity(lastLocalRef.current);
       schedule(timeoutMs);
     };
 
@@ -60,8 +61,7 @@ export function useIdleLogout(
     }, Math.min(timeoutMs / 3, 60_000));
 
     ACTIVITY_EVENTS.forEach((name) => window.addEventListener(name, onActivity, { passive: true }));
-    sync.shareActivity(lastLocal);
-    schedule(timeoutMs);
+    schedule(Math.max(lastLocalRef.current, sync.lastSharedActivity()) + timeoutMs - Date.now());
 
     return () => {
       done = true;

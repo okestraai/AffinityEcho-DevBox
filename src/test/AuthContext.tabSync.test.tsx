@@ -69,13 +69,36 @@ describe('AuthProvider across tabs', () => {
     fromOtherTabs = [];
   });
 
-  it('signs this tab out when another tab signs out', async () => {
+  it('signs this tab out when another tab signs out, without clearing the cookies again', async () => {
     const { result } = await signedInTab();
+    vi.mocked(TokenUtils.clearTokens).mockClear();
     act(() => otherTab.postMessage({ type: 'logout' }));
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(vi.mocked(TokenUtils.clearTokens)).toHaveBeenCalled();
+    expect(vi.mocked(TokenUtils.clearTokens)).not.toHaveBeenCalled();
+    expect(fromOtherTabs).toEqual([]);
     expect(vi.mocked(showToast)).toHaveBeenCalledWith(MSG.AUTH.LOGGED_OUT, 'info');
+  });
+
+  it('says why when another tab signed out after inactivity', async () => {
+    await signedInTab();
+    act(() => otherTab.postMessage({ type: 'logout', reason: 'idle' }));
+    expect(vi.mocked(showToast)).toHaveBeenCalledWith(MSG.AUTH.LOGGED_OUT_IDLE, 'info');
+  });
+
+  it('tells the other tabs when the sign-in is cleared because the user could not be loaded', async () => {
+    vi.mocked(GetCurrentUser).mockRejectedValue(new Error('expired'));
+    const hook = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(hook.result.current.isLoading).toBe(false));
+    expect(fromOtherTabs).toEqual([{ type: 'logout' }]);
+  });
+
+  it('shares activity from any signed-in tab, not only admin pages', async () => {
+    await signedInTab();
+    act(() => {
+      window.dispatchEvent(new Event('keydown'));
+    });
+    expect(fromOtherTabs).toEqual([{ type: 'activity', at: expect.any(Number) }]);
   });
 
   it('tells the other tabs when this tab signs out', async () => {
