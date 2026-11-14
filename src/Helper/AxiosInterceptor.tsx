@@ -2,6 +2,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { webSocketService } from '../services/websocket.service';
 import { TokenUtils } from '../utils/tokenUtils';
+import { sessionSync } from '../utils/tabSync';
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = [];
@@ -85,6 +86,7 @@ const AxiosInterceptor = (
 
           // Clear tokens from cookies and localStorage (cleanup)
           TokenUtils.clearTokens();
+          sessionSync.broadcastLogout();
 
           window.location.href = '/login';
           return Promise.reject(refreshError);

@@ -41,6 +41,7 @@ export const MSG = {
     LOGIN_CANCELLED: 'Login cancelled, your account remains paused',
     PASSWORD_RESET: 'Your password has been reset successfully',
     LOGGED_OUT: 'You have been logged out',
+    LOGGED_OUT_IDLE: 'You were signed out after a period of inactivity',
     OTP_SENT: 'A new verification code has been sent to your email',
     OTP_PASTED: 'Verification code pasted',
     OTP_VERIFIED: 'Code verified successfully',

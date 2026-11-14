@@ -4,6 +4,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ import { ReactivateAccount } from "../../api/profileApis";
 import { showToast } from "../Helper/ShowToast";
 import { MSG } from "../constants/messages";
 import { TokenUtils } from "../utils/tokenUtils";
+import { registerSession, sessionSync } from "../utils/tabSync";
 
 export interface User {
   id: string;
@@ -84,6 +86,7 @@ interface AuthContextType {
   socialLogin: (provider: "google" | "facebook") => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
+  logoutAfterIdle: () => void;
   loadUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   completeOnboarding: (data?: unknown) => Promise<void>;
@@ -465,9 +468,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = () => {
     clearAuth();
+    sessionSync.broadcastLogout();
     showToast(MSG.AUTH.LOGGED_OUT, "info");
     navigate("/login", { replace: true });
   };
+
+  const logoutAfterIdle = () => {
+    clearAuth();
+    sessionSync.broadcastLogout({ reason: "idle" });
+    showToast(MSG.AUTH.LOGGED_OUT_IDLE, "info");
+    navigate("/login", { replace: true });
+  };
+
+  // Another tab signed out, so this one drops its sign-in; the route guards send it to the login page.
+  const userRef = useRef<User | null>(null);
+  userRef.current = user;
+  useEffect(() => {
+    registerSession({
+      isSignedIn: () => userRef.current !== null,
+      logOutLocally: () => {
+        clearAuth();
+        showToast(MSG.AUTH.LOGGED_OUT, "info");
+      },
+    });
+    sessionSync.installLogoutSync();
+  }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const completeOnboarding = async (_onboardingData?: unknown) => {
@@ -519,6 +544,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         socialLogin,
         forgotPassword,
         logout,
+        logoutAfterIdle,
         loadUser,
         updateUser,
         completeOnboarding,

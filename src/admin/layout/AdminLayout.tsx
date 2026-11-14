@@ -28,6 +28,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
 import { usePermission } from "../hooks/usePermission";
+import { useAdminIdleLogout } from "../hooks/useAdminIdleLogout";
 import { GetUnreadCount } from "../../../api/notificationApis";
 import { NotificationsDropdown } from "../../components/NavComponent/NotificationsDropdown";
 
@@ -229,8 +230,9 @@ export function AdminLayout() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, logoutAfterIdle } = useAuth();
   const { hasPermission, isSuperAdmin } = usePermission();
+  useAdminIdleLogout(logoutAfterIdle);
 
   const visibleNavItems = NAV_ITEMS.filter((item) => {
     if (item.superAdminOnly) return isSuperAdmin;
