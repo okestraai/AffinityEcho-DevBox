@@ -18,6 +18,16 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Ends a sign-in the server no longer accepts: clears it here, tells the other tabs and shows the login form.
+const endSessionAndGoToLogin = () => {
+  TokenUtils.clearTokens();
+  sessionSync.broadcastLogout();
+  if (window.location.pathname !== '/login') window.location.href = '/login';
+};
+
+// Sign-in calls answer 401 for a wrong password or code, which the form shows; they never end the session.
+const isAuthCall = (url: string | undefined) => !!url && /\/auth\//.test(url);
+
 const AxiosInterceptor = (
   accessToken: string | null,
   refreshToken: string | null
@@ -31,8 +41,11 @@ const AxiosInterceptor = (
   // Request Interceptor
   instance.interceptors.request.use(
     (config) => {
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
+      // The stored token is the current one; after a refresh it is newer than the one this client was made with,
+      // so a retried request goes out with the fresh token instead of the expired one.
+      const current = TokenUtils.getAccessToken() ?? accessToken;
+      if (current) {
+        config.headers.Authorization = `Bearer ${current}`;
       }
       return config;
     },
@@ -84,15 +97,17 @@ const AxiosInterceptor = (
         } catch (refreshError) {
           processQueue(refreshError, null);
 
-          // Clear tokens from cookies and localStorage (cleanup)
-          TokenUtils.clearTokens();
-          sessionSync.broadcastLogout();
-
-          window.location.href = '/login';
+          endSessionAndGoToLogin();
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
         }
+      }
+
+      // Still refused with no way to refresh, or after a refresh: the sign-in is over, so go to the login form
+      // instead of leaving the page on "not authenticated".
+      if (error.response?.status === 401 && accessToken && !isAuthCall(originalRequest?.url)) {
+        endSessionAndGoToLogin();
       }
 
       return Promise.reject(error);

@@ -59,6 +59,14 @@ describe('AxiosInterceptor', () => {
     expect(result.headers.Authorization).toBe('Bearer my-access-token');
   });
 
+  it('sends the refreshed token, not the one the client was made with', () => {
+    const instance = AxiosInterceptor('expired-token', 'my-refresh-token');
+    vi.mocked(TokenUtils.getAccessToken).mockReturnValueOnce('fresh-token');
+    const handlers = (instance.interceptors.request as unknown as { handlers: Array<{ fulfilled: (c: { headers: Record<string, string> }) => { headers: Record<string, string> } }> }).handlers;
+    const result = handlers[0].fulfilled({ headers: { Authorization: 'Bearer fresh-token' } });
+    expect(result.headers.Authorization).toBe('Bearer fresh-token');
+  });
+
   it('does not attach auth header when no access token is provided', () => {
     const instance = AxiosInterceptor(null, null);
 
@@ -169,6 +177,8 @@ describe('AxiosInterceptor', () => {
 
     await expect(rejectedHandler(error)).rejects.toEqual(error);
     expect(postSpy).not.toHaveBeenCalled();
+    // With no way to refresh, the sign-in is over: back to the login form.
+    expect(window.location.href).toBe('/login');
 
     postSpy.mockRestore();
   });
@@ -190,7 +200,29 @@ describe('AxiosInterceptor', () => {
 
     await expect(rejectedHandler(error)).rejects.toEqual(error);
     expect(postSpy).not.toHaveBeenCalled();
+    // Refused again after a refresh: the sign-in is over, so back to the login form.
+    expect(window.location.href).toBe('/login');
 
     postSpy.mockRestore();
+  });
+
+  it('leaves a wrong password on the login form alone', async () => {
+    window.location.href = '/somewhere';
+    const instance = AxiosInterceptor('token', null);
+    const rejectedHandler = (instance.interceptors.response as unknown as { handlers: Array<{ rejected: (e: unknown) => Promise<unknown> }> }).handlers[0].rejected;
+    const error = { response: { status: 401 }, config: { url: 'https://api.test/auth/login', headers: {}, _retry: false } };
+
+    await expect(rejectedHandler(error)).rejects.toEqual(error);
+    expect(window.location.href).toBe('/somewhere');
+  });
+
+  it('leaves a signed-out visitor alone', async () => {
+    window.location.href = '/somewhere';
+    const instance = AxiosInterceptor(null, null);
+    const rejectedHandler = (instance.interceptors.response as unknown as { handlers: Array<{ rejected: (e: unknown) => Promise<unknown> }> }).handlers[0].rejected;
+    const error = { response: { status: 401 }, config: { url: 'https://api.test/feeds', headers: {}, _retry: false } };
+
+    await expect(rejectedHandler(error)).rejects.toEqual(error);
+    expect(window.location.href).toBe('/somewhere');
   });
 });
