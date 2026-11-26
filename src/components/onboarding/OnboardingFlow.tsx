@@ -18,10 +18,12 @@ import { showToast } from "../../Helper/ShowToast";
 import { MSG } from "../../constants/messages";
 
 export function OnboardingFlow() {
+  const { completeOnboarding, user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  // Someone who signed up through an event already gave their name.
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    firstName: user?.first_name ?? "",
+    lastName: user?.last_name ?? "",
     country: guessCountry(),
     ethnicities: [] as string[],
     gender: "",
@@ -36,7 +38,6 @@ export function OnboardingFlow() {
     ageConfirmed: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { completeOnboarding } = useAuth();
 
   const steps = [
     {

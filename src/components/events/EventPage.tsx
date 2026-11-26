@@ -251,7 +251,7 @@ export function EventPage() {
             ) : revealed ? (
               <div className="space-y-2">
                 <p className="flex items-center gap-2 font-semibold text-slate-900"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> Code accepted</p>
-                <p className="text-sm text-slate-600">The details for your place are shown on the left.</p>
+                <p className="text-sm text-slate-600">The address or join link for your place now shows in the event details.</p>
               </div>
             ) : !event.registrationOpen ? (
               <p className="text-slate-600">{event.status === "cancelled" ? "This event was cancelled." : "Registration is closed."}</p>

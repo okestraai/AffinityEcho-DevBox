@@ -330,7 +330,7 @@ export function LoginScreen() {
 
                     {useCode ? (
                       <div className="space-y-4">
-                        <CodeSignIn onSignedIn={afterCodeSignIn} />
+                        <CodeSignIn existingOnly onSignedIn={afterCodeSignIn} />
                         <button type="button" onClick={() => setUseCode(false)} className="w-full text-sm text-gray-600 underline min-h-[44px]">
                           Use a password instead
                         </button>

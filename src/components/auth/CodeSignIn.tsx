@@ -10,6 +10,8 @@ interface Props {
   // Ask for a name, so a new account doesn't need onboarding to know it.
   askName?: boolean;
   submitLabel?: string;
+  // Sign-in screen: only emails that already have an account get a code.
+  existingOnly?: boolean;
 }
 
 const errorText = (error: unknown, fallback: string) => {
@@ -18,8 +20,8 @@ const errorText = (error: unknown, fallback: string) => {
   return (Array.isArray(m) ? m[0] : m) || fallback;
 };
 
-// "Email me a code": email (and name), then the 6-digit code. New emails get an account.
-export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email me a code" }: Props) {
+// "Email me a code": email (and name), then the 6-digit code. New emails get an account unless existingOnly.
+export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email me a code", existingOnly = false }: Props) {
   const { signInWithCode } = useAuth();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -38,8 +40,12 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
     setBusy(true);
     setError(null);
     try {
-      const res = await SendSignInCode(email.trim());
-      setNote(res?.message ?? "If this email can sign in, a code is on its way.");
+      const res = await SendSignInCode(email.trim(), existingOnly);
+      setNote(
+        existingOnly
+          ? "If this email has an Affinity Echo account, a code is on its way."
+          : res?.message ?? "If this email can sign in, a code is on its way.",
+      );
       setStep("code");
     } catch (e) {
       setError(errorText(e, "We couldn't send the code. Try again."));
@@ -57,7 +63,7 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
         code: code.trim(),
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
-        termsAccepted: terms,
+        ...(existingOnly ? { existingOnly: true } : { termsAccepted: terms }),
       })) as CodeSignInData;
       await signInWithCode(data);
       onSignedIn(data);
@@ -126,18 +132,20 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
         <input id="code-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-xl min-h-[44px]" />
       </div>
+      {!existingOnly && (
       <label className="flex items-start gap-2 text-sm text-gray-700 min-h-[44px]">
-        <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-1 w-4 h-4" />
+        <input type="checkbox" aria-label="I agree to the Terms and Privacy Policy" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-1 w-4 h-4" />
         <span>
           I agree to the <Link to="/terms" className="text-purple-700 underline">Terms</Link> and{" "}
           <Link to="/privacy" className="text-purple-700 underline">Privacy Policy</Link>.
         </span>
       </label>
+      )}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <button
         type="button"
         onClick={send}
-        disabled={busy || !emailOk || !nameOk || !terms}
+        disabled={busy || !emailOk || !nameOk || (!existingOnly && !terms)}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-50 min-h-[44px]"
       >
         <Mail className="w-4 h-4" /> {busy ? "Sending..." : submitLabel}

@@ -44,9 +44,9 @@ export const GetRecentDiscussions = async (
   if (filters.limit) queryParams.append("limit", filters.limit.toString());
 
   const queryString = queryParams.toString();
-  const url = `${API_URL}/forum/recent-discussions/${encodeURIComponent(
-    companyName
-  )}${queryString ? `?${queryString}` : ""}`;
+  // No company (students, people not working): the server uses the member's own spaces.
+  const company = companyName ? `/${encodeURIComponent(companyName)}` : "";
+  const url = `${API_URL}/forum/recent-discussions${company}${queryString ? `?${queryString}` : ""}`;
 
   const res = await authFetch.get(url);
   return unwrap(res);

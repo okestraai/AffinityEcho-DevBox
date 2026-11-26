@@ -144,7 +144,7 @@ describe('email code sign-in', () => {
     expect(screen.getByRole('button', { name: /Email me a code/ })).toBeDisabled();
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /Email me a code/ }));
-    expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com');
+    expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com', false);
     await user.type(await screen.findByLabelText('6-digit code'), '12a3456');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() =>
@@ -158,6 +158,31 @@ describe('email code sign-in', () => {
     );
     expect(signInWithCode).toHaveBeenCalledWith(data);
     expect(onSignedIn).toHaveBeenCalledWith(data);
+  });
+
+  it('on the sign-in screen only serves existing accounts, with no terms box', async () => {
+    asVisitor(false);
+    const data = { access_token: 'a', refresh_token: 'r', user: { id: 'u1', has_completed_onboarding: true } };
+    vi.mocked(VerifySignInCode).mockResolvedValue(data as never);
+    render(
+      <MemoryRouter>
+        <CodeSignIn existingOnly onSignedIn={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('Email'), 'ada@example.com');
+    await user.click(screen.getByRole('button', { name: /Email me a code/ }));
+    expect(SendSignInCode).toHaveBeenCalledWith('ada@example.com', true);
+    expect(await screen.findByText(/If this email has an Affinity Echo account/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText('6-digit code'), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() =>
+      expect(VerifySignInCode).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'ada@example.com', existingOnly: true }),
+      ),
+    );
+    expect(vi.mocked(VerifySignInCode).mock.calls.at(-1)?.[0]).not.toHaveProperty('termsAccepted');
   });
 });
 

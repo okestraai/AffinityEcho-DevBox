@@ -51,6 +51,7 @@ export function SetPasswordPage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-xl min-h-[44px]" />
         </div>
         {problem && <p className="text-sm text-red-600">{problem}</p>}
+        {!problem && confirm && password !== confirm && <p className="text-sm text-red-600">The passwords don't match.</p>}
         <button type="button" onClick={save} disabled={busy || !password || !!problem || password !== confirm}
           className="w-full px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-50 min-h-[44px]">
           {busy ? "Saving..." : "Set password"}

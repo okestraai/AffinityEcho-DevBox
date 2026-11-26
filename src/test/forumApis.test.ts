@@ -101,6 +101,13 @@ describe('Forum API functions', () => {
       const url = mockGet.mock.calls[0][0] as string;
       expect(url).toContain('Test%20Corp%20%26%20Co');
     });
+
+    it('leaves the company out for members with none', async () => {
+      mockGet.mockResolvedValue({ data: { data: {} } });
+      await GetRecentDiscussions('', { limit: 5 });
+      const url = mockGet.mock.calls[0][0] as string;
+      expect(url).toContain('/forum/recent-discussions?limit=5');
+    });
   });
 
   // ---------- GetFoundationForums ----------
