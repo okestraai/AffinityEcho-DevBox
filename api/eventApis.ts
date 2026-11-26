@@ -21,6 +21,7 @@ export interface EventSummary {
   registrationOpen: boolean;
   placesLeft?: { inPerson: number | null; online: number | null };
   attendance?: Attendance | null;
+  shareEmail?: boolean | null;
 }
 
 export interface EventForMember extends EventSummary {

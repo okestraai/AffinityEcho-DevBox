@@ -24,7 +24,7 @@ import {
 import { eventWhen } from "../../utils/eventTime";
 import { CodeSignIn } from "../auth/CodeSignIn";
 import { showToast } from "../../Helper/ShowToast";
-import { Card, DateTile, InfoRow, ModeBadge, StatusBadge, inputClass, primaryButton } from "./parts";
+import { Card, DateTile, InfoRow, ModeBadge, ShareEmailButton, StatusBadge, inputClass, primaryButton } from "./parts";
 
 const errorText = (error: unknown, fallback: string) => {
   const e = error as { response?: { data?: { message?: string | string[] } } };
@@ -273,14 +273,10 @@ export function EventPage() {
                     ].filter(Boolean).join(" · ")}
                   </p>
                 )}
-                <label className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
-                  <input type="checkbox" checked={shareEmail} onChange={(e) => setShareEmail(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
-                  <span>
-                    Share my email with the host
-                    <span className="block text-xs text-slate-500">Optional. You can change this until the event ends.</span>
-                  </span>
-                </label>
+                <div>
+                  <ShareEmailButton shared={shareEmail} onToggle={() => setShareEmail(!shareEmail)} />
+                  <p className="mt-1.5 text-xs text-slate-500">Optional. The host only sees your name unless you share. You can change this until the event ends.</p>
+                </div>
                 {isAuthenticated ? (
                   <>
                     {needsName && (

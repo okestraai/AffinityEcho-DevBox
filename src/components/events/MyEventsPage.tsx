@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, CalendarDays, MapPin, MonitorPlay, ChevronRight, Sparkles } from "lucide-react";
+import { Plus, CalendarDays, MapPin, MonitorPlay, ChevronRight, Sparkles, XCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import {
   CancelRegistration,
   EventSummary,
-  GetEventForMember,
   GetMyEvents,
   SetEmailSharing,
 } from "../../../api/eventApis";
 import { eventWhen } from "../../utils/eventTime";
 import { rememberReturnTo } from "../../utils/returnTo";
 import { showToast } from "../../Helper/ShowToast";
-import { Card, DateTile, ModeBadge, PageHeading, StatusBadge, primaryButton } from "./parts";
+import { Card, DateTile, ModeBadge, PageHeading, ShareEmailButton, StatusBadge, primaryButton } from "./parts";
 
 type Tab = "active" | "past" | "hosting";
 const TABS: { id: Tab; label: string }[] = [
@@ -120,27 +119,18 @@ function EmptyState({ tab, canHost }: { tab: Tab; canHost: boolean }) {
 }
 
 function EventRow({ event, hosting, editable, onChange }: { event: EventSummary; hosting: boolean; editable: boolean; onChange: () => void }) {
-  const [sharing, setSharing] = useState<boolean | null>(null);
+  const [sharing, setSharing] = useState<boolean>(!!event.shareEmail);
   const [busy, setBusy] = useState(false);
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
   const ended = new Date(event.endsAt).getTime() < Date.now();
   const href = hosting ? `/events/manage/${event.id}` : `/events/${event.slug}`;
-
-  // The sharing choice is read only when the guest opens it.
-  const openSettings = async () => {
-    try {
-      const full = await GetEventForMember(event.slug);
-      setSharing(full.registration?.shareEmail ?? false);
-    } catch {
-      showToast("Couldn't load your registration.", "error");
-    }
-  };
 
   const toggleSharing = async (value: boolean) => {
     setBusy(true);
     try {
       const res = await SetEmailSharing(event.slug, value);
       setSharing(res?.shareEmail ?? value);
+      showToast(value ? "The host can now see your email." : "The host no longer sees your email.", "success");
     } catch {
       showToast("Couldn't change email sharing.", "error");
     } finally {
@@ -187,20 +177,11 @@ function EventRow({ event, hosting, editable, onChange }: { event: EventSummary;
           <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-purple-500 flex-shrink-0" />
         </Link>
         {editable && !hosting && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 sm:px-5 py-2.5 border-t border-slate-100 text-sm">
-            {sharing === null ? (
-              <button type="button" onClick={openSettings} className="font-medium text-slate-600 hover:text-slate-900 min-h-[40px]">
-                Email sharing
-              </button>
-            ) : (
-              <label className="flex items-center gap-2 text-slate-700 min-h-[40px] cursor-pointer">
-                <input type="checkbox" checked={sharing} disabled={busy} onChange={(e) => toggleSharing(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-purple-600" />
-                Share my email with the host
-              </label>
-            )}
-            <button type="button" onClick={cancel} disabled={busy} className="font-medium text-red-600 hover:text-red-700 min-h-[40px]">
-              Cancel registration
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 sm:px-5 py-3 border-t border-slate-100 text-sm">
+            <ShareEmailButton size="sm" shared={sharing} disabled={busy} onToggle={() => toggleSharing(!sharing)} />
+            <button type="button" onClick={cancel} disabled={busy}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 transition-all min-h-[40px]">
+              <XCircle className="w-4 h-4" /> Cancel registration
             </button>
           </div>
         )}

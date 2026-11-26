@@ -81,7 +81,7 @@ describe('public event page', () => {
     expect(document.body.textContent).not.toContain('Allen Avenue');
     expect(screen.getByText('Your name will be shown to the host.')).toBeInTheDocument();
     // Sharing the email is off until the guest ticks it.
-    expect(screen.getByLabelText(/Share my email with the host/)).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /Share my email with host/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('registers a signed-in member in one tap', async () => {

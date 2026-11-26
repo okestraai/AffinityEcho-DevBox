@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Globe2, MapPin, MonitorPlay } from "lucide-react";
+import { Check, Globe2, Mail, MapPin, MonitorPlay } from "lucide-react";
 import type { EventMode } from "../../../api/eventApis";
 
 // Shared pieces of the event screens, so they read as one set.
@@ -103,3 +103,29 @@ export const dangerButton =
   "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-red-600 text-sm font-semibold border border-red-200 hover:bg-red-50 transition-all min-h-[44px]";
 export const inputClass =
   "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-purple-400 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all min-h-[44px]";
+
+// Sharing your email with the host: one button that shows the current choice and flips it.
+export function ShareEmailButton({ shared, onToggle, disabled, size = "md" }: {
+  shared: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  size?: "sm" | "md";
+}) {
+  const pad = size === "sm" ? "px-3 py-2 text-sm" : "px-4 py-3 text-sm w-full justify-center";
+  return (
+    <button
+      type="button"
+      aria-pressed={shared}
+      onClick={onToggle}
+      disabled={disabled}
+      className={`inline-flex items-center gap-2 rounded-xl border font-semibold transition-all min-h-[40px] ${pad} ${
+        shared
+          ? "bg-purple-600 border-purple-600 text-white hover:bg-purple-700"
+          : "bg-white border-slate-200 text-slate-700 hover:border-purple-300 hover:text-purple-700"
+      } disabled:opacity-50`}
+    >
+      {shared ? <Check className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+      {shared ? "Email shared with host" : "Share my email with host"}
+    </button>
+  );
+}
