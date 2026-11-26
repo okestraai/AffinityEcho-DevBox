@@ -1,20 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Download, Copy, CheckCircle2, Pencil, XCircle } from "lucide-react";
 import {
-  CancelEvent,
-  CheckInGuest,
-  DownloadGuestCsv,
-  GetHostPage,
-} from "../../../api/eventApis";
+  ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Download,
+  Eye,
+  MapPin,
+  MonitorPlay,
+  Pencil,
+  ScanLine,
+  Search,
+  UserCheck,
+  Users,
+  XCircle,
+} from "lucide-react";
+import { CancelEvent, CheckInGuest, DownloadGuestCsv, GetHostPage } from "../../../api/eventApis";
 import { eventWhen } from "../../utils/eventTime";
 import { showToast } from "../../Helper/ShowToast";
+import { Card, DateTile, ModeBadge, StatusBadge, dangerButton, inputClass, primaryButton, secondaryButton } from "./parts";
 
 type Page = Awaited<ReturnType<typeof GetHostPage>>;
 
-const shareBase = (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined) || window.location.origin;
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
 
-// The host's page: link opens and registrations, the guest list, check-in and the CSV.
+// The host's page: link opens and registrations, check-in, the guest list and the CSV.
 export function HostPage() {
   const { eventId = "" } = useParams();
   const [page, setPage] = useState<Page | null>(null);
@@ -34,12 +45,20 @@ export function HostPage() {
     load();
   }, [load]);
 
-  if (!page) return <main className="max-w-3xl mx-auto px-4 py-10 text-gray-500">Loading…</main>;
+  if (!page) {
+    return (
+      <div className="max-w-6xl mx-auto animate-pulse" aria-label="Loading">
+        <div className="h-32 rounded-2xl bg-slate-200" />
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-24 rounded-2xl bg-slate-200" />)}</div>
+      </div>
+    );
+  }
   const { event, stats, guests } = page;
-  const link = `${shareBase.replace(/\/$/, "")}/events/${event.slug}`;
+  const link = `${window.location.origin}/events/${event.slug}`;
   const active = guests.filter((g) => g.status === "registered");
   const shown = active.filter((g) => g.name.toLowerCase().includes(filter.trim().toLowerCase()));
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
+  const ended = new Date(event.endsAt).getTime() < Date.now();
 
   const checkIn = async (payload: { code?: string; registrationId?: string }) => {
     setBusy(true);
@@ -89,85 +108,125 @@ export function HostPage() {
     }
   };
 
+  const statCards = [
+    { label: "Link opens", value: stats.linkOpens, icon: <Eye className="w-4 h-4" /> },
+    { label: "Registered", value: stats.registered, icon: <Users className="w-4 h-4" /> },
+    { label: "In person", value: stats.inPerson, icon: <MapPin className="w-4 h-4" /> },
+    { label: "Online", value: stats.online, icon: <MonitorPlay className="w-4 h-4" /> },
+    { label: "Checked in", value: stats.checkedIn, icon: <UserCheck className="w-4 h-4" /> },
+  ];
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-5">
-      <div>
-        <Link to="/events" className="text-sm text-gray-600 underline">My Events</Link>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{event.title}</h1>
-        <p className="text-gray-600">{when.local}</p>
-        {event.status === "cancelled" && <p className="mt-2 text-red-700 font-medium">Cancelled</p>}
-      </div>
+    <div className="max-w-6xl mx-auto">
+      <Link to="/events" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 mb-4 min-h-[40px]">
+        <ArrowLeft className="w-4 h-4" /> My Events
+      </Link>
 
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={copy} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white min-h-[44px]"><Copy className="w-4 h-4" /> Copy share link</button>
-        <Link to={`/events/${event.slug}`} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white min-h-[44px]">View public page</Link>
-        {event.status === "published" && (
-          <>
-            <Link to={`/events/manage/${event.id}/edit`} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white min-h-[44px]"><Pencil className="w-4 h-4" /> Edit</Link>
-            <button type="button" onClick={cancel} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-300 text-red-700 bg-white min-h-[44px]"><XCircle className="w-4 h-4" /> Cancel event</button>
-          </>
-        )}
-      </div>
-
-      <section aria-label="Numbers" className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        {[
-          ["Link opens", stats.linkOpens],
-          ["Registered", stats.registered],
-          ["In person", stats.inPerson],
-          ["Online", stats.online],
-          ["Checked in", stats.checkedIn],
-        ].map(([label, n]) => (
-          <div key={label as string} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-gray-900">{n}</p>
-            <p className="text-xs text-gray-500">{label}</p>
+      <Card className="p-5 sm:p-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-5">
+          <DateTile iso={event.startsAt} timeZone={event.timeZone} size="lg" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-600">Host page</span>
+              <StatusBadge status={event.status} ended={ended} />
+              <ModeBadge mode={event.mode} />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">{event.title}</h1>
+            <p className="mt-1 text-slate-600">{when.local}</p>
           </div>
+        </div>
+        <div className="mt-5 pt-5 border-t border-slate-100 flex flex-wrap gap-2">
+          <button type="button" onClick={copy} className={secondaryButton}><Copy className="w-4 h-4" /> Copy share link</button>
+          <Link to={`/events/${event.slug}`} className={secondaryButton}><Eye className="w-4 h-4" /> Public page</Link>
+          {event.status === "published" && (
+            <>
+              <Link to={`/events/manage/${event.id}/edit`} className={secondaryButton}><Pencil className="w-4 h-4" /> Edit</Link>
+              <button type="button" onClick={cancel} className={dangerButton}><XCircle className="w-4 h-4" /> Cancel event</button>
+            </>
+          )}
+        </div>
+      </Card>
+
+      <section aria-label="Numbers" className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {statCards.map((s) => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center gap-2 text-slate-500">
+              <span className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">{s.icon}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">{s.label}</span>
+            </div>
+            <p className="mt-3 text-3xl font-bold text-slate-900 tabular-nums">{s.value}</p>
+          </Card>
         ))}
       </section>
 
-      {event.mode !== "virtual" && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-4">
-          <h2 className="font-semibold text-gray-900 mb-2">Check in</h2>
-          <form onSubmit={(e) => { e.preventDefault(); if (code.trim()) checkIn({ code: code.trim() }); }} className="flex gap-2">
-            <label htmlFor="checkin-code" className="sr-only">Check-in code</label>
-            <input id="checkin-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={12}
-              placeholder="Code from the guest's QR or email" className="flex-1 px-3 py-2 border border-gray-300 rounded-xl tracking-widest min-h-[44px]" />
-            <button type="submit" disabled={busy || !code.trim()} className="px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-50 min-h-[44px]">Check in</button>
-          </form>
-        </section>
-      )}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
+        {event.mode !== "virtual" ? (
+          <Card className="p-5 lg:sticky lg:top-4">
+            <h2 className="flex items-center gap-2 font-semibold text-slate-900"><ScanLine className="w-5 h-5 text-purple-600" /> Check in</h2>
+            <p className="mt-1 text-sm text-slate-600">Type the code from the guest's QR or email, or tap Check in next to their name.</p>
+            <form onSubmit={(e) => { e.preventDefault(); if (code.trim()) checkIn({ code: code.trim() }); }} className="mt-4 space-y-3">
+              <label htmlFor="checkin-code" className="sr-only">Check-in code</label>
+              <input id="checkin-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={12}
+                placeholder="e.g. ABCD2345" className={`${inputClass} text-center text-lg tracking-[0.3em] font-semibold`} />
+              <button type="submit" disabled={busy || !code.trim()} className={`${primaryButton} w-full`}>Check in</button>
+            </form>
+            <div className="mt-5">
+              <div className="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
+                <span>Checked in</span>
+                <span className="tabular-nums">{stats.checkedIn} of {stats.inPerson}</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all"
+                  style={{ width: `${stats.inPerson ? Math.round((stats.checkedIn / stats.inPerson) * 100) : 0}%` }} />
+              </div>
+            </div>
+          </Card>
+        ) : <div className="hidden lg:block" />}
 
-      <section className="bg-white border border-gray-200 rounded-2xl p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 className="font-semibold text-gray-900">Guests ({active.length})</h2>
-          <button type="button" onClick={download} className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl border border-gray-300 min-h-[44px]"><Download className="w-4 h-4" /> CSV</button>
-        </div>
-        <label htmlFor="guest-filter" className="sr-only">Find a guest</label>
-        <input id="guest-filter" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Find a guest by name"
-          className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-xl min-h-[44px]" />
-        {shown.length === 0 ? (
-          <p className="text-sm text-gray-500">No guests yet.</p>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {shown.map((g) => (
-              <li key={g.registrationId} className="py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900">{g.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {g.attendance === "in_person" ? "In person" : "Online"}
-                    {g.email ? ` · ${g.email}` : " · email not shared"}
-                  </p>
-                </div>
-                {g.attendance === "in_person" && (g.checkedInAt ? (
-                  <span className="flex items-center gap-1 text-sm text-green-700"><CheckCircle2 className="w-4 h-4" /> Checked in</span>
-                ) : (
-                  <button type="button" onClick={() => checkIn({ registrationId: g.registrationId })} disabled={busy}
-                    className="text-sm px-3 py-2 rounded-xl border border-gray-300 min-h-[44px]">Check in</button>
-                ))}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+            <h2 className="font-semibold text-slate-900">Guests <span className="text-slate-400 font-normal">({active.length})</span></h2>
+            <div className="flex gap-2">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <label htmlFor="guest-filter" className="sr-only">Find a guest</label>
+                <input id="guest-filter" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Find a guest"
+                  className={`${inputClass} pl-9`} />
+              </div>
+              <button type="button" onClick={download} className={secondaryButton}><Download className="w-4 h-4" /> CSV</button>
+            </div>
+          </div>
+          {shown.length === 0 ? (
+            <p className="p-10 text-center text-sm text-slate-500">{active.length ? "No guest matches that name." : "No guests yet. Share the link to get started."}</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {shown.map((g) => (
+                <li key={g.registrationId} className="px-5 py-3.5 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {initials(g.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-slate-900 truncate">{g.name}</p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {g.attendance === "in_person" ? "In person" : "Online"} · {g.email ?? "email not shared"}
+                    </p>
+                  </div>
+                  {g.attendance === "in_person" && (g.checkedInAt ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> In
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => checkIn({ registrationId: g.registrationId })} disabled={busy}
+                      className="text-sm font-semibold text-purple-700 px-3 py-2 rounded-lg hover:bg-purple-50 min-h-[40px]">
+                      Check in
+                    </button>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+    </div>
   );
 }

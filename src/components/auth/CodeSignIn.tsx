@@ -130,14 +130,14 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
         <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-1 w-4 h-4" />
         <span>
           I agree to the <Link to="/terms" className="text-purple-700 underline">Terms</Link> and{" "}
-          <Link to="/privacy" className="text-purple-700 underline">Privacy Policy</Link> if this creates an account.
+          <Link to="/privacy" className="text-purple-700 underline">Privacy Policy</Link>.
         </span>
       </label>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <button
         type="button"
         onClick={send}
-        disabled={busy || !emailOk || !nameOk}
+        disabled={busy || !emailOk || !nameOk || !terms}
         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-50 min-h-[44px]"
       >
         <Mail className="w-4 h-4" /> {busy ? "Sending..." : submitLabel}

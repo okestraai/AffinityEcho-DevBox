@@ -21,7 +21,10 @@ export function DashboardLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
 
-  const activeTab = location.pathname.split('/')[2] || 'feeds';
+  // Events have their own top-level address but live in this shell.
+  const activeTab = location.pathname.startsWith('/events')
+    ? 'events'
+    : location.pathname.split('/')[2] || 'feeds';
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) return;
@@ -95,7 +98,7 @@ export function DashboardLayout() {
   }, [location.pathname, fetchUnreadCount]);
 
   const handleTabChange = useCallback((tab: string) => {
-    // Events live outside the dashboard, so they also work before onboarding.
+    // Events sit at /events so they also work before onboarding.
     navigate(tab === "events" ? "/events" : `/dashboard/${tab}`);
     if (tab === 'messages') {
       setMessageUnreadCount(0);

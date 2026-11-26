@@ -20,7 +20,7 @@ import { validatePassword } from "../../utils/passwordUtils";
 import PasswordStrengthIndicator from "../shared/PasswordStrengthIndicator";
 import { TrimInput } from "../shared/TrimInput";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CodeSignIn } from "./CodeSignIn";
 import type { CodeSignInData } from "../../contexts/AuthContext";
 export function LoginScreen() {
@@ -39,10 +39,14 @@ export function LoginScreen() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [useCode, setUseCode] = useState(false);
   const navigateTo = useNavigate();
+  const fromPath = (useLocation().state as { from?: { pathname?: string } } | null)?.from?.pathname;
 
   // After a code sign-in: the optional password step, then onboarding or the app.
   const afterCodeSignIn = (data: CodeSignInData) => {
-    const next = !data.user.has_completed_onboarding
+    // A link that sent them here (an event, My Events) comes first; then onboarding or the app.
+    const next = fromPath?.startsWith("/events")
+      ? fromPath
+      : !data.user.has_completed_onboarding
       ? "/onboarding"
       : data.user.role === "admin" || data.user.role === "super_admin"
         ? "/admin"

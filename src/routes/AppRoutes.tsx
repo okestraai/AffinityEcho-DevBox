@@ -59,6 +59,9 @@ const LoginScreen = React.lazy(() =>
 const EventPage = React.lazy(() =>
   import("../components/events/EventPage").then((m) => ({ default: m.EventPage })),
 );
+const EventsShell = React.lazy(() =>
+  import("../components/events/EventsShell").then((m) => ({ default: m.EventsShell })),
+);
 const MyEventsPage = React.lazy(() =>
   import("../components/events/MyEventsPage").then((m) => ({ default: m.MyEventsPage })),
 );
@@ -380,11 +383,13 @@ const AppRoutes: React.FC = () => {
         <Route path="/nooks/:id" element={<ShareRedirect build={(id) => `/dashboard/nooks/${id}`} />} />
 
         {/* EVENTS — the event page is open to everyone; the rest needs sign-in, not onboarding */}
-        <Route path="/events" element={<SignedInRoute><MyEventsPage /></SignedInRoute>} />
-        <Route path="/events/new" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
-        <Route path="/events/manage/:eventId" element={<SignedInRoute><HostPage /></SignedInRoute>} />
-        <Route path="/events/manage/:eventId/edit" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
-        <Route path="/events/:slug" element={<EventPage />} />
+        <Route element={<EventsShell />}>
+          <Route path="/events" element={<SignedInRoute><MyEventsPage /></SignedInRoute>} />
+          <Route path="/events/new" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
+          <Route path="/events/manage/:eventId" element={<SignedInRoute><HostPage /></SignedInRoute>} />
+          <Route path="/events/manage/:eventId/edit" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
+          <Route path="/events/:slug" element={<EventPage />} />
+        </Route>
         <Route path="/set-password" element={<SignedInRoute><SetPasswordPage /></SignedInRoute>} />
 
         {/* ONBOARDING — only for logged-in users who haven't completed it */}

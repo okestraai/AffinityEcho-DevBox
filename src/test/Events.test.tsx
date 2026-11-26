@@ -73,8 +73,10 @@ describe('public event page', () => {
     vi.mocked(GetPublicEvent).mockResolvedValue(event as never);
     openEvent();
     expect(await screen.findByText('Career night')).toBeInTheDocument();
-    expect(screen.getByText(/Hub One, Lagos/)).toBeInTheDocument();
+    expect(screen.getByText('Hub One')).toBeInTheDocument();
+    expect(screen.getByText(/Lagos · full address shared with guests/)).toBeInTheDocument();
     expect(screen.getByText('The join link is shared with guests.')).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('Allen Avenue');
     expect(screen.getByText('Your name will be shown to the host.')).toBeInTheDocument();
     // Sharing the email is off until the guest ticks it.
     expect(screen.getByLabelText(/Share my email with the host/)).not.toBeChecked();
@@ -96,7 +98,8 @@ describe('public event page', () => {
       expect(RegisterForEvent).toHaveBeenCalledWith(event.slug, expect.objectContaining({ attendance: 'in_person', shareEmail: false })),
     );
     expect(await screen.findByText("You're registered")).toBeInTheDocument();
-    expect(screen.getByText('12 Allen Avenue')).toBeInTheDocument();
+    expect(screen.getByText(/12 Allen Avenue, Lagos/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Join the event/ })).toHaveAttribute('href', 'https://meet.example.com/a');
     expect(screen.getByText('ABCD2345')).toBeInTheDocument();
   });
 
@@ -122,6 +125,8 @@ describe('email code sign-in', () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText('First name'), 'Tolu');
     await user.type(screen.getByLabelText('Email'), 'tolu@example.com');
+    // The code can't be sent until the terms are ticked, so it isn't wasted.
+    expect(screen.getByRole('button', { name: /Email me a code/ })).toBeDisabled();
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /Email me a code/ }));
     expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com');
@@ -146,6 +151,9 @@ describe('helpers', () => {
     expect(zonedToIso('2026-12-10T18:00', 'Africa/Lagos')).toBe('2026-12-10T17:00:00.000Z');
     expect(zonedToIso('2026-07-01T09:30', 'America/New_York')).toBe('2026-07-01T13:30:00.000Z');
     expect(isoToZoned('2026-12-10T17:00:00.000Z', 'Africa/Lagos')).toBe('2026-12-10T18:00');
+    // Right after New York's clocks go forward: 03:30 EDT is 07:30 UTC.
+    expect(zonedToIso('2026-03-08T03:30', 'America/New_York')).toBe('2026-03-08T07:30:00.000Z');
+    expect(zonedToIso('2026-11-01T09:00', 'America/New_York')).toBe('2026-11-01T14:00:00.000Z');
   });
 
   it("shows the event's own time when the viewer is elsewhere", () => {
