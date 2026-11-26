@@ -33,6 +33,8 @@ const errorText = (error: unknown, fallback: string) => {
 };
 
 // The page an event link opens. Anyone can see it; guests and the host see the full details.
+const REGISTERED_EVENT = "affinity:event-registered";
+
 export function EventPage() {
   const { slug = "" } = useParams();
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -46,6 +48,7 @@ export function EventPage() {
   const [revealed, setRevealed] = useState<Awaited<ReturnType<typeof RevealEventDetails>> | null>(null);
   // Only the newest answer is shown, so a slow page load can't undo a registration.
   const latest = useRef(0);
+  const pageId = useRef(Math.random().toString(36).slice(2));
 
   const load = useCallback(async () => {
     const ticket = ++latest.current;
@@ -62,6 +65,17 @@ export function EventPage() {
   useEffect(() => {
     if (!isLoading) load();
   }, [isLoading, load]);
+
+  // Signing in with a code remounts this page in the dashboard shell, so the copy that
+  // sent the registration may be gone. Whichever copy is on screen reloads.
+  useEffect(() => {
+    const onRegistered = (e: Event) => {
+      const { slug: done, from } = (e as CustomEvent<{ slug: string; from: string }>).detail;
+      if (done === slug && from !== pageId.current) load();
+    };
+    window.addEventListener(REGISTERED_EVENT, onRegistered);
+    return () => window.removeEventListener(REGISTERED_EVENT, onRegistered);
+  }, [slug, load]);
 
   if (missing) {
     return (
@@ -108,6 +122,7 @@ export function EventPage() {
       });
       latest.current += 1;
       setEvent(data);
+      window.dispatchEvent(new CustomEvent(REGISTERED_EVENT, { detail: { slug, from: pageId.current } }));
       showToast("You're registered. Check your email for the details.", "success");
     } catch (e) {
       showToast(errorText(e, "Could not register. Try again."), "error");
@@ -182,6 +197,8 @@ export function EventPage() {
                   </a>
                 ) : isGuest && (member?.registration?.attendance ?? revealed?.attendance) === "online" ? (
                   <p className="text-slate-600">The host hasn't added the join link yet. You'll get an email when they do.</p>
+                ) : isGuest ? (
+                  <p className="text-slate-600">The join link goes to guests attending online.</p>
                 ) : (
                   <p className="text-slate-600">The join link is shared with guests.</p>
                 )}

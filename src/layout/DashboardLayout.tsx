@@ -1,5 +1,5 @@
 // src/components/dashboard/DashboardLayout.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { BottomNavigation } from '../components/NavComponent/BottomNavigation';
 import { DashboardHeader } from '../components/NavComponent/DashboardHeader';
@@ -20,6 +20,12 @@ export function DashboardLayout() {
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // A new page starts at the top, not at the last page's scroll position.
+  useEffect(() => {
+    mainRef.current?.scrollTo?.({ top: 0 });
+  }, [location.pathname]);
 
   // Events have their own top-level address but live in this shell.
   const activeTab = location.pathname.startsWith('/events')
@@ -117,7 +123,7 @@ export function DashboardLayout() {
         messageUnreadCount={messageUnreadCount}
       />
 
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-8 pb-24 md:pb-8">
           <CountryPrompt />
           <StudentCheckPrompt />

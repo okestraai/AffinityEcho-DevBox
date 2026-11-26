@@ -11,6 +11,7 @@ import {
   Pencil,
   ScanLine,
   Search,
+  Share2,
   UserCheck,
   Users,
   XCircle,
@@ -124,6 +125,16 @@ export function HostPage() {
     }
   };
 
+  // Phones open their share sheet (WhatsApp, SMS, email); elsewhere the link is copied.
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const share = async () => {
+    try {
+      await navigator.share({ title: event.title, text: `${event.title}, ${when.local}`, url: link });
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") copy();
+    }
+  };
+
   const statCards = [
     { label: "Link opens", value: stats.linkOpens, icon: <Eye className="w-4 h-4" /> },
     { label: "Registered", value: stats.registered, icon: <Users className="w-4 h-4" /> },
@@ -151,8 +162,23 @@ export function HostPage() {
             <p className="mt-1 text-slate-600">{when.local}</p>
           </div>
         </div>
+        {event.status === "published" && (
+          <div className="mt-5 pt-5 border-t border-slate-100">
+            <label htmlFor="share-link" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Share link</label>
+            <p className="text-sm text-slate-600 mt-0.5 mb-2">Anyone with this link can see the event and register.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input id="share-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()}
+                className={`${inputClass} font-mono text-sm`} />
+              <div className="flex gap-2">
+                <button type="button" onClick={copy} className={`${secondaryButton} flex-1 sm:flex-none`}><Copy className="w-4 h-4" /> Copy</button>
+                {canShare && (
+                  <button type="button" onClick={share} className={`${primaryButton} flex-1 sm:flex-none`}><Share2 className="w-4 h-4" /> Share</button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mt-5 pt-5 border-t border-slate-100 flex flex-wrap gap-2">
-          <button type="button" onClick={copy} className={secondaryButton}><Copy className="w-4 h-4" /> Copy share link</button>
           <Link to={`/events/${event.slug}`} className={secondaryButton}><Eye className="w-4 h-4" /> Public page</Link>
           {event.status === "published" && (
             <>
