@@ -23,6 +23,7 @@ import { ForumViewSkeleton } from "../../../Helper/SkeletonLoader";
 import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 
+import { STUDENTS_SPACE } from "../../../constants/spaces";
 export function ForumsView() {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ export function ForumsView() {
   const [recentDiscussions, setRecentDiscussions] = useState<Record<string, unknown>[]>([]);
   const [foundationForums, setFoundationForums] = useState<Record<string, unknown>[]>([]);
   const [globalForums, setGlobalForums] = useState<Record<string, unknown>[]>([]);
+  const [studentForums, setStudentForums] = useState<Record<string, unknown>[]>([]);
   const [userJoinedForums, setUserJoinedForums] = useState<Record<string, unknown>[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [companyNameResolved, setCompanyNameResolved] = useState(
@@ -143,6 +145,16 @@ export function ForumsView() {
         setGlobalMetrics(globalData);
         setGlobalForums(globalData?.forums || []);
 
+        // Students see their own space too.
+        if (currentUser?.is_student) {
+          const studentData = await GetFoundationForums(STUDENTS_SPACE).catch(
+            () => null,
+          );
+          setStudentForums(studentData?.forums || []);
+        } else {
+          setStudentForums([]);
+        }
+
         // Fetch company-specific data if company name is available
         if (apiCompanyName) {
           const [localData, foundationData, joinedData] = await Promise.all([
@@ -164,7 +176,7 @@ export function ForumsView() {
     };
 
     fetchInitialData();
-  }, [apiCompanyName, companyNameResolved]);
+  }, [apiCompanyName, companyNameResolved, currentUser?.is_student]);
 
   // Fetch recent discussions
   useEffect(() => {
@@ -331,8 +343,10 @@ export function ForumsView() {
   };
 
   const handleCompanySelect = (id: string) => {
+    if (id === STUDENTS_SPACE) {
+      setSelectedCompany(STUDENTS_SPACE);
     // When company type is "other", use "Others" as the selected company
-    if (companyType?.toLowerCase() === "other") {
+    } else if (companyType?.toLowerCase() === "other") {
       setSelectedCompany("Others");
     } else {
       setSelectedCompany(id);
@@ -538,6 +552,11 @@ export function ForumsView() {
     setRecentDiscussions((prev) => prev.filter((t) => t.id !== topicId));
   };
 
+  // Shared forums come with the global list and show in every space.
+  const sharedForums = globalForums
+    .filter((f) => f.is_shared)
+    .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
+
   const shared = {
     handleCommentClick,
     handleCommentSubmit,
@@ -576,6 +595,8 @@ export function ForumsView() {
     selectedForum,
     companies: [],
     globalForums,
+    sharedForums,
+    studentForums,
     handleChat,
     activeCommentId,
     setActiveCommentId,
@@ -583,7 +604,8 @@ export function ForumsView() {
     viewMode, // FIX: Add viewMode to shared props
     localMetrics,
     globalMetrics,
-    foundationForums,
+    foundationForums:
+      selectedCompany === STUDENTS_SPACE ? studentForums : foundationForums,
     userJoinedForums,
     topicsLoading,
     hasMoreTopics,
@@ -620,7 +642,7 @@ export function ForumsView() {
   if (viewMode === "company" && selectedCompany)
     return <CompanyMode {...shared} />;
   if (viewMode === "forumDetail" && selectedForum) {
-    const forum = [...globalForums, ...foundationForums].find(
+    const forum = [...globalForums, ...foundationForums, ...studentForums].find(
       (f) => f.id === selectedForum
     );
     if (!forum) return null;

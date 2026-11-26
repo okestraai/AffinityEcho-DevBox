@@ -74,6 +74,7 @@ export const GetAdminUsers = async (
     role?: string;
     status?: string;
     provider?: string;
+    student?: string;
     sortBy?: string;
     sortOrder?: string;
   } = {},
@@ -327,13 +328,23 @@ export const SetCompanyActive = async (companyId: string, isActive: boolean) => 
   return unwrap(await api.patch(`${BASE}/companies/${companyId}`, { is_active: isActive }));
 };
 
+// Takes a member out of Students; their school is kept as a past school.
+export const RemoveStudentStatus = async (userId: string) => {
+  const api = getAuthInstance();
+  const res = await api.post(`${BASE}/users/${userId}/student-status/remove`);
+  return unwrap(res);
+};
+
 /* ─── 5. Forums ─── */
 export const GetAdminForums = async (
   params: {
     page?: number;
     limit?: number;
     type?: string;
+    space?: string;
     search?: string;
+    sortBy?: string;
+    sortOrder?: string;
   } = {},
 ) => {
   const api = getAuthInstance();
@@ -372,6 +383,34 @@ export const UpdateForum = async (
 ) => {
   const api = getAuthInstance();
   const res = await api.patch(`${BASE}/forums/${forumId}`, payload);
+  return unwrap(res);
+};
+
+// Sets the order of a space's forums. No space and no shared means Global.
+export const ReorderForums = async (payload: {
+  space?: string;
+  shared?: boolean;
+  forum_ids: string[];
+}) => {
+  const api = getAuthInstance();
+  const res = await api.post(`${BASE}/forums/reorder`, payload);
+  return unwrap(res);
+};
+
+export const GetForumLabels = async (space?: string) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/forums/labels${buildQS({ space })}`);
+  return res.data; // { success, data: [{ label, topics }] }
+};
+
+export const PromoteForumLabel = async (payload: {
+  space?: string;
+  label: string;
+  name?: string;
+  icon?: string;
+}) => {
+  const api = getAuthInstance();
+  const res = await api.post(`${BASE}/forums/labels/promote`, payload);
   return unwrap(res);
 };
 

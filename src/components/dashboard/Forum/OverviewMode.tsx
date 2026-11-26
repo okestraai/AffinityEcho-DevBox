@@ -21,6 +21,8 @@ import {
   Heart as HeartIcon,
   Sparkles,
   Bookmark,
+  GraduationCap,
+  Share2,
 } from "lucide-react";
 import { ClapIcon } from "../../shared/ClapIcon";
 import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
@@ -28,6 +30,7 @@ import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { InlineCommentInput } from "./InlineCommentInput";
 import { formatLastActivity } from "../../../utils/forumUtils";
+import { SHARED_BADGE, STUDENTS_SPACE } from "../../../constants/spaces";
 import {
   TopicsSkeleton,
   ForumViewSkeleton,
@@ -47,6 +50,8 @@ interface ForumItem {
   name: string;
   icon?: string;
   is_global?: boolean;
+  is_shared?: boolean;
+  is_other_topics?: boolean;
   company_name?: string;
   topic_count?: number;
   member_count?: number;
@@ -111,10 +116,12 @@ interface OverviewModeProps {
   handleTopicClick: (topic: TopicItem) => void;
   handleHashtagClick: (tag: string) => void;
   getTimeAgo: (date: string) => string;
-  currentUser: { id?: string } | null;
+  currentUser: { id?: string; is_student?: boolean } | null;
   handleCompanySelect: (companyName: string) => void;
   handleForumSelect: (forumId: string) => void;
   globalForums: ForumItem[];
+  sharedForums?: ForumItem[];
+  studentForums?: ForumItem[];
   activeCommentId: string | null;
   localMetrics: { totalTopics?: number; totalMembers?: number } | null;
   globalMetrics: { totalTopics?: number; totalMembers?: number } | null;
@@ -160,13 +167,17 @@ export function OverviewMode(props: OverviewModeProps) {
     currentUser,
     handleCompanySelect,
     handleForumSelect,
-    globalForums,
+    globalForums: allGlobalForums,
+    sharedForums = [],
     activeCommentId,
     localMetrics,
     initialLoading,
     topicsLoading,
     handleViewAllGlobalForums,
   } = props;
+
+  // Shared forums have their own list; Other topics is reached from its space.
+  const globalForums = allGlobalForums.filter((f) => !f.is_shared);
 
     const [okestraSelectedTopic, setOkestraSelectedTopic] = useState<Topic | null>(null);
       const [showOkestraPanel, setShowOkestraPanel] = useState(false);
@@ -674,6 +685,58 @@ export function OverviewMode(props: OverviewModeProps) {
                       </div>
                     </div>
                   </button>
+                </div>
+              )}
+
+              {/* Students */}
+              {currentUser?.is_student && (
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <GraduationCap className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Students</h3>
+                  </div>
+                  <button
+                    onClick={() => handleCompanySelect(STUDENTS_SPACE)}
+                    className="w-full text-left bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-300 shadow-sm transition-all group hover:shadow-md min-h-[44px]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                        Students space
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-700 transition-colors" />
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Only students can see this space.
+                    </p>
+                  </button>
+                </div>
+              )}
+
+              {/* Shared */}
+              {sharedForums.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <Share2 className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Shared forums</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">{SHARED_BADGE}</p>
+                  <div className="space-y-2">
+                    {sharedForums.map((forum: ForumItem) => (
+                      <button
+                        key={forum.id}
+                        onClick={() => handleForumSelect(forum.id)}
+                        className="w-full text-left bg-white/90 rounded-xl px-4 py-3 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group flex items-center justify-between min-h-[44px]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-lg">{forum.icon}</span>
+                          <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {forum.name}
+                          </span>
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

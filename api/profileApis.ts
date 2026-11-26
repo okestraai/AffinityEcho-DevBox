@@ -666,3 +666,13 @@ export const GetCompanies = async (): Promise<CompanyOption[]> => {
   const res = await authFetch.get(`${API_URL}/companies`);
   return unwrap(res);
 };
+
+// Answer to "Still a student?"
+export const AnswerStudentCheck = async (payload: {
+  stillStudent: boolean;
+  expectedGradYear?: number | null;
+}) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/user/student-status`, payload);
+  return unwrap(res);
+};

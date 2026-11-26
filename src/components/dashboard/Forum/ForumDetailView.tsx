@@ -33,6 +33,7 @@ import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
 import { resolveAuthorName } from "../../../utils/nameUtils";
 
+import { SHARED_BADGE, STUDENTS_SPACE } from "../../../constants/spaces";
 interface ForumData {
   id: string;
   name: string;
@@ -46,6 +47,8 @@ interface ForumData {
   last_activity?: string;
   company_name?: string;
   is_global?: boolean;
+  is_shared?: boolean;
+  is_other_topics?: boolean;
   companyId?: string;
   rules?: string[];
   forum_topics?: unknown[];
@@ -78,6 +81,22 @@ export function ForumDetailView({
 
   // Determine if this is a global forum or company forum
   const isGlobalForum = !forum.company_name || forum.is_global;
+  const isStudentsForum = forum.company_name === STUDENTS_SPACE;
+  // Students forums need student status; other space forums need a company.
+  const canJoinSpace =
+    isGlobalForum ||
+    (isStudentsForum ? !!currentUser?.is_student : !!decryptedCompanyName);
+  const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const labels = Array.from(
+    new Map(
+      topics
+        .filter((t) => t.label)
+        .map((t) => [String(t.label).toLowerCase(), String(t.label)]),
+    ).values(),
+  ).slice(0, 12);
+  const shownTopics = labelFilter
+    ? topics.filter((t) => t.label?.toLowerCase() === labelFilter.toLowerCase())
+    : topics;
 
   // Decrypt company name and get company type
   useEffect(() => {
@@ -276,11 +295,19 @@ export function ForumDetailView({
                 <p className="text-blue-100 text-sm sm:text-base max-w-2xl">{forum.description}</p>
                 {!isGlobalForum && forum.company_name && (
                   <p className="text-blue-200 text-xs sm:text-sm mt-1">
-                    Company Forum • {forum.company_name}
+                    {isStudentsForum
+                      ? "Students Forum · only students can see it"
+                      : `Company Forum • ${forum.company_name}`}
                   </p>
                 )}
-                {isGlobalForum && (
-                  <p className="text-blue-200 text-xs sm:text-sm mt-1">Global Forum</p>
+                {forum.is_shared ? (
+                  <p className="mt-2 inline-block text-xs font-medium text-blue-700 bg-white rounded-full px-3 py-1">
+                    {SHARED_BADGE}
+                  </p>
+                ) : (
+                  isGlobalForum && (
+                    <p className="text-blue-200 text-xs sm:text-sm mt-1">Global Forum</p>
+                  )
                 )}
               </div>
             </div>
@@ -288,7 +315,7 @@ export function ForumDetailView({
             <button
               onClick={handleJoinToggle}
               disabled={
-                (!isGlobalForum && !decryptedCompanyName) ||
+                !canJoinSpace ||
                 joining ||
                 checkingJoinStatus
               }
@@ -297,7 +324,7 @@ export function ForumDetailView({
                   ? "bg-white text-blue-600 hover:bg-blue-50"
                   : "bg-blue-500 text-white hover:bg-blue-400"
               } ${
-                (!isGlobalForum && !decryptedCompanyName) ||
+                !canJoinSpace ||
                 joining ||
                 checkingJoinStatus
                   ? "opacity-50 cursor-not-allowed"
@@ -405,7 +432,7 @@ export function ForumDetailView({
           <p className="text-gray-600 mb-4">
             Join this forum to view discussions, create topics, and connect with{" "}
             {memberCount.toLocaleString()} members
-            {!isGlobalForum && !decryptedCompanyName && (
+            {!canJoinSpace && !isStudentsForum && (
               <span className="block text-sm text-orange-600 mt-2">
                 Note: You need to set your company in your profile to join
                 company forums
@@ -415,12 +442,12 @@ export function ForumDetailView({
           <button
             onClick={handleJoinToggle}
             disabled={
-              (!isGlobalForum && !decryptedCompanyName) ||
+              !canJoinSpace ||
               joining ||
               checkingJoinStatus
             }
             className={`px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2 ${
-              (!isGlobalForum && !decryptedCompanyName) ||
+              !canJoinSpace ||
               joining ||
               checkingJoinStatus
                 ? "opacity-50 cursor-not-allowed"
@@ -451,9 +478,33 @@ export function ForumDetailView({
         </div>
       )}
 
+      {isJoined && !checkingJoinStatus && forum.is_other_topics && labels.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filter by label">
+          <button
+            type="button"
+            aria-pressed={!labelFilter}
+            onClick={() => setLabelFilter(null)}
+            className={`px-3 py-1.5 rounded-full text-sm border min-h-[36px] ${!labelFilter ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-700 border-gray-300"}`}
+          >
+            All
+          </button>
+          {labels.map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={labelFilter?.toLowerCase() === l.toLowerCase()}
+              onClick={() => setLabelFilter(l)}
+              className={`px-3 py-1.5 rounded-full text-sm border min-h-[36px] ${labelFilter?.toLowerCase() === l.toLowerCase() ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-700 border-gray-300"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isJoined && !checkingJoinStatus && (
         <div className="space-y-3">
-          {topics.length === 0 ? (
+          {shownTopics.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
               <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -471,7 +522,7 @@ export function ForumDetailView({
               </button>
             </div>
           ) : (
-            topics.map((topic) => (
+            shownTopics.map((topic) => (
               <div
                 key={topic.id}
                 onClick={() => navigate(`/dashboard/forums/topic/${topic.id}`)}
@@ -555,6 +606,7 @@ export function ForumDetailView({
         forumName={forum.name}
         forumId={forum.id}
         companyId={forum.companyId || forum.company_name}
+        isShared={!!forum.is_shared}
       />
     </div>
   );

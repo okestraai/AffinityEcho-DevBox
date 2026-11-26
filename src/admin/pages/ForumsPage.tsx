@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   MessageSquare, Users, Eye, EyeOff, Lock, Unlock,
   Plus, Search, ChevronLeft, ChevronRight, Loader2, Globe, Building2,
-  Pencil, Trash2, X, Save, Download, ChevronDown,
+  Pencil, Trash2, X, Save, Download, ChevronDown, ArrowUp, ArrowDown, Share2, GraduationCap, Tag,
 } from 'lucide-react';
-import { GetAdminForums, CreateForum, UpdateForum, DeleteForum, ExportForums } from '../../../api/adminApis';
+import { GetAdminForums, CreateForum, UpdateForum, DeleteForum, ExportForums, ReorderForums, GetForumLabels, PromoteForumLabel } from '../../../api/adminApis';
 import { showToast } from '../../Helper/ShowToast';
 import { MSG } from '../../constants/messages';
 import { ExportModal, ExportSuccessModal, SortDropdown, ConfirmModal, TableRowSkeleton } from '../components';
@@ -16,6 +16,7 @@ interface ModeratorProfile { id: string; username: string; avatar?: string; }
 interface Forum {
   id: string; name: string; description?: string; icon?: string;
   category?: string; scope: string; is_global: boolean;
+  is_shared?: boolean; is_other_topics?: boolean; sort_order?: number;
   company_id?: string | null; company_name?: string | null;
   rules?: string[]; moderator_ids?: string[];
   moderator_profiles?: ModeratorProfile[];
@@ -106,7 +107,9 @@ function ForumModal({ forum, onClose, onSaved }: { forum?: Forum; onClose: () =>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Scope</label>
               <select value={scope} onChange={e => setScope(e.target.value)} title="Forum scope" className="w-full px-3 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 text-gray-700">
                 <option value="global">Global</option>
+                <option value="shared">Shared (shown in every space)</option>
                 <option value="company">Company-based</option>
+                <option value="students">Students</option>
               </select>
             </div>
           )}
@@ -152,6 +155,11 @@ export function ForumsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [spaceInput, setSpaceInput] = useState('');
+  const [space, setSpace] = useState('');
+  const [labels, setLabels] = useState<{ label: string; topics: number }[]>([]);
+  const [promoting, setPromoting] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [page, setPage] = useState(1);
@@ -165,19 +173,78 @@ export function ForumsPage() {
     (format) => ExportForums({ format, search: search || undefined, type: typeFilter || undefined })
   );
 
+  // Ordering works on one space at a time; a company tab needs the company's name.
+  const spaceMode = ['global', 'shared', 'students'].includes(typeFilter) || (typeFilter === 'company' && !!space);
+
   const fetchForums = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await GetAdminForums({ page, limit: PAGE_SIZE, search: search || undefined, type: typeFilter || undefined, sortBy: sortField, sortOrder });
+      // A space tab lists every forum in members' order, so it can be reordered.
+      const res = await GetAdminForums(
+        spaceMode
+          ? { page: 1, limit: 100, type: typeFilter, space: space || undefined, search: search || undefined }
+          : { page, limit: PAGE_SIZE, search: search || undefined, type: typeFilter || undefined, sortBy: sortField, sortOrder },
+      );
       setForums(res?.data ?? []);
       setTotal(res?.meta?.total ?? 0);
       setTotalPages(res?.meta?.total_pages ?? 1);
     } catch (err: unknown) {
       showToast(getApiError(err, MSG.ADMIN.FORUMS_LOAD_FAILED), 'error');
     } finally { setLoading(false); }
-  }, [page, search, typeFilter, sortField, sortOrder]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, typeFilter, space, sortField, sortOrder]);
 
   useEffect(() => { fetchForums(); }, [fetchForums]);
+
+  // Labels come from a space's Other topics: Global, Students or one company.
+  const labelSpace = typeFilter === 'global' ? 'global' : typeFilter === 'students' ? 'Students' : typeFilter === 'company' ? space : '';
+  const fetchLabels = useCallback(async () => {
+    if (!labelSpace) { setLabels([]); return; }
+    try {
+      const res = await GetForumLabels(labelSpace);
+      setLabels(res?.data ?? []);
+    } catch { setLabels([]); }
+  }, [labelSpace]);
+
+  useEffect(() => { fetchLabels(); }, [fetchLabels]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSpace(spaceInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [spaceInput]);
+
+  async function moveForum(index: number, step: -1 | 1) {
+    const ordered = forums.filter(f => !f.is_other_topics);
+    const target = index + step;
+    if (target < 0 || target >= ordered.length) return;
+    const ids = ordered.map(f => f.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    setMoving(true);
+    try {
+      await ReorderForums({
+        forum_ids: ids,
+        shared: typeFilter === 'shared' || undefined,
+        space: typeFilter === 'students' ? 'Students' : typeFilter === 'company' ? space : undefined,
+      });
+      fetchForums();
+    } catch (err: unknown) {
+      showToast(getApiError(err, "Couldn't change the order"), 'error');
+    } finally { setMoving(false); }
+  }
+
+  async function promoteLabel(label: string) {
+    const name = window.prompt(`Name for the new forum made from "${label}"`, label);
+    if (name === null) return;
+    setPromoting(label);
+    try {
+      const res = await PromoteForumLabel({ space: labelSpace, label, name: name.trim() || label });
+      showToast(`Forum created. ${res?.topics_moved ?? 0} topics moved into it.`, 'success');
+      fetchForums();
+      fetchLabels();
+    } catch (err: unknown) {
+      showToast(getApiError(err, "Couldn't make that label a forum"), 'error');
+    } finally { setPromoting(null); }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
@@ -263,14 +330,36 @@ export function ForumsPage() {
           <SortDropdown sortField={sortField} sortOrder={sortOrder} onSort={handleSort} options={SORT_OPTIONS} />
           <div className="relative">
             <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }} title="Filter by type" className="appearance-none pl-3 pr-8 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 text-gray-700 min-w-[130px]">
-              <option value="">All Types</option>
+              <option value="">All spaces</option>
               <option value="global">Global</option>
+              <option value="shared">Shared</option>
               <option value="company">Company</option>
+              <option value="students">Students</option>
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
+          {typeFilter === 'company' && (
+            <input value={spaceInput} onChange={e => setSpaceInput(e.target.value)} placeholder="Company name (to order or see labels)" aria-label="Company name" className="px-3 py-2.5 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-gray-50 min-w-[220px]" />
+          )}
         </div>
       </div>
+
+      {labelSpace && labels.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-5 border border-gray-100/80">
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><Tag className="w-4 h-4 text-purple-600" /> Most used labels in Other topics</h2>
+          <p className="text-xs text-gray-500 mt-1 mb-3">Make a label a forum to move its topics out of Other topics.</p>
+          <ul className="flex flex-wrap gap-2">
+            {labels.map(l => (
+              <li key={l.label} className="flex items-center gap-2 pl-3 pr-1 py-1 rounded-full border border-gray-200 bg-gray-50 text-sm">
+                <span>{l.label} <span className="text-gray-400">({l.topics})</span></span>
+                <button type="button" onClick={() => promoteLabel(l.label)} disabled={promoting === l.label} className="px-2 py-1 rounded-full text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50">
+                  {promoting === l.label ? 'Working…' : 'Make this a forum'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100/80 overflow-hidden">
@@ -305,9 +394,13 @@ export function ForumsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${forum.is_global || forum.scope === 'global' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
-                      {forum.is_global || forum.scope === 'global' ? <><Globe className="w-3 h-3" /> Global</> : <><Building2 className="w-3 h-3" /> {forum.company_name ?? 'Company'}</>}
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${forum.is_shared ? 'bg-sky-50 text-sky-700 border-sky-200' : forum.scope === 'students' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : forum.is_global || forum.scope === 'global' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
+                      {forum.is_shared ? <><Share2 className="w-3 h-3" /> Shared</>
+                        : forum.scope === 'students' ? <><GraduationCap className="w-3 h-3" /> Students</>
+                        : forum.is_global || forum.scope === 'global' ? <><Globe className="w-3 h-3" /> Global</>
+                        : <><Building2 className="w-3 h-3" /> {forum.company_name ?? 'Company'}</>}
                     </span>
+                    {forum.is_other_topics && <span className="ml-1 text-xs text-gray-400">catch-all</span>}
                   </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     {forum.moderator_profiles && forum.moderator_profiles.length > 0 ? (
@@ -326,14 +419,24 @@ export function ForumsPage() {
                   <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500">{formatDate(forum.created_at)}</td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     <div className="flex items-center gap-1">
+                      {spaceMode && !forum.is_other_topics && (() => {
+                        const i = forums.filter(f => !f.is_other_topics).findIndex(f => f.id === forum.id);
+                        const last = forums.filter(f => !f.is_other_topics).length - 1;
+                        return (
+                          <>
+                            <button type="button" onClick={() => moveForum(i, -1)} disabled={moving || i === 0} title="Move up" aria-label={`Move ${forum.name} up`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => moveForum(i, 1)} disabled={moving || i === last} title="Move down" aria-label={`Move ${forum.name} down`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
+                          </>
+                        );
+                      })()}
                       <button type="button" onClick={() => setEditForum(forum)} title="Edit" className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"><Pencil className="w-4 h-4" /></button>
                       <button type="button" onClick={() => handleToggle(forum, 'is_locked')} disabled={toggling === forum.id + 'is_locked'} title={forum.is_locked ? 'Unlock' : 'Lock'} className="p-1.5 rounded-lg hover:bg-orange-50 text-orange-500 transition-colors disabled:opacity-40">
                         {toggling === forum.id + 'is_locked' ? <Loader2 className="w-4 h-4 animate-spin" /> : forum.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       </button>
-                      <button type="button" onClick={() => handleToggle(forum, 'is_hidden')} disabled={toggling === forum.id + 'is_hidden'} title={forum.is_hidden ? 'Show' : 'Hide'} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors disabled:opacity-40">
+                      <button type="button" onClick={() => handleToggle(forum, 'is_hidden')} disabled={toggling === forum.id + 'is_hidden' || !!forum.is_other_topics} title={forum.is_hidden ? 'Show' : 'Hide'} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors disabled:opacity-40">
                         {toggling === forum.id + 'is_hidden' ? <Loader2 className="w-4 h-4 animate-spin" /> : forum.is_hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       </button>
-                      <button type="button" onClick={() => setConfirmDelete(forum)} disabled={deleting === forum.id} title="Delete" className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-40">
+                      <button type="button" onClick={() => setConfirmDelete(forum)} disabled={deleting === forum.id || !!forum.is_other_topics} title="Delete" className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-40">
                         {deleting === forum.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>

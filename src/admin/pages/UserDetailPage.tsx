@@ -25,6 +25,7 @@ import {
   SuspendUser,
   UnsuspendUser,
   ChangeUserRole,
+  RemoveStudentStatus,
   DeleteAdminUser,
   NotifyUser,
 } from "../../../api/adminApis";
@@ -42,6 +43,8 @@ interface User {
   role: string;
   job_title: string;
   is_suspended: boolean;
+  is_student?: boolean;
+  expected_grad_year?: number | null;
   is_deactivated: boolean;
   is_deleted: boolean;
   account_status: string;
@@ -335,6 +338,21 @@ export function UserDetailPage() {
     }
   }
 
+  async function handleRemoveStudentStatus() {
+    if (!user) return;
+    if (!window.confirm(`Take ${user.username} out of the Students space? Their school is kept as a past school.`)) return;
+    setSaving(true);
+    try {
+      await RemoveStudentStatus(user.id);
+      showToast("Student status removed", "success");
+      loadUser();
+    } catch (err: unknown) {
+      showToast(getApiError(err, MSG.ADMIN.ACTION_FAILED), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSaveRole() {
     if (!user || selectedRole === user.role) return;
     setSaving(true);
@@ -532,6 +550,11 @@ export function UserDetailPage() {
       <div className="flex flex-wrap items-center gap-2">
         <RoleBadge role={user.role} />
         <StatusBadge status={status} />
+        {user.is_student && (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
+            Student{user.expected_grad_year ? ` · finishing ${user.expected_grad_year}` : ""}
+          </span>
+        )}
         {user.suspension_reason && (
           <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium border border-red-200">
             <Ban className="w-3 h-3" />
@@ -698,6 +721,16 @@ export function UserDetailPage() {
             <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <Shield className="w-4 h-4 text-purple-500" /> Account Actions
             </h2>
+
+            {user.is_student && (
+              <button
+                onClick={handleRemoveStudentStatus}
+                disabled={saving}
+                className="w-full mb-3 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl border border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 transition-all"
+              >
+                Remove student status
+              </button>
+            )}
 
             {/* Suspend / Lift */}
             <div className="space-y-3">

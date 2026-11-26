@@ -4,6 +4,7 @@ import { CreateTopicModal } from "../../Modals/ForumModals/CreateTopicModal";
 import { TopicDetailModal } from "../../Modals/ForumModals/TopicDetailModal";
 import { UserProfileModal } from "../../Modals/UserProfileModal";
 import { formatLastActivity } from "../../../utils/forumUtils";
+import { SHARED_BADGE, STUDENTS_SPACE } from "../../../constants/spaces";
 
 interface CompanyModeProps {
   currentUser: { id?: string } | null;
@@ -23,6 +24,7 @@ interface CompanyModeProps {
   foundationForums: { id: string; name: string; icon: string; description: string; lastActivity?: string; last_activity?: string; metrics?: { topicCount?: number; memberCount?: number }; originalTopicCount?: number; originalMemberCount?: number }[];
   localMetrics: { totalMembers?: number } | null;
   userCompany: { actualCompanyName?: string } | null;
+  sharedForums?: { id: string; name: string; icon?: string; description?: string }[];
   handleForumSelect: (forumId: string) => void;
   handleTopicCreated?: () => void;
   handleFollow?: () => void;
@@ -51,10 +53,14 @@ export function CompanyMode(props: CompanyModeProps) {
     userCompany,
   } = props;
 
+  const { sharedForums = [] } = props;
+  const isStudents = selectedCompany === STUDENTS_SPACE;
   const displayTitle =
     selectedCompany === "Others"
       ? `Others (${userCompany?.actualCompanyName})`
-      : selectedCompany;
+      : isStudents
+        ? "Students"
+        : selectedCompany;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -75,7 +81,9 @@ export function CompanyMode(props: CompanyModeProps) {
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{displayTitle}</h1>
             <p className="text-gray-600">
-              {localMetrics?.totalMembers || 0} anonymous members
+              {isStudents
+                ? "Only students can see this space"
+                : `${localMetrics?.totalMembers || 0} anonymous members`}
             </p>
           </div>
         </div>
@@ -149,6 +157,34 @@ export function CompanyMode(props: CompanyModeProps) {
             No forums available for this company
           </p>
         </div>
+      )}
+
+      {sharedForums.length > 0 && (
+        <section className="mt-10" aria-labelledby="shared-forums-heading">
+          <h2 id="shared-forums-heading" className="text-lg font-bold text-gray-900">
+            Shared forums
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">{SHARED_BADGE}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sharedForums.map((forum) => (
+              <button
+                key={forum.id}
+                onClick={() => props.handleForumSelect(forum.id)}
+                className="text-left bg-white/90 rounded-2xl p-4 border border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all group min-h-[44px]"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-2xl">{forum.icon}</span>
+                  <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {forum.name}
+                  </span>
+                </span>
+                <span className="mt-2 inline-block text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+                  Shared
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
       <CreateTopicModal

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { X, Hash, Tag, Globe, Building, AlertTriangle } from 'lucide-react';
+import { X, Hash, Tag, AlertTriangle } from 'lucide-react';
 import { CreateNook } from '../../../../api/nookApis';
+import { useAuth } from '../../../hooks/useAuth';
+import { AudiencePicker, type Audience } from '../../shared/AudiencePicker';
+import { useCompanySpace } from '../../../hooks/useCompanySpace';
 
 interface CreateNookModalProps {
   isOpen: boolean;
@@ -13,10 +16,12 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
     title: '',
     description: '',
     urgency: 'medium' as 'low' | 'medium' | 'high',
-    scope: 'company' as 'company' | 'global',
+    audience: 'everyone' as Audience,
     hashtags: [] as string[],
     hashtagInput: ''
   });
+  const { user } = useAuth();
+  const { label: companyLabel } = useCompanySpace(user, isOpen);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +66,9 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
         title: formData.title.trim(),
         description: formData.description.trim(),
         urgency: formData.urgency,
-        scope: formData.scope,
+        // The server picks the space from the audience.
+        scope: formData.audience === 'everyone' ? 'global' : 'company',
+        audience: formData.audience,
         hashtags: formData.hashtags
       };
 
@@ -72,7 +79,7 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
         title: '',
         description: '',
         urgency: 'medium',
-        scope: 'company',
+        audience: 'everyone',
         hashtags: [],
         hashtagInput: ''
       });
@@ -210,38 +217,13 @@ export function CreateNookModal({ isOpen, onClose, onSuccess }: CreateNookModalP
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-800 mb-3">Nook Scope</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, scope: 'company' }))}
-                  disabled={submitting}
-                  className={`p-3 rounded-xl border transition-all text-sm font-medium disabled:opacity-50 ${
-                    formData.scope === 'company'
-                      ? 'bg-green-50 border-green-300 text-green-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Building className="w-4 h-4 mx-auto mb-1" />
-                  Company
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, scope: 'global' }))}
-                  disabled={submitting}
-                  className={`p-3 rounded-xl border transition-all text-sm font-medium disabled:opacity-50 ${
-                    formData.scope === 'global'
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Globe className="w-4 h-4 mx-auto mb-1" />
-                  Global
-                </button>
-              </div>
-            </div>
+            <AudiencePicker
+              value={formData.audience}
+              onChange={(audience) => setFormData(prev => ({ ...prev, audience }))}
+              isStudent={!!user?.is_student}
+              companyLabel={companyLabel}
+              disabled={submitting}
+            />
           </div>
 
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border border-yellow-200">

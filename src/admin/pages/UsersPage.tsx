@@ -65,6 +65,7 @@ interface User {
   total_posts: number;
   total_comments: number;
   reports_against: number;
+  is_student?: boolean;
 }
 
 function getInitials(u: string) {
@@ -729,6 +730,11 @@ function MobileUserCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">
               {user.username}
+              {user.is_student && (
+                <span className="ml-1.5 inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 align-middle">
+                  Student
+                </span>
+              )}
             </p>
             <p className="text-xs text-gray-500 truncate">{user.email}</p>
           </div>
@@ -778,6 +784,8 @@ function FilterModal({
   setStatusFilter,
   providerFilter,
   setProviderFilter,
+  studentFilter,
+  setStudentFilter,
   onApply,
 }: {
   isOpen: boolean;
@@ -788,6 +796,8 @@ function FilterModal({
   setStatusFilter: (v: string) => void;
   providerFilter: string;
   setProviderFilter: (v: string) => void;
+  studentFilter: string;
+  setStudentFilter: (v: string) => void;
   onApply: () => void;
 }) {
   if (!isOpen) return null;
@@ -857,6 +867,21 @@ function FilterModal({
               <option value="email">Email</option>
               <option value="google">Google</option>
               <option value="apple">Apple</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Student
+            </label>
+            <select
+              value={studentFilter}
+              onChange={(e) => setStudentFilter(e.target.value)}
+              className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300"
+            >
+              <option value="">Students and others</option>
+              <option value="true">Students only</option>
+              <option value="false">Not students</option>
             </select>
           </div>
 
@@ -985,6 +1010,7 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [providerFilter, setProviderFilter] = useState("");
+  const [studentFilter, setStudentFilter] = useState("");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [page, setPage] = useState(1);
@@ -1006,6 +1032,7 @@ export function UsersPage() {
         role: roleFilter || undefined,
         status: statusFilter || undefined,
         provider: providerFilter || undefined,
+        student: studentFilter || undefined,
         sortBy: sortField,
         sortOrder: sortOrder,
       });
@@ -1017,7 +1044,7 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, roleFilter, statusFilter, providerFilter, sortField, sortOrder]);
+  }, [page, search, roleFilter, statusFilter, providerFilter, studentFilter, sortField, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
@@ -1220,6 +1247,19 @@ export function UsersPage() {
               <option value="google">Google</option>
               <option value="apple">Apple</option>
             </select>
+            <select
+              value={studentFilter}
+              onChange={(e) => {
+                setStudentFilter(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter by student status"
+              className="px-4 py-2.5 sm:py-3 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 text-gray-700 min-w-[140px] appearance-none cursor-pointer"
+            >
+              <option value="">Students and others</option>
+              <option value="true">Students only</option>
+              <option value="false">Not students</option>
+            </select>
           </div>
 
           {/* Mobile Filter & Sort Buttons */}
@@ -1296,6 +1336,8 @@ export function UsersPage() {
         setStatusFilter={setStatusFilter}
         providerFilter={providerFilter}
         setProviderFilter={setProviderFilter}
+        studentFilter={studentFilter}
+        setStudentFilter={setStudentFilter}
         onApply={() => setPage(1)}
       />
 
@@ -1389,6 +1431,11 @@ export function UsersPage() {
                           <div>
                             <p className="text-sm font-semibold text-gray-900 group-hover/btn:text-purple-700 transition-colors">
                               {user.username}
+                              {user.is_student && (
+                <span className="ml-1.5 inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 align-middle">
+                  Student
+                </span>
+              )}
                             </p>
                             <p className="text-xs text-gray-400">
                               {user.email}

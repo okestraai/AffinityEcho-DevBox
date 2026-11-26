@@ -213,6 +213,7 @@ export const sortTopics = (
 
 interface ApiTopicResponse {
   id: string;
+  label?: string | null;
   title: string;
   content: string;
   user_id: string;
@@ -240,6 +241,7 @@ interface ApiTopicResponse {
 
 interface TransformedTopic {
   id: string;
+  label?: string | null;
   title: string;
   content: string;
   author: { id: string; username: string; avatar: string };
@@ -296,6 +298,7 @@ export const transformTopicFromAPI = (apiTopic: ApiTopicResponse): TransformedTo
     createdAt: apiTopic.created_at,
     lastActivity: apiTopic.last_activity_at,
     forum: apiTopic.forum,
+    label: apiTopic.label ?? null,
   };
 };
 

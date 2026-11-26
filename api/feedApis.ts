@@ -38,6 +38,7 @@ export const GetFeed = async (params: {
 export const CreatePost = async (payload: {
   content: string;
   visibility?: "global" | "company" | "connections";
+  audience?: "everyone" | "company" | "students";
   isAnonymous?: boolean;
   tags?: string[];
 }) => {

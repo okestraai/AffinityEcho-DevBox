@@ -1,32 +1,32 @@
-// src/components/Modals/CreateTopicModal.tsx - NO PAGE RELOAD VERSION
+// src/components/Modals/ForumModals/CreateTopicModal.tsx
 import React, { useState, useEffect } from "react";
 import {
   X,
-  Link as LinkIcon,
   AlertCircle,
-  Globe,
-  Building,
+  Link as LinkIcon,
   Hash,
   Tag,
   ChevronDown,
-  Users,
-  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   CreateForumTopic,
+  GetGlobalScopeMetrics,
   GetUserJoinedForums,
 } from "../../../../api/forumApis";
-import { DecryptData } from "../../../../api/EncrytionApis";
 import { showToast } from "../../../Helper/ShowToast";
 import { MSG } from "../../../constants/messages";
-import { useNavigate } from "react-router-dom";
+import { SHARED_POSTING_NOTE, STUDENTS_SPACE } from "../../../constants/spaces";
+import { AudiencePicker, type Audience } from "../../shared/AudiencePicker";
+import { useCompanySpace } from "../../../hooks/useCompanySpace";
 
 interface ForumItem {
   id: string;
   name: string;
   icon?: string;
   is_global?: boolean;
+  is_shared?: boolean;
+  is_other_topics?: boolean;
   company_name?: string;
   member_count?: number;
   topic_count?: number;
@@ -36,10 +36,12 @@ interface ForumItem {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onTopicCreated?: () => Promise<void>; // NEW: Callback to refresh topics
+  onTopicCreated?: () => Promise<void>;
   forumName?: string;
   forumId?: string;
   companyId?: string;
+  // The forum this form was opened from is a Shared forum.
+  isShared?: boolean;
 }
 
 export function CreateTopicModal({
@@ -48,176 +50,98 @@ export function CreateTopicModal({
   onTopicCreated,
   forumName,
   forumId,
+  isShared,
 }: Props) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [link, setLink] = useState("");
-  const [scope, setScope] = useState<"local" | "global">("local");
-  const [selectedForumId, setSelectedForumId] = useState(forumId || "");
+  const [audience, setAudience] = useState<Audience>("everyone");
+  const [selectedForumId, setSelectedForumId] = useState("");
+  const [label, setLabel] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // isAnonymous always true — removed UI toggle since anonymity is the point of the app
-  const navigate = useNavigate();
-  // API State
-  const [decryptedCompanyName, setDecryptedCompanyName] = useState<string>("");
-  const [companyType, setCompanyType] = useState<string>("");
-  const [availableForums, setAvailableForums] = useState<ForumItem[]>([]);
+  const [forums, setForums] = useState<ForumItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [allJoinedForums, setAllJoinedForums] = useState<ForumItem[]>([]);
 
-  // Decrypt company name and get company type
+  const { space: companySpace, label: companyLabel } = useCompanySpace(user, isOpen);
+  const isStudent = !!user?.is_student;
+  const fixedForum = !!forumId;
+
+  // Forums the member can post in for the chosen audience; Other topics is the "no forum" choice.
   useEffect(() => {
-    const decryptCompanyName = async () => {
-      try {
-        if (user?.company_encrypted) {
-          const result = await DecryptData({
-            encryptedData: user.company_encrypted,
-          });
-          setDecryptedCompanyName(result.decryptedData);
-          setCompanyType(user.company_type || "");
-        }
-      } catch (err) {
-        console.error("Error decrypting company name:", err);
-      }
-    };
-
-    if (isOpen) {
-      decryptCompanyName();
-    }
-  }, [isOpen, user]);
-
-  // Get company name for API calls
-  const getCompanyNameForApi = () => {
-    if (!decryptedCompanyName) return null;
-
-    if (companyType?.toLowerCase() === "other") {
-      return "Others";
-    }
-
-    return decryptedCompanyName;
-  };
-
-  // Fetch ALL joined forums once
-  useEffect(() => {
-    const fetchAllJoinedForums = async () => {
-      try {
-        const apiCompanyName = getCompanyNameForApi();
-
-        let forums: ForumItem[] = [];
-
-        if (apiCompanyName) {
-          const result = await GetUserJoinedForums(apiCompanyName);
-          forums = Array.isArray(result) ? result : (result?.forums || []);
-        }
-
-        const uniqueForums = Array.from(
-          new Map(forums.map((f) => [f.id, f])).values(),
-        );
-
-        setAllJoinedForums(uniqueForums);
-      } catch (err) {
-        console.error("Error fetching joined forums:", err);
-        setAllJoinedForums([]);
-      }
-    };
-
-    if (isOpen) {
+    if (!isOpen || fixedForum) return;
+    let cancelled = false;
+    const load = async () => {
       setLoading(true);
-      fetchAllJoinedForums();
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, decryptedCompanyName, companyType]);
-
-  // Filter forums based on scope
-  useEffect(() => {
-    const filterForumsByScope = () => {
-      if (allJoinedForums.length === 0) {
-        setAvailableForums([]);
-        return;
-      }
-
-      const apiCompanyName = getCompanyNameForApi();
-
-      if (scope === "local") {
-        const companyForums = allJoinedForums.filter(
-          (f) => !f.is_global && f.company_name === apiCompanyName,
-        );
-        setAvailableForums(companyForums);
-      } else {
-        setAvailableForums(allJoinedForums);
+      try {
+        let list: ForumItem[] = [];
+        if (audience === "everyone") {
+          const data = await GetGlobalScopeMetrics();
+          list = data?.forums || [];
+        } else {
+          const space = audience === "students" ? STUDENTS_SPACE : companySpace;
+          if (space) {
+            const data = await GetUserJoinedForums(space);
+            const joined: ForumItem[] = Array.isArray(data) ? data : data?.forums || [];
+            list = joined.filter((f) => !f.is_global && f.company_name === space);
+          }
+        }
+        if (!cancelled) setForums(list.filter((f) => !f.is_other_topics));
+      } catch {
+        if (!cancelled) setForums([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-
-    if (isOpen && allJoinedForums.length > 0) {
-      filterForumsByScope();
-    } else if (isOpen) {
-      setAvailableForums([]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, scope, allJoinedForums]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, audience, companySpace, fixedForum]);
 
   if (!isOpen) return null;
+
+  const chosenForum = forums.find((f) => f.id === selectedForumId);
+  const postingToEveryone = fixedForum ? !!isShared : !!chosenForum?.is_shared;
+
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setLink("");
+    setLabel("");
+    setHashtags([]);
+    setHashtagInput("");
+    setSelectedForumId("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
-      const apiCompanyName = getCompanyNameForApi();
-
-      const payload: {
-        title: string;
-        content: string;
-        forumId: string;
-        scope: string;
-        isAnonymous: boolean;
-        tags: string[];
-        companyName?: string;
-        link?: string;
-      } = {
+      // The server works out the space from the forum, or from the audience for Other topics.
+      const payload: Record<string, unknown> = {
         title: title.trim(),
         content: content.trim(),
-        forumId: selectedForumId,
-        scope: scope,
         isAnonymous: true,
         tags: hashtags,
       };
-
-      if (scope === "local" && apiCompanyName) {
-        payload.companyName = apiCompanyName;
-      }
-
-      if (link.trim()) {
-        payload.link = link.trim();
-      }
+      const targetForum = fixedForum ? forumId : selectedForumId;
+      if (targetForum) payload.forumId = targetForum;
+      else payload.audience = audience;
+      if (label.trim()) payload.label = label.trim();
+      if (link.trim()) payload.link = link.trim();
 
       await CreateForumTopic(payload);
-
-      // Reset form
-      setTitle("");
-      setContent("");
-      setLink("");
-      setHashtags([]);
-      setHashtagInput("");
-      setSelectedForumId("");
-
+      resetForm();
       showToast(MSG.FORUM.TOPIC_CREATED, "success");
-
       onClose();
-
-      // FIXED: Call refresh callback instead of reloading page
-      if (onTopicCreated) {
-        await onTopicCreated();
-      }
+      if (onTopicCreated) await onTopicCreated();
     } catch (error: unknown) {
-      console.error("Error creating topic:", error);
       const axiosErr = error as { response?: { data?: { message?: string } } };
       showToast(
-        axiosErr.response?.data?.message ||
-          MSG.FORUM.CREATE_TOPIC_FAILED,
+        axiosErr.response?.data?.message || MSG.FORUM.CREATE_TOPIC_FAILED,
         "error",
       );
     } finally {
@@ -244,24 +168,6 @@ export function CreateTopicModal({
     }
   };
 
-  // Get display company name for UI
-  const getDisplayCompanyName = () => {
-    if (!decryptedCompanyName) return null;
-
-    if (companyType?.toLowerCase() === "other") {
-      return `Others (${decryptedCompanyName})`;
-    }
-
-    return decryptedCompanyName;
-  };
-
-  const displayCompanyName = getDisplayCompanyName();
-  const apiCompanyName = getCompanyNameForApi();
-
-  // Group forums by type for better display
-  const globalForums = availableForums.filter((f) => f.is_global);
-  const companyForums = availableForums.filter((f) => !f.is_global);
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div className="bg-white w-full sm:max-w-md md:max-w-4xl rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
@@ -270,7 +176,9 @@ export function CreateTopicModal({
             Create New Topic {forumName && `in ${forumName}`}
           </h3>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="text-gray-500 hover:text-gray-700"
           >
             <X className="w-5 h-5" />
@@ -278,242 +186,79 @@ export function CreateTopicModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Topic Visibility
-            </label>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setScope("local");
+          {!fixedForum && (
+            <>
+              <AudiencePicker
+                value={audience}
+                onChange={(a) => {
+                  setAudience(a);
                   setSelectedForumId("");
                 }}
-                disabled={!apiCompanyName}
-                className={`p-3 rounded-xl border transition-all ${
-                  scope === "local"
-                    ? "bg-purple-50 border-purple-200 text-purple-700"
-                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Building className="w-4 h-4" />
-                  <span className="font-medium">Company Only</span>
-                </div>
-                <p className="text-xs">
-                  {displayCompanyName
-                    ? `Visible only to ${displayCompanyName} members`
-                    : "Visible only to your company members"}
-                </p>
-              </button>
+                isStudent={isStudent}
+                companyLabel={companyLabel}
+              />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setScope("global");
-                  setSelectedForumId("");
-                }}
-                className={`p-3 rounded-xl border transition-all ${
-                  scope === "global"
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Globe className="w-4 h-4" />
-                  <span className="font-medium">Global</span>
-                </div>
-                <p className="text-xs">Visible to all platform members</p>
-              </button>
-            </div>
-
-            {scope === "local" && displayCompanyName && (
-              <p className="text-sm text-gray-600 mb-2">
-                Posting to:{" "}
-                <span className="font-semibold">{displayCompanyName}</span>
-              </p>
-            )}
-
-            {scope === "global" && (
-              <p className="text-sm text-gray-600 mb-2">
-                Your topic will be visible to all members across the platform
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Forum *
-            </label>
-            <div className="relative">
-              <select
-                value={selectedForumId}
-                onChange={(e) => setSelectedForumId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
-                required
-                disabled={loading || (scope === "local" && !apiCompanyName)}
-              >
-                <option value="">
-                  {loading
-                    ? "Loading forums..."
-                    : scope === "local" && !apiCompanyName
-                      ? "Set your company to view company forums"
-                      : availableForums.length === 0
-                        ? `No ${
-                            scope === "local" ? "company" : ""
-                          } forums available`
-                        : "Choose a forum..."}
-                </option>
-
-                {scope === "global" && globalForums.length > 0 && (
-                  <optgroup label="Global Forums">
-                    {globalForums.map((forum) => (
-                      <option key={forum.id} value={forum.id}>
-                        🌍 {forum.icon} {forum.name} (Global)
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-
-                {scope === "global" && companyForums.length > 0 && (
-                  <optgroup label="Company Forums (Posting Globally)">
-                    {companyForums.map((forum) => (
-                      <option key={forum.id} value={forum.id}>
-                        🏢 {forum.icon} {forum.name} ({forum.company_name})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-
-                {scope === "local" && companyForums.length > 0 && (
-                  <>
-                    {companyForums.map((forum) => (
-                      <option key={forum.id} value={forum.id}>
-                        🏢 {forum.icon} {forum.name}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            </div>
-
-            {selectedForumId && !loading && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                {(() => {
-                  const selectedForum = availableForums.find(
-                    (f) => f.id === selectedForumId,
-                  );
-                  if (!selectedForum) return null;
-
-                  return (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{selectedForum.icon}</span>
-                          <span className="font-medium">
-                            {selectedForum.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          {selectedForum.is_global ? (
-                            <>
-                              <Globe className="w-3 h-3" />
-                              <span>Global Forum</span>
-                            </>
-                          ) : (
-                            <>
-                              <Building className="w-3 h-3" />
-                              <span>Company Forum</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>{selectedForum.member_count || 0} members</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          <span>{selectedForum.topic_count || 0} topics</span>
-                        </div>
-                      </div>
-
-                      {selectedForum.description && (
-                        <p className="text-xs text-gray-600">
-                          {selectedForum.description}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {scope === "local" && !apiCompanyName && (
-              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertCircle className="w-4 h-4 text-orange-600" />
-                  <p className="text-sm text-orange-700">Company not set</p>
-                </div>
-                <p className="text-xs text-orange-600">
-                  You need to set your company in your profile to post to
-                  company forums
-                </p>
-              </div>
-            )}
-
-            {availableForums.length === 0 &&
-              !loading &&
-              apiCompanyName &&
-              scope === "local" && (
-                <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertCircle className="w-4 h-4 text-orange-600" />
-                    <p className="text-sm text-orange-700">
-                      No company forums available
-                    </p>
-                  </div>
-                  <p className="text-xs text-orange-600 mb-2">
-                    You need to join at least one {displayCompanyName} forum
-                    first.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      navigate("/dashboard/forums");
-                    }}
-                    className="mt-2 text-xs text-orange-600 hover:text-orange-800 font-medium underline"
-                  >
-                    Browse and join forums →
-                  </button>
-                </div>
-              )}
-
-            {availableForums.length === 0 && !loading && scope === "global" && (
-              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertCircle className="w-4 h-4 text-orange-600" />
-                  <p className="text-sm text-orange-700">No forums available</p>
-                </div>
-                <p className="text-xs text-orange-600 mb-2">
-                  You need to join at least one forum first.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    navigate("/dashboard/forums");
-                  }}
-                  className="text-xs text-orange-600 hover:text-orange-800 font-medium underline"
+              <div>
+                <label
+                  htmlFor="topic-forum"
+                  className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Browse and join forums →
-                </button>
+                  Forum <span className="font-normal text-gray-500">(optional)</span>
+                </label>
+                <div className="relative">
+                  <select
+                    id="topic-forum"
+                    value={selectedForumId}
+                    onChange={(e) => setSelectedForumId(e.target.value)}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white min-h-[44px]"
+                  >
+                    <option value="">
+                      {loading ? "Loading forums..." : "No forum: post to Other topics"}
+                    </option>
+                    {forums.map((forum) => (
+                      <option key={forum.id} value={forum.id}>
+                        {forum.icon} {forum.name}
+                        {forum.is_shared ? " (Shared)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+                {audience !== "everyone" && !loading && forums.length === 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Join a forum in this space to post there, or post to Other topics.
+                  </p>
+                )}
               </div>
-            )}
+            </>
+          )}
+
+          {postingToEveryone && (
+            <p className="text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+              {SHARED_POSTING_NOTE}
+            </p>
+          )}
+
+          <div>
+            <label
+              htmlFor="topic-label"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Label <span className="font-normal text-gray-500">(optional)</span>
+            </label>
+            <input
+              id="topic-label"
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value.replace(/[,()]/g, ""))}
+              maxLength={40}
+              placeholder="e.g. visas"
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              A short word that helps people find your topic in Other topics.
+            </p>
           </div>
 
           <div>
@@ -650,8 +395,7 @@ export function CreateTopicModal({
                 isSubmitting ||
                 !title.trim() ||
                 !content.trim() ||
-                !selectedForumId ||
-                (scope === "local" && !apiCompanyName)
+                (!fixedForum && audience === "company" && !companySpace)
               }
               className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >

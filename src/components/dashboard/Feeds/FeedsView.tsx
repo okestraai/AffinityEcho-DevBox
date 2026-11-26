@@ -115,6 +115,8 @@ interface FeedComment {
   };
 }
 
+import { AudiencePicker, type Audience } from "../../shared/AudiencePicker";
+import { useCompanySpace } from "../../../hooks/useCompanySpace";
 export function FeedsView() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -125,6 +127,8 @@ export function FeedsView() {
   const [, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [postAudience, setPostAudience] = useState<Audience>("everyone");
+  const { label: companyLabel } = useCompanySpace(user, showCreatePost);
   const [postContent, setPostContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -295,7 +299,9 @@ export function FeedsView() {
       } else {
         await CreatePost({
           content: postContent,
-          visibility: "global",
+          // The server picks the space from the audience.
+          visibility: postAudience === "everyone" ? "global" : "company",
+          audience: postAudience,
         });
         showToast(MSG.FEED.POST_CREATED, "success");
         loadFeed(1);
@@ -716,9 +722,27 @@ export function FeedsView() {
                   <h3 className="font-semibold text-gray-900">
                     {user?.username || "Anonymous User"}
                   </h3>
-                  <p className="text-sm text-gray-500">Sharing publicly</p>
+                  <p className="text-sm text-gray-500">
+                    {postAudience === "everyone"
+                      ? "Sharing with everyone"
+                      : postAudience === "students"
+                        ? "Sharing with students"
+                        : `Sharing with ${companyLabel || "your company"}`}
+                  </p>
                 </div>
               </div>
+
+              {!editingPost && (
+                <div className="mb-4">
+                  <AudiencePicker
+                    value={postAudience}
+                    onChange={setPostAudience}
+                    isStudent={!!user?.is_student}
+                    companyLabel={companyLabel}
+                    disabled={submitting}
+                  />
+                </div>
+              )}
 
               <MentionTextarea
                 value={postContent}

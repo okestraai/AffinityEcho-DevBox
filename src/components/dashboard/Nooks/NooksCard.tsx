@@ -13,6 +13,8 @@ interface NookCardProps {
     lastActivity: string;
     urgency: "high" | "medium" | "low";
     scope: "company" | "global";
+    // A company-scoped Nook in the Students space is for students.
+    company_name?: string | null;
     temperature: "hot" | "warm" | "cool";
     hashtags: string[];
     user_has_bookmarked?: boolean;
@@ -22,6 +24,7 @@ interface NookCardProps {
   onHide?: (id: string) => void;
 }
 
+import { STUDENTS_SPACE } from "../../../constants/spaces";
 export function NookCard({ nook, onClick, onBookmark, onHide }: NookCardProps) {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -128,7 +131,11 @@ export function NookCard({ nook, onClick, onBookmark, onHide }: NookCardProps) {
                   : "bg-green-100 text-green-700"
               }`}
             >
-              {nook.scope === "global" ? "GLOBAL" : "COMPANY"}
+              {nook.scope === "global"
+                ? "GLOBAL"
+                : nook.company_name === STUDENTS_SPACE
+                  ? "STUDENTS"
+                  : "COMPANY"}
             </span>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
