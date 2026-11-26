@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Bot,
   ShieldAlert,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
@@ -116,6 +117,13 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/forums",
     label: "Forums",
     icon: <MessageSquare className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.FORUMS_VIEW,
+    section: "Management",
+  },
+  {
+    to: "/admin/companies",
+    label: "Companies",
+    icon: <Building2 className="w-4.5 h-4.5" />,
     permission: PERMISSIONS.FORUMS_VIEW,
     section: "Management",
   },

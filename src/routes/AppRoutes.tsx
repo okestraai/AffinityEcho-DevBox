@@ -225,6 +225,9 @@ const AdminModerationPage = React.lazy(() =>
     default: m.ContentModerationPage,
   })),
 );
+const AdminCompaniesPage = React.lazy(() =>
+  import("../admin/pages/CompaniesPage").then((m) => ({ default: m.CompaniesPage })),
+);
 const AdminForumsPage = React.lazy(() =>
   import("../admin/pages/ForumsPage").then((m) => ({ default: m.ForumsPage })),
 );
@@ -389,6 +392,7 @@ const AppRoutes: React.FC = () => {
           <Route path="moderation" element={<AdminModerationPage />} />
           <Route path="content-flags" element={<AdminContentFlagsPage />} />
           <Route path="forums" element={<AdminForumsPage />} />
+          <Route path="companies" element={<AdminCompaniesPage />} />
           <Route path="nooks" element={<AdminNooksPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="logs" element={<AdminLogsPage />} />

@@ -296,6 +296,37 @@ export const ExportContent = async (params: {
   return res;
 };
 
+/* ─── Companies ─── */
+export interface AdminCompany {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const GetAdminCompanies = async (): Promise<AdminCompany[]> => {
+  const api = getAuthInstance();
+  return unwrap(await api.get(`${BASE}/companies`));
+};
+
+export const GetCompanySuggestions = async (): Promise<{ name: string; members: number }[]> => {
+  const api = getAuthInstance();
+  return unwrap(await api.get(`${BASE}/companies/suggestions`));
+};
+
+export const AddCompany = async (
+  name: string,
+): Promise<{ company: AdminCompany; membersMoved: number }> => {
+  const api = getAuthInstance();
+  return unwrap(await api.post(`${BASE}/companies`, { name }));
+};
+
+export const SetCompanyActive = async (companyId: string, isActive: boolean) => {
+  const api = getAuthInstance();
+  return unwrap(await api.patch(`${BASE}/companies/${companyId}`, { is_active: isActive }));
+};
+
 /* ─── 5. Forums ─── */
 export const GetAdminForums = async (
   params: {
