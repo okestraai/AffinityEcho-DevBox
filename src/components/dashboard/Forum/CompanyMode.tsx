@@ -193,6 +193,7 @@ export function CompanyMode(props: CompanyModeProps) {
         onTopicCreated={props.handleTopicCreated}
         forumName={selectedCompany}
         companyId={selectedCompany}
+        space={selectedCompany}
       />
       <TopicDetailModal
         isOpen={showTopicDetail}

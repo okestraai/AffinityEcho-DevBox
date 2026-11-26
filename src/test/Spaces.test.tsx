@@ -90,6 +90,29 @@ describe('new topic', () => {
   });
 });
 
+describe('new topic from a space page', () => {
+  const postFrom = async (space: string) => {
+    renderWithRouter(<CreateTopicModal isOpen onClose={() => {}} forumName={space} space={space} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("What's on your mind?"), 'Hello');
+    await user.type(screen.getByPlaceholderText(/Share your thoughts/), 'Body');
+    await user.click(screen.getByText('Post Topic'));
+    await waitFor(() => expect(CreateForumTopic).toHaveBeenCalled());
+    return vi.mocked(CreateForumTopic).mock.calls[0][0];
+  };
+
+  it('posts to Students when opened from the Students space', async () => {
+    asUser({ is_student: true });
+    expect(await postFrom('Students')).toMatchObject({ audience: 'students' });
+  });
+
+  it("posts to the member's company when opened from their company space", async () => {
+    asUser();
+    renderWithRouter(<CreateTopicModal isOpen onClose={() => {}} forumName="Google" space="Google" />);
+    await waitFor(() => expect(screen.getByText('My company').closest('button')).toHaveAttribute('aria-pressed', 'true'));
+  });
+});
+
 describe('Still a student?', () => {
   const openAt = (url: string) =>
     render(

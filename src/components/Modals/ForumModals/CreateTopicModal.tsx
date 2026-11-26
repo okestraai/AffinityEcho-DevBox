@@ -42,6 +42,8 @@ interface Props {
   companyId?: string;
   // The forum this form was opened from is a Shared forum.
   isShared?: boolean;
+  // The company or Students space this form was opened from, so it starts with that space's audience.
+  space?: string;
 }
 
 export function CreateTopicModal({
@@ -51,6 +53,7 @@ export function CreateTopicModal({
   forumName,
   forumId,
   isShared,
+  space,
 }: Props) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -68,6 +71,16 @@ export function CreateTopicModal({
   const { space: companySpace, label: companyLabel } = useCompanySpace(user, isOpen);
   const isStudent = !!user?.is_student;
   const fixedForum = !!forumId;
+
+  // Each opening starts from the space it was opened in.
+  const startAudience: Audience =
+    space === STUDENTS_SPACE ? "students" : space && space === companySpace ? "company" : "everyone";
+  useEffect(() => {
+    if (isOpen) {
+      setAudience(startAudience);
+      setSelectedForumId("");
+    }
+  }, [isOpen, startAudience]);
 
   // Forums the member can post in for the chosen audience; Other topics is the "no forum" choice.
   useEffect(() => {
