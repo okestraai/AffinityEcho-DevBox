@@ -27,7 +27,7 @@ export const formatLastActivity = (
     if (diffInMonths < 12) return `${diffInMonths}mo ago`;
 
     // For dates older than a year, show the actual date
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -44,7 +44,7 @@ export const formatLastActivity = (
 export const formatCreatedDate = (date: string | Date): string => {
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toLocaleDateString("en-US", {
+    return dateObj.toLocaleDateString(undefined, {
       year: "numeric",
       month: "long",
       day: "numeric",

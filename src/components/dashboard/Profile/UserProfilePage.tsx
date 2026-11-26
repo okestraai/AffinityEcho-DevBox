@@ -111,7 +111,7 @@ function timeAgo(dateStr: string | null | undefined): string {
 
 function formatJoinDate(dateStr?: string): string {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
 // ---------------------------------------------------------------------------

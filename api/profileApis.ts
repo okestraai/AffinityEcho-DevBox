@@ -295,11 +295,19 @@ export const UpdateEditableProfile = async (payload: {
     location?: string;
     years_experience?: number;
     skills?: string[];
+    country_code?: string;
   };
   company?: { company_name?: string };
+  school?: {
+    is_student?: boolean;
+    school_name?: string;
+    expected_grad_year?: number | null;
+    show_school?: boolean;
+  };
   identity?: {
     career_level?: string;
     race?: string;
+    ethnicities?: string[];
     gender?: string;
     affinity_tags?: string; // JSON-encoded array string
   };
@@ -637,5 +645,24 @@ export const UpdateCompanyVerificationEmail = async (email: string) => {
 export const GetCompanyVerificationStatus = async () => {
   const authFetch = getAuthInstance();
   const res = await authFetch.get(`${API_URL}/user/company-verification-status`);
+  return unwrap(res);
+};
+
+// Stops the "Where are you based?" prompt for good.
+export const DismissCountryPrompt = async () => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/user/country-prompt/dismiss`);
+  return unwrap(res);
+};
+
+export interface CompanyOption {
+  id: string;
+  name: string;
+}
+
+// Companies members can pick, from any country.
+export const GetCompanies = async (): Promise<CompanyOption[]> => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.get(`${API_URL}/companies`);
   return unwrap(res);
 };

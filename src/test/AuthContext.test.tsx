@@ -115,6 +115,29 @@ describe('AuthContext', () => {
       expect(result.current.isAuthenticated).toBe(true);
     });
 
+    it('keeps the country and student fields from the API', async () => {
+      mockedTokenUtils.hasTokens.mockReturnValue(true);
+      mockedGetCurrentUser.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.com',
+        username: 'TestUser',
+        role: 'user',
+        has_completed_onboarding: true,
+        country_code: 'NG',
+        country_prompt_dismissed_at: null,
+        is_student: true,
+        expected_grad_year: 2028,
+        show_school: false,
+      });
+
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.user).toEqual(
+        expect.objectContaining({ country_code: 'NG', is_student: true, expected_grad_year: 2028 }),
+      );
+    });
+
     it('clears auth when loadUser fails on mount', async () => {
       mockedTokenUtils.hasTokens.mockReturnValue(true);
       mockedGetCurrentUser.mockRejectedValue(new Error('unauthorized'));

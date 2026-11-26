@@ -8,6 +8,7 @@ import { renderWithRouter } from './testUtils';
 vi.mock('../../api/profileApis', () => ({
   GetEditableProfile: vi.fn(),
   UpdateEditableProfile: vi.fn(),
+  GetCompanies: vi.fn().mockResolvedValue([{ id: 'c1', name: 'Google' }]),
 }));
 
 vi.mock('../../api/mentorshipApis', () => ({
@@ -278,12 +279,12 @@ describe('EditProfilePanel', () => {
     const user = userEvent.setup();
 
     // Identity section is collapsed by default
-    expect(screen.queryByText('Career Level')).not.toBeInTheDocument();
+    expect(screen.queryByText('Life / career stage')).not.toBeInTheDocument();
 
     await user.click(screen.getByText('Identity'));
 
     await waitFor(() => {
-      expect(screen.getByText('Career Level')).toBeInTheDocument();
+      expect(screen.getByText('Life / career stage')).toBeInTheDocument();
     });
   });
 
@@ -324,5 +325,73 @@ describe('EditProfilePanel', () => {
     await waitFor(() => {
       expect(mockedShowToast).toHaveBeenCalledWith('Update failed', 'error');
     });
+  });
+});
+
+describe('EditProfilePanel – country, school and ethnicity', () => {
+  const open = async () => {
+    renderWithRouter(<EditProfilePanel onClose={mockOnClose} />);
+    await waitFor(() => expect(screen.getByText('Edit My Profile')).toBeInTheDocument());
+    return userEvent.setup();
+  };
+
+  it('saves a chosen country', async () => {
+    setup();
+    const user = await open();
+    await user.selectOptions(screen.getByLabelText('Country'), 'GB');
+    await user.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(mockedUpdateEditableProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ basic: { country_code: 'GB' } }),
+      ),
+    );
+  });
+
+  it('needs a school before a student can save', async () => {
+    setup();
+    const user = await open();
+    await user.click(screen.getByText('School'));
+    await user.click(screen.getByLabelText(/I'm currently a student/));
+    expect(screen.getByText('Save').closest('button')).toBeDisabled();
+    await user.type(screen.getByLabelText('School, college or university'), 'Unilag');
+    await user.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(mockedUpdateEditableProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          school: expect.objectContaining({ is_student: true, school_name: 'Unilag' }),
+        }),
+      ),
+    );
+  });
+
+  it('keeps an older ethnicity answer selected and adds new ones', async () => {
+    setup({
+      identity: { ...mockProfileData.identity, ethnicities: ['Asian/Pacific Islander'] },
+    });
+    const user = await open();
+    await user.click(screen.getByText('Identity'));
+    expect(screen.getByRole('button', { name: 'Asian/Pacific Islander' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Caribbean' }));
+    await user.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(mockedUpdateEditableProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          identity: { ethnicities: ['Asian/Pacific Islander', 'Caribbean'] },
+        }),
+      ),
+    );
+  });
+
+  it('asks before removing the company', async () => {
+    setup();
+    const user = await open();
+    await user.click(screen.getByText('Company'));
+    await user.click(screen.getByText('Remove my company'));
+    await user.click(screen.getByText('Save'));
+    expect(await screen.findByText('Change Company?')).toBeInTheDocument();
+    expect(mockedUpdateEditableProfile).not.toHaveBeenCalled();
   });
 });

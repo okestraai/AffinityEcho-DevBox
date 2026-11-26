@@ -41,6 +41,8 @@ export interface User {
     careerLevel?: string;
     company?: string;
     affinityTags?: string[];
+    ethnicities?: string[];
+    school?: string | null;
   };
   basicProfile?: {
     bio?: string;
@@ -54,6 +56,11 @@ export interface User {
     affinityTags?: string[];
   };
   is_company_verified?: boolean;
+  country_code?: string | null;
+  country_prompt_dismissed_at?: string | null;
+  is_student?: boolean;
+  expected_grad_year?: number | null;
+  show_school?: boolean;
 }
 
 interface LoginResponseData {
@@ -237,6 +244,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         demographics?: User['demographics'];
         basicProfile?: User['basicProfile'];
         is_company_verified?: boolean; isCompanyVerified?: boolean;
+        country_code?: string | null; country_prompt_dismissed_at?: string | null;
+        is_student?: boolean; expected_grad_year?: number | null; show_school?: boolean;
       };
       let userData = res as RawUserData;
 
@@ -270,6 +279,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           demographics: userData.demographics || {},
           basicProfile: userData.basicProfile || undefined,
           is_company_verified: userData.is_company_verified ?? userData.isCompanyVerified ?? false,
+          country_code: userData.country_code ?? null,
+          country_prompt_dismissed_at: userData.country_prompt_dismissed_at ?? null,
+          is_student: !!userData.is_student,
+          expected_grad_year: userData.expected_grad_year ?? null,
+          show_school: !!userData.show_school,
         };
 
 

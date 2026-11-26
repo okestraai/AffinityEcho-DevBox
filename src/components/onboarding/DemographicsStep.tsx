@@ -1,5 +1,11 @@
 import React from "react";
-import { EyeOff, Shield } from "lucide-react";
+import { EyeOff, Globe2, Shield } from "lucide-react";
+import { countryOptions } from "../../constants/countries";
+import {
+  ETHNICITY_OPTIONS,
+  LIFE_STAGES,
+  MAX_ETHNICITIES,
+} from "../../constants/onboardingOptions";
 
 // Logging utility for consistent formatting
 const log = (action: string, message: string, data?: unknown) => {
@@ -16,7 +22,8 @@ const log = (action: string, message: string, data?: unknown) => {
 interface DemographicsData {
   firstName?: string;
   lastName?: string;
-  race?: string;
+  country?: string;
+  ethnicities?: string[];
   gender?: string;
   careerLevel?: string;
   ageConfirmed?: boolean;
@@ -39,26 +46,26 @@ export function DemographicsStep({ data, updateData }: Props) {
     log("update", "Data changed", data);
   }, [data]);
 
-  const races = [
-    "Black/African American",
-    "Hispanic/Latino",
-    "Asian/Pacific Islander",
-    "Native American",
-    "Middle Eastern",
-    "Mixed/Multiracial",
-    "White",
-    "Prefer not to say",
-  ];
+  const countries = React.useMemo(() => countryOptions(), []);
+  const ethnicities = data.ethnicities ?? [];
+
+  // "Prefer not to say" stands alone; any other choice clears it.
+  const toggleEthnicity = (value: string) => {
+    if (ethnicities.includes(value)) {
+      updateData({ ethnicities: ethnicities.filter((e) => e !== value) });
+    } else if (value === "Prefer not to say") {
+      updateData({ ethnicities: [value] });
+    } else if (ethnicities.length < MAX_ETHNICITIES) {
+      updateData({
+        ethnicities: [
+          ...ethnicities.filter((e) => e !== "Prefer not to say"),
+          value,
+        ],
+      });
+    }
+  };
 
   const genders = ["Woman", "Man", "Non-binary", "Prefer not to say"];
-
-  const careerLevels = [
-    "Entry Level (0-2 years)",
-    "Mid-level (3-7 years)",
-    "Senior (8-12 years)",
-    "Leadership (13+ years)",
-    "Executive/C-Suite",
-  ];
 
   const handleFirstNameChange = (firstName: string) => {
     log("firstName", "Changed", {
@@ -124,26 +131,59 @@ export function DemographicsStep({ data, updateData }: Props) {
         </div>
       </div>
 
-      {/* Race */}
+      {/* Country */}
       <div>
-        <label className="block text-base font-semibold text-gray-800 mb-4">
-          Race / Ethnicity
+        <label
+          htmlFor="onboarding-country"
+          className="block text-base font-semibold text-gray-800 mb-2"
+        >
+          Where are you based? <span className="text-red-500">*</span>
         </label>
-        <div className="space-y-3">
-          {races.map((race) => (
+        <div className="relative">
+          <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          <select
+            id="onboarding-country"
+            required
+            value={data.country ?? ""}
+            onChange={(e) => updateData({ country: e.target.value })}
+            className="w-full pl-11 pr-4 py-3.5 sm:py-4 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 bg-gray-50/50 focus:bg-white font-medium text-base min-h-[48px]"
+          >
+            <option value="">Choose your country</option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          We use this to show you safety help and dates that fit where you
+          live.
+        </p>
+      </div>
+
+      {/* Ethnicity */}
+      <div>
+        <label className="block text-base font-semibold text-gray-800 mb-1">
+          Ethnicity or heritage{" "}
+          <span className="text-sm font-normal text-gray-500">(optional)</span>
+        </label>
+        <p className="text-xs text-gray-500 mb-4">
+          Choose up to {MAX_ETHNICITIES}.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ETHNICITY_OPTIONS.map((option) => (
             <label
-              key={race}
-              className="flex items-center p-3 sm:p-3 rounded-xl hover:bg-gray-50 cursor-pointer min-h-[44px]"
+              key={option}
+              className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer min-h-[44px]"
             >
               <input
-                type="radio"
-                name="race"
-                value={race}
-                checked={data.race === race}
-                onChange={(e) => updateData({ race: e.target.value })}
-                className="mr-3 sm:mr-4 w-5 h-5 sm:w-4 sm:h-4 text-purple-600"
+                type="checkbox"
+                checked={ethnicities.includes(option)}
+                onChange={() => toggleEthnicity(option)}
+                className="mr-3 w-5 h-5 sm:w-4 sm:h-4 rounded text-purple-600"
               />
-              <span className="text-gray-700 font-medium">{race}</span>
+              <span className="text-gray-700 font-medium">{option}</span>
             </label>
           ))}
         </div>
@@ -179,15 +219,16 @@ export function DemographicsStep({ data, updateData }: Props) {
       {/* Career level */}
       <div>
         <label className="block text-base font-semibold text-gray-800 mb-4">
-          Career Level
+          Life / career stage{" "}
+          <span className="text-sm font-normal text-gray-500">(optional)</span>
         </label>
         <select
           value={data.careerLevel ?? ""}
           onChange={(e) => updateData({ careerLevel: e.target.value })}
           className="w-full px-3 sm:px-4 py-3.5 sm:py-4 border border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 bg-gray-50/50 focus:bg-white font-medium text-base min-h-[48px]"
         >
-          <option value="">Select your level</option>
-          {careerLevels.map((level) => (
+          <option value="">Select your stage</option>
+          {LIFE_STAGES.map((level) => (
             <option key={level} value={level}>
               {level}
             </option>

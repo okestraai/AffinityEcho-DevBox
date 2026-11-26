@@ -48,7 +48,7 @@ export function AffinityStep({ data, updateData }: Props) {
     { id: 'women-leadership', name: 'Women in Leadership', icon: '👑' },
     { id: 'first-gen-college', name: 'First-Gen College Grads', icon: '🎓' },
     { id: 'working-parents', name: 'Working Parents', icon: '👨‍👩‍👧‍👦' },
-    { id: 'military-veterans', name: 'Military Veterans', icon: '🇺🇸' },
+    { id: 'military-veterans', name: 'Military Veterans', icon: '🎖️' },
     { id: 'disabled-professionals', name: 'Disabled Professionals', icon: '♿' },
     { id: 'immigrant-professionals', name: 'Immigrant Professionals', icon: '🌍' },
     { id: 'allies-advocates', name: 'Allies & Advocates', icon: '🤝' }

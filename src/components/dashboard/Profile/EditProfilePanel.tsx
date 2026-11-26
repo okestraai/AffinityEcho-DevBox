@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   X,
   Save,
@@ -11,9 +11,21 @@ import {
   Target,
   BookOpen,
   Plus,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
-import { GetEditableProfile, UpdateEditableProfile } from '../../../../api/profileApis';
+import {
+  GetCompanies,
+  GetEditableProfile,
+  UpdateEditableProfile,
+} from '../../../../api/profileApis';
+import { countryOptions } from '../../../constants/countries';
+import {
+  ETHNICITY_OPTIONS,
+  GRAD_YEARS,
+  LIFE_STAGES,
+  MAX_ETHNICITIES,
+} from '../../../constants/onboardingOptions';
 import { GetFilterOptions, type FilterOptions } from '../../../../api/mentorshipApis';
 import { showToast } from '../../../Helper/ShowToast';
 import { MSG } from '../../../constants/messages';
@@ -29,25 +41,6 @@ const AVATAR_EMOJIS = [
   '💡', '🔦', '🕯️', '🧭', '🗺️', '⏰', '⏱️', '⌚', '🔮',
 ];
 
-const CAREER_LEVELS = [
-  'Entry Level (0-2 years)',
-  'Mid-level (3-7 years)',
-  'Senior (8-12 years)',
-  'Leadership (13+ years)',
-  'Executive/C-Suite',
-];
-
-const RACES = [
-  'Black/African American',
-  'Hispanic/Latino',
-  'Asian/Pacific Islander',
-  'Native American',
-  'Middle Eastern',
-  'Mixed/Multiracial',
-  'White',
-  'Prefer not to say',
-];
-
 const GENDERS = ['Woman', 'Man', 'Non-binary', 'Prefer not to say'];
 
 const AFFINITY_TAGS = [
@@ -58,20 +51,10 @@ const AFFINITY_TAGS = [
   { id: 'women-leadership', label: 'Women in Leadership', icon: '👑' },
   { id: 'first-gen-college', label: 'First-Gen College Grads', icon: '🎓' },
   { id: 'working-parents', label: 'Working Parents', icon: '👨‍👩‍👧‍👦' },
-  { id: 'military-veterans', label: 'Military Veterans', icon: '🇺🇸' },
+  { id: 'military-veterans', label: 'Military Veterans', icon: '🎖️' },
   { id: 'disabled-professionals', label: 'Disabled Professionals', icon: '♿' },
   { id: 'immigrant-professionals', label: 'Immigrant Professionals', icon: '🌍' },
   { id: 'allies-advocates', label: 'Allies & Advocates', icon: '🤝' },
-];
-
-const STATIC_COMPANIES = [
-  'Google', 'Microsoft', 'Apple', 'Amazon', 'Meta',
-  'Netflix', 'Tesla', 'Goldman Sachs', 'JPMorgan Chase',
-  'Bank of America', 'Wells Fargo', 'McKinsey & Company',
-  'Boston Consulting Group', 'Deloitte', 'PwC',
-  'Johnson & Johnson', 'Pfizer', 'Merck', 'Abbott',
-  'Bristol Myers Squibb',
-  'Memorial University of Newfoundland', 'Staples Canada',
 ];
 
 // ── Sub-components ──────────────────────────────────────────────────────────
@@ -211,7 +194,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
 
   // Section expansion
   const [sections, setSections] = useState({
-    basic: true, company: false, identity: false, mentor: false, mentee: false,
+    basic: true, school: false, company: false, identity: false, mentor: false, mentee: false,
   });
   const toggle = (key: keyof typeof sections) => setSections((p) => ({ ...p, [key]: !p[key] }));
 
@@ -227,11 +210,18 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
   const [skills, setSkills] = useState<string[]>([]);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
+  const [countryCode, setCountryCode] = useState('');
+  const countries = useMemo(() => countryOptions(), []);
   const [companyName, setCompanyName] = useState('');
+  const [companies, setCompanies] = useState<string[]>([]);
+  const [isStudent, setIsStudent] = useState(false);
+  const [schoolName, setSchoolName] = useState('');
+  const [gradYear, setGradYear] = useState('');
+  const [showSchool, setShowSchool] = useState(false);
   const [showCompanyList, setShowCompanyList] = useState(false);
 
   const [careerLevel, setCareerLevel] = useState('');
-  const [race, setRace] = useState('');
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [gender, setGender] = useState('');
   const [affinityTags, setAffinityTags] = useState<string[]>([]);
 
@@ -277,13 +267,23 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
       setUsername(b.username || ''); setAvatar(b.avatar || '');
       setBio(b.bio || ''); setJobTitle(b.job_title || '');
       setLocation(b.location || '');
+      setCountryCode(b.country_code || '');
       setYearsExp(b.years_experience ? String(b.years_experience) : '');
       setSkills(b.skills || []);
 
       setCompanyName(data.company?.company_name || '');
+      const sc = data.school || {};
+      setIsStudent(!!sc.is_student);
+      setSchoolName(sc.school_name || '');
+      setGradYear(sc.expected_grad_year ? String(sc.expected_grad_year) : '');
+      setShowSchool(!!sc.show_school);
+      GetCompanies()
+        .then((list) => setCompanies(Array.isArray(list) ? list.map((c) => c.name) : []))
+        .catch(() => setCompanies([]));
 
       const id = data.identity || {};
-      setCareerLevel(id.career_level || ''); setRace(id.race || ''); setGender(id.gender || '');
+      setCareerLevel(id.career_level || ''); setGender(id.gender || '');
+      setEthnicities(Array.isArray(id.ethnicities) ? id.ethnicities : []);
       setAffinityTags(Array.isArray(id.affinity_tags) ? id.affinity_tags : []);
 
       if (data.mentor) {
@@ -338,16 +338,27 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
     if (bio !== (origBasic?.bio || '')) bd.bio = bio;
     if (jobTitle !== (origBasic?.job_title || '')) bd.job_title = jobTitle;
     if (location !== (origBasic?.location || '')) bd.location = location;
+    if (countryCode && countryCode !== (origBasic?.country_code || '')) bd.country_code = countryCode;
     const yn = yearsExp ? parseInt(yearsExp, 10) : 0;
     if (yn !== (origBasic?.years_experience || 0)) bd.years_experience = yn;
     if (JSON.stringify(skills) !== JSON.stringify(origBasic?.skills || [])) bd.skills = skills;
     if (Object.keys(bd).length) payload.basic = bd;
 
-    if (companyName !== (origCompany?.company_name || '')) payload.company = { company_name: companyName };
+    if (companyName.trim() !== (origCompany?.company_name || '')) payload.company = { company_name: companyName.trim() };
+
+    const origSchool = orig.school as Record<string, unknown> | undefined;
+    const sd: Record<string, unknown> = {};
+    if (isStudent !== !!origSchool?.is_student) sd.is_student = isStudent;
+    if (isStudent && schoolName.trim() !== (origSchool?.school_name || '')) sd.school_name = schoolName.trim();
+    const gy = gradYear ? parseInt(gradYear, 10) : null;
+    if (isStudent && gy !== (origSchool?.expected_grad_year ?? null)) sd.expected_grad_year = gy;
+    if (showSchool !== !!origSchool?.show_school) sd.show_school = showSchool;
+    if (Object.keys(sd).length) payload.school = sd;
 
     const id: Record<string, unknown> = {};
     if (careerLevel !== (origIdentity?.career_level || '')) id.career_level = careerLevel;
-    if (race !== (origIdentity?.race || '')) id.race = race;
+    const oe = Array.isArray(origIdentity?.ethnicities) ? origIdentity.ethnicities : [];
+    if (JSON.stringify(ethnicities) !== JSON.stringify(oe)) id.ethnicities = ethnicities;
     if (gender !== (origIdentity?.gender || '')) id.gender = gender;
     const ot = Array.isArray(origIdentity?.affinity_tags) ? origIdentity.affinity_tags : [];
     if (JSON.stringify(affinityTags) !== JSON.stringify(ot)) id.affinity_tags = JSON.stringify(affinityTags);
@@ -393,9 +404,8 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
       const updated = res?.data ?? res;
       originalRef.current = JSON.parse(JSON.stringify(updated));
 
-      // If company changed, log out so fresh state loads on next login
-      const payloadCompany = payload.company as Record<string, unknown> | undefined;
-      if (payloadCompany?.company_name) {
+      // A new or removed company changes the member's spaces, so they sign in again.
+      if (payload.company !== undefined) {
         showToast(MSG.USER.COMPANY_CHANGED, 'success');
         setTimeout(() => logout(), 1000);
         return;
@@ -424,7 +434,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
     const payload = buildPayload();
     if (!Object.keys(payload).length) { showToast(MSG.USER.NO_CHANGES, 'info'); return; }
 
-    if ((payload.company as Record<string, unknown> | undefined)?.company_name) {
+    if (payload.company !== undefined) {
       pendingPayloadRef.current = payload;
       setShowCompanyConfirm(true);
       return;
@@ -442,8 +452,21 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
   };
 
   const filteredCompanies = companyName
-    ? STATIC_COMPANIES.filter((c) => c.toLowerCase().includes(companyName.toLowerCase()))
-    : STATIC_COMPANIES;
+    ? companies.filter((c) => c.toLowerCase().includes(companyName.toLowerCase()))
+    : companies;
+
+  // Older answers stay selectable alongside the current choices.
+  const ethnicityChoices = [
+    ...ETHNICITY_OPTIONS,
+    ...ethnicities.filter((e) => !ETHNICITY_OPTIONS.includes(e)),
+  ];
+  const toggleEthnicity = (value: string) => {
+    if (ethnicities.includes(value)) setEthnicities(ethnicities.filter((e) => e !== value));
+    else if (value === 'Prefer not to say') setEthnicities([value]);
+    else if (ethnicities.length < MAX_ETHNICITIES)
+      setEthnicities([...ethnicities.filter((e) => e !== 'Prefer not to say'), value]);
+  };
+  const schoolMissing = isStudent && schoolName.trim().length < 2;
 
   if (loading) {
     return (
@@ -472,7 +495,7 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
             <button onClick={onClose} aria-label="Close edit profile panel" className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
             <h2 className="text-lg font-bold text-gray-900">Edit My Profile</h2>
           </div>
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm font-medium hover:bg-[#6d28d9] disabled:opacity-50 transition-colors">
+          <button onClick={handleSave} disabled={saving || schoolMissing} className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm font-medium hover:bg-[#6d28d9] disabled:opacity-50 transition-colors">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -531,7 +554,17 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
 
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Location</label>
-                <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. New York, NY" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. your city" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div>
+                <label htmlFor="edit-country" className="text-xs font-semibold text-gray-600 mb-1 block">Country</label>
+                <select id="edit-country" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">Choose your country</option>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -546,13 +579,49 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
             </div>
           )}
 
+          {/* SCHOOL */}
+          <SectionHeader title="School" icon={GraduationCap} expanded={sections.school} onToggle={() => toggle('school')} />
+          {sections.school && (
+            <div className="space-y-4 p-4 bg-white border border-gray-100 rounded-lg">
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={isStudent} onChange={(e) => setIsStudent(e.target.checked)} className="w-4 h-4 rounded text-blue-600" />
+                I'm currently a student (any level)
+              </label>
+              {isStudent && (
+                <>
+                  <div>
+                    <label htmlFor="edit-school" className="text-xs font-semibold text-gray-600 mb-1 block">School, college or university</label>
+                    <input id="edit-school" type="text" maxLength={120} value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="e.g. University of Lagos" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                    {schoolMissing && <p className="text-xs text-red-600 mt-1">Add your school to save.</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="edit-grad-year" className="text-xs font-semibold text-gray-600 mb-1 block">Expected to finish</label>
+                    <select id="edit-grad-year" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                      <option value="">Not sure</option>
+                      {GRAD_YEARS.map((y) => (<option key={y} value={String(y)}>{y}</option>))}
+                    </select>
+                  </div>
+                </>
+              )}
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={showSchool} onChange={(e) => setShowSchool(e.target.checked)} className="w-4 h-4 rounded text-blue-600" />
+                Show my school on my profile
+              </label>
+            </div>
+          )}
+
           {/* COMPANY */}
           <SectionHeader title="Company" icon={Building} expanded={sections.company} onToggle={() => toggle('company')} />
           {sections.company && (
             <div className="space-y-4 p-4 bg-white border border-gray-100 rounded-lg">
               <div className="relative">
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Company Name</label>
-                <input type="text" value={companyName} onChange={(e) => { setCompanyName(e.target.value); setShowCompanyList(true); }} onFocus={() => setShowCompanyList(true)} placeholder="Search or enter company..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input type="text" maxLength={120} value={companyName} onChange={(e) => { setCompanyName(e.target.value); setShowCompanyList(true); }} onFocus={() => setShowCompanyList(true)} placeholder="Search or type your company (optional)" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                {companyName && (
+                  <button type="button" onClick={() => { setCompanyName(''); setShowCompanyList(false); }} className="mt-2 text-xs text-gray-600 hover:text-gray-900 underline">
+                    Remove my company
+                  </button>
+                )}
                 {showCompanyList && filteredCompanies.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-20">
                     {filteredCompanies.map((c) => (
@@ -571,12 +640,22 @@ export function EditProfilePanel({ onClose }: EditProfilePanelProps) {
           {sections.identity && (
             <div className="space-y-4 p-4 bg-white border border-gray-100 rounded-lg">
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">Career Level</label>
-                <SelectField options={CAREER_LEVELS} selected={careerLevel} onSelect={setCareerLevel} placeholder="Select career level..." />
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Life / career stage</label>
+                <SelectField options={LIFE_STAGES} selected={careerLevel} onSelect={setCareerLevel} placeholder="Select your stage..." />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">Race / Ethnicity</label>
-                <SelectField options={RACES} selected={race} onSelect={setRace} placeholder="Select race/ethnicity..." />
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Ethnicity or heritage (up to {MAX_ETHNICITIES})</label>
+                <div className="flex flex-wrap gap-2">
+                  {ethnicityChoices.map((option) => {
+                    const sel = ethnicities.includes(option);
+                    return (
+                      <button type="button" key={option} aria-pressed={sel} onClick={() => toggleEthnicity(option)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${sel ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Gender</label>

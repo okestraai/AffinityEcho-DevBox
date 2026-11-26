@@ -210,7 +210,7 @@ export function ExportDataPage() {
   };
 
   const buildPdfTemplate = (data: unknown): string => {
-    const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const exportDate = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     const categoryMap = new Map(dataCategories.map(c => [c.id, c.name]));
     const selectedNames = selectedData.map(id => categoryMap.get(id)).filter(Boolean).join(', ');
 

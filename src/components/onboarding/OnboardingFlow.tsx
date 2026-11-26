@@ -4,7 +4,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Users,
-  Briefcase,
+  GraduationCap,
   Heart,
   Loader2,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { DemographicsStep } from "./DemographicsStep";
 import { CompanyStep } from "./CompanyStep";
 import { AffinityStep } from "./AffinityStep";
 import { CreateOnboardingProfile } from "../../../api/authApis"; // REMOVED CreateFoundationForums
-import { formatCompanyName } from "../../utils/CompanyFormatter";
+import { guessCountry } from "../../constants/countries";
 import { showToast } from "../../Helper/ShowToast";
 import { MSG } from "../../constants/messages";
 
@@ -22,12 +22,16 @@ export function OnboardingFlow() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    race: "",
+    country: guessCountry(),
+    ethnicities: [] as string[],
     gender: "",
     careerLevel: "",
+    isWorking: false,
     company: "",
-    companyType: "", // Added companyType field
-    isCustomCompany: false,
+    isStudent: false,
+    school: "",
+    expectedGradYear: "",
+    showSchool: false,
     affinityTags: [] as string[],
     ageConfirmed: false,
   });
@@ -42,9 +46,9 @@ export function OnboardingFlow() {
       component: DemographicsStep,
     },
     {
-      title: "Your workplace",
-      subtitle: "Connect with colleagues safely",
-      icon: Briefcase,
+      title: "School & work",
+      subtitle: "Both optional",
+      icon: GraduationCap,
       component: CompanyStep,
     },
     {
@@ -69,41 +73,30 @@ export function OnboardingFlow() {
   const handleCompleteOnboarding = async () => {
     setIsSubmitting(true);
     try {
-      let finalCompanyName = formData.company;
-      let finalCompanyType = formData.companyType || "static"; // Default to static if not set
-
-      // Format company name if it's a custom company
-      if (formData.isCustomCompany && formData.company?.trim()) {
-        finalCompanyName = formatCompanyName(formData.company.trim());
-        finalCompanyType = "other"; // Force to 'other' for custom companies
-        console.log("Custom company selected:", {
-          original: formData.company,
-          formatted: finalCompanyName,
-          companyType: finalCompanyType,
-        });
-      } else {
-        console.log("Static company selected:", {
-          company: finalCompanyName,
-          companyType: finalCompanyType,
-        });
-      }
-
-   
+      const company = formData.isWorking ? formData.company.trim() : "";
       const payload = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        ...(formData.race && { race: formData.race }),
+        country: formData.country,
+        ...(formData.ethnicities.length > 0 && {
+          ethnicities: formData.ethnicities,
+        }),
         ...(formData.gender && { gender: formData.gender }),
         ...(formData.careerLevel && { careerLevel: formData.careerLevel }),
-        ...(finalCompanyName && { company: finalCompanyName }),
-        ...(finalCompanyType && { companyType: finalCompanyType }),
+        ...(company && { company }),
+        isStudent: formData.isStudent,
+        ...(formData.isStudent && {
+          school: formData.school.trim(),
+          showSchool: formData.showSchool,
+          ...(formData.expectedGradYear && {
+            expectedGradYear: Number(formData.expectedGradYear),
+          }),
+        }),
         ...(formData.affinityTags.length > 0 && {
           affinityTags: formData.affinityTags,
         }),
         ageConfirmed: formData.ageConfirmed,
       };
-
-      console.log("Submitting onboarding payload:", payload);
 
       await CreateOnboardingProfile(payload);
       await completeOnboarding(); // This refreshes user + redirects + shows toast
@@ -135,16 +128,20 @@ export function OnboardingFlow() {
   const getNextButtonDisabled = () => {
     if (isSubmitting) return true;
 
-    // For demographics step, require first name, last name, and age confirmation
-    if (currentStep === 0 && (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.ageConfirmed)) return true;
-
-    // For company step, disable if custom company but no company name
+    // Step 1 needs a name, a country and the age confirmation.
     if (
-      currentStep === 1 &&
-      formData.isCustomCompany &&
-      !formData.company?.trim()
-    ) {
+      currentStep === 0 &&
+      (!formData.firstName?.trim() ||
+        !formData.lastName?.trim() ||
+        !formData.country ||
+        !formData.ageConfirmed)
+    )
       return true;
+
+    // Step 2: a working member names their company, and a student names their school.
+    if (currentStep === 1) {
+      if (formData.isWorking && formData.company.trim().length < 2) return true;
+      if (formData.isStudent && formData.school.trim().length < 2) return true;
     }
 
     return false;

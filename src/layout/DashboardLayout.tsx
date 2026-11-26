@@ -9,6 +9,7 @@ import { GetMessageUnreadCount } from '../../api/messaging';
 import { webSocketService } from '../services/websocket.service';
 import { TestLLMButton } from '../components/dashboard/TestLLMButton';
 import { CoachDock } from '../components/dashboard/Coach/CoachDock';
+import { CountryPrompt } from '../components/dashboard/Profile/CountryPrompt';
 
 export function DashboardLayout() {
   const { user } = useAuth();
@@ -113,6 +114,7 @@ export function DashboardLayout() {
 
       <main className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-8 pb-24 md:pb-8">
+          <CountryPrompt />
           <Outlet />
         </div>
       </main>

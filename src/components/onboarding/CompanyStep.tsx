@@ -1,215 +1,222 @@
 // src/components/onboarding/CompanyStep.tsx
-import React, { useState } from "react";
-import { Search, Building } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Building, GraduationCap, Briefcase } from "lucide-react";
+import { GetCompanies, type CompanyOption } from "../../../api/profileApis";
+import { GRAD_YEARS } from "../../constants/onboardingOptions";
 
-// Logging utility for consistent formatting
-const log = (component: string, message: string, data?: unknown) => {
-  const timestamp = new Date().toISOString();
-  if (data !== undefined) {
-    console.log(`[${timestamp}] [CompanyStep.${component}] ${message}:`, data);
-  } else {
-    console.log(`[${timestamp}] [CompanyStep.${component}] ${message}`);
-  }
-};
-
-interface CompanyData {
+export interface SchoolWorkData {
+  isWorking: boolean;
   company: string;
-  companyType: string;
-  isCustomCompany: boolean;
+  isStudent: boolean;
+  school: string;
+  expectedGradYear: string;
+  showSchool: boolean;
 }
 
 interface Props {
-  data: CompanyData;
-  updateData: (updates: Partial<CompanyData>) => void;
+  data: SchoolWorkData;
+  updateData: (updates: Partial<SchoolWorkData>) => void;
   onNext: () => void;
 }
 
-export function CompanyStep({ data, updateData, onNext }: Props) {
+// "School & work": either, both or neither. The server decides whether a company is on the list.
+export function CompanyStep({ data, updateData }: Props) {
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showOther, setShowOther] = useState(false);
+  const [typing, setTyping] = useState(false);
 
-  // List of static companies
-  const staticCompanies = [
-    "Google",
-    "Microsoft",
-    "Apple",
-    "Amazon",
-    "Meta",
-    "Netflix",
-    "Tesla",
-    "Goldman Sachs",
-    "JPMorgan Chase",
-    "Bank of America",
-    "Wells Fargo",
-    "McKinsey & Company",
-    "Boston Consulting Group",
-    "Deloitte",
-    "PwC",
-    "Johnson & Johnson",
-    "Pfizer",
-    "Merck",
-    "Abbott",
-    "Bristol Myers Squibb",
-    "Memorial University of Newfoundland",
-    "Staples Canada",
-  ];
+  useEffect(() => {
+    if (!data.isWorking || companies.length) return;
+    GetCompanies()
+      .then((list) => setCompanies(Array.isArray(list) ? list : []))
+      .catch(() => setTyping(true));
+  }, [data.isWorking, companies.length]);
 
-  const filteredCompanies = staticCompanies.filter((company) =>
-    company.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = useMemo(
+    () =>
+      companies.filter((c) =>
+        c.name.toLowerCase().includes(searchTerm.trim().toLowerCase()),
+      ),
+    [companies, searchTerm],
   );
 
-  const handleCompanySelect = (company: string) => {
-    log('handleCompanySelect', 'Static company selected', { 
-      previousCompany: data.company, 
-      newCompany: company 
-    });
-    
-    updateData({ 
-      company,
-      companyType: 'static', // Mark as static company
-      isCustomCompany: false
-    });
-    setShowOther(false);
-    
-    // Auto-proceed for static companies
-    onNext();
-  };
-
-  const handleOther = () => {
-    log("handleOther", "Other option selected");
-    setShowOther(true);
-    updateData({
-      company: "",
-      companyType: 'other', // Mark as other/custom company
-      isCustomCompany: true,
-    });
-  };
-
-  const handleCustomCompanyChange = (company: string) => {
-    log("handleCustomCompanyChange", "Custom company input changed", {
-      previousCompany: data.company,
-      newCompany: company,
-    });
-    updateData({
-      company,
-      companyType: 'other', // Ensure it's marked as 'other'
-      isCustomCompany: true,
-    });
-  };
-
-  const handleCustomCompanySubmit = () => {
-    if (!data.company?.trim()) {
-      return;
-    }
-
-    log("handleCustomCompanySubmit", "Submitting custom company", {
-      company: data.company,
-      companyType: data.companyType,
-      isCustomCompany: data.isCustomCompany,
-    });
-
-    // Just call onNext - parent will handle forum creation
-    onNext();
-  };
+  const toggleClass = (on: boolean) =>
+    `flex items-center gap-3 w-full p-4 rounded-2xl border text-left transition-colors min-h-[56px] ${
+      on
+        ? "bg-purple-50 border-purple-300 text-purple-900"
+        : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+    }`;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Current Company
-        </label>
+    <div className="space-y-8">
+      <p className="text-sm text-gray-600">
+        Both are optional. Choose what fits you, or skip this step.
+      </p>
 
-        {!showOther ? (
-          <>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search for your company"
-                value={searchTerm}
-                onChange={(e) => {
-                  const newSearchTerm = e.target.value;
-                  log("handleSearchChange", "Search term updated", {
-                    previousTerm: searchTerm,
-                    newTerm: newSearchTerm,
-                  });
-                  setSearchTerm(newSearchTerm);
-                }}
-                className="w-full pl-10 pr-4 py-3 sm:py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base min-h-[44px]"
-              />
-            </div>
+      {/* Work */}
+      <section className="space-y-4">
+        <button
+          type="button"
+          aria-pressed={data.isWorking}
+          onClick={() =>
+            updateData({ isWorking: !data.isWorking, company: data.isWorking ? "" : data.company })
+          }
+          className={toggleClass(data.isWorking)}
+        >
+          <Briefcase className="w-5 h-5" />
+          <span className="font-semibold">I'm working</span>
+        </button>
 
-            <div className="max-h-64 overflow-y-auto space-y-1">
-              {filteredCompanies.map((company) => (
-                <button
-                  key={company}
-                  onClick={() => handleCompanySelect(company)}
-                  className={`w-full text-left px-3 py-3 sm:py-2 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px] ${
-                    data.company === company
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-gray-400" />
-                    {company}
-                  </div>
-                </button>
-              ))}
-
-              <button
-                onClick={handleOther}
-                className="w-full text-left px-3 py-3 sm:py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors border border-dashed border-gray-300 min-h-[44px]"
-              >
-                <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-gray-400" />
-                  Other (not listed) 
+        {data.isWorking && (
+          <div className="pl-1 space-y-3">
+            {!typing ? (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    aria-label="Search for your company"
+                    placeholder="Search for your company"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-base min-h-[44px]"
+                  />
                 </div>
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <input
-                type="text"
-                placeholder="Enter your company name (e.g., Indomie)"
-                value={data.company}
-                onChange={(e) => handleCustomCompanyChange(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && data.company?.trim()) {
-                    handleCustomCompanySubmit();
-                  }
-                }}
-                className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base min-h-[44px]"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                We'll create dedicated forums for "Others({data.company})"
-              </p>
-            </div>
-
-            <button
-              onClick={() => {
-                log("handleBackToList", "Returning to company list");
-                setShowOther(false);
-              }}
-              className="text-sm text-blue-600 hover:text-blue-700 transition-colors min-h-[44px] inline-flex items-center"
-            >
-              ← Back to company list
-            </button>
+                <div className="max-h-64 overflow-y-auto space-y-1">
+                  {filtered.map((c) => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => updateData({ company: c.name })}
+                      className={`w-full text-left px-3 py-3 rounded-lg transition-colors min-h-[44px] ${
+                        data.company === c.name
+                          ? "bg-purple-50 text-purple-800 border border-purple-200"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Building className="w-4 h-4 text-gray-400" />
+                        {c.name}
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTyping(true);
+                      updateData({ company: searchTerm.trim() });
+                    }}
+                    className="w-full text-left px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50 border border-dashed border-gray-300 min-h-[44px]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-gray-400" />
+                      Not listed? Type your company
+                    </span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  aria-label="Company name"
+                  placeholder="Your company's name"
+                  maxLength={120}
+                  value={data.company}
+                  onChange={(e) => updateData({ company: e.target.value })}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-base min-h-[44px]"
+                />
+                {companies.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setTyping(false)}
+                    className="text-sm text-purple-700 hover:text-purple-800 min-h-[44px]"
+                  >
+                    ← Back to the list
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
+              Your company stays private unless you choose to show it.
+            </p>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="pt-4 border-t border-gray-100">
-        <div className="bg-green-50 p-3 rounded-lg">
-          <p className="text-xs text-green-700 leading-relaxed">
-            {showOther
-              ? "We'll create a new 'Others({company name})' forum foundation where you can connect with colleagues from your company."
-              : "You'll automatically join your company's private forum and can participate in discussions with colleagues."}
-          </p>
-        </div>
-      </div>
+      {/* School */}
+      <section className="space-y-4">
+        <button
+          type="button"
+          aria-pressed={data.isStudent}
+          onClick={() => updateData({ isStudent: !data.isStudent })}
+          className={toggleClass(data.isStudent)}
+        >
+          <GraduationCap className="w-5 h-5" />
+          <span className="font-semibold">I'm a student</span>
+        </button>
+
+        {data.isStudent && (
+          <div className="pl-1 space-y-4">
+            <div>
+              <label
+                htmlFor="onboarding-school"
+                className="block text-sm font-semibold text-gray-800 mb-2"
+              >
+                School, college or university <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="onboarding-school"
+                type="text"
+                maxLength={120}
+                placeholder="e.g. University of Lagos"
+                value={data.school}
+                onChange={(e) => updateData({ school: e.target.value })}
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-base min-h-[44px]"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Any level counts: diploma, degree, master's, PhD or other.
+              </p>
+            </div>
+            <div>
+              <label
+                htmlFor="onboarding-grad-year"
+                className="block text-sm font-semibold text-gray-800 mb-2"
+              >
+                Expected to finish{" "}
+                <span className="font-normal text-gray-500">(optional)</span>
+              </label>
+              <select
+                id="onboarding-grad-year"
+                value={data.expectedGradYear}
+                onChange={(e) => updateData({ expectedGradYear: e.target.value })}
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white text-base min-h-[44px]"
+              >
+                <option value="">Not sure</option>
+                {GRAD_YEARS.map((y) => (
+                  <option key={y} value={String(y)}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer min-h-[44px]">
+              <input
+                type="checkbox"
+                checked={data.showSchool}
+                onChange={(e) => updateData({ showSchool: e.target.checked })}
+                className="w-5 h-5 rounded text-purple-600"
+              />
+              <span className="text-sm text-gray-700">
+                Show my school on my profile
+              </span>
+            </label>
+            <p className="text-xs text-gray-500">
+              Your school is private unless you choose to show it.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
