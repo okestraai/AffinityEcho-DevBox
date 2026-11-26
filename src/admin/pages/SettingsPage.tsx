@@ -240,6 +240,8 @@ export function SettingsPage() {
   const [storage, setStorage] = useState<StorageSettings>(DEFAULTS.storage);
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({ bucketReady: false, bucketName: null });
   const [saveError, setSaveError] = useState<string | null>(null);
+  // What the server last had for each section, so only changed sections are sent.
+  const [savedAs, setSavedAs] = useState<Record<string, string>>({});
   const [newIp, setNewIp] = useState('');
 
   useEffect(() => {
@@ -252,6 +254,10 @@ export function SettingsPage() {
         if (data?.events)        setEvents(e => ({ ...e, ...data.events }));
         if (data?.storage)       setStorage(s => ({ ...s, ...data.storage }));
         if (data?.storage_status) setStorageStatus(data.storage_status);
+        const asSaved: Record<string, string> = {};
+        for (const [key, base] of Object.entries(DEFAULTS))
+          asSaved[key] = JSON.stringify({ ...base, ...(data?.[key] ?? {}) });
+        setSavedAs(asSaved);
       })
       .catch(() => {/* keep defaults on error */});
   }, []);
@@ -260,15 +266,19 @@ export function SettingsPage() {
     setIsSaving(true);
     setSaveError(null);
     try {
+      const sections = { general, security, notifications, moderation, events, storage };
+      const changed = (Object.entries(sections) as [keyof typeof sections, object][]).filter(
+        ([key, value]) => JSON.stringify(value) !== savedAs[key],
+      );
       // Each section saves on its own, so one refused value doesn't hide the others' result.
-      const results = await Promise.allSettled([
-        UpdateAdminSettings('general',       general       as unknown as Record<string, unknown>),
-        UpdateAdminSettings('security',      security      as unknown as Record<string, unknown>),
-        UpdateAdminSettings('notifications', notifications as unknown as Record<string, unknown>),
-        UpdateAdminSettings('moderation',    moderation    as unknown as Record<string, unknown>),
-        UpdateAdminSettings('events',        events        as unknown as Record<string, unknown>),
-        UpdateAdminSettings('storage',       storage       as unknown as Record<string, unknown>),
-      ]);
+      const results = await Promise.allSettled(
+        changed.map(([key, value]) => UpdateAdminSettings(key, value as Record<string, unknown>)),
+      );
+      const next = { ...savedAs };
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') next[changed[i][0]] = JSON.stringify(changed[i][1]);
+      });
+      setSavedAs(next);
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failed) {
         const m = (failed.reason as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;

@@ -17,7 +17,10 @@ const saved = (over: Record<string, unknown> = {}) =>
     ...over,
   });
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(UpdateAdminSettings).mockReset().mockResolvedValue({});
+});
 
 describe('admin event settings', () => {
   it('shows the saved event values and saves changes', async () => {
@@ -57,7 +60,11 @@ describe('admin event settings', () => {
       return {};
     });
     render(<SettingsPage />);
-    await userEvent.setup().click(screen.getByRole('button', { name: /Save Changes/ }));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Events/ }));
+    await screen.findByDisplayValue('7');
+    await user.click(screen.getByTitle('Increase Events per host per day'));
+    await user.click(screen.getByRole('button', { name: /Save Changes/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('from 1 to 50');
     expect(screen.queryByText('Settings saved successfully!')).not.toBeInTheDocument();
   });
@@ -78,5 +85,18 @@ describe('admin event settings', () => {
     await user.click(bucket);
     await user.click(screen.getByRole('button', { name: /Save Changes/ }));
     await waitFor(() => expect(UpdateAdminSettings).toHaveBeenCalledWith('storage', { cover_storage: 'bucket' }));
+  });
+
+  it('saves only the sections that changed, so a stored bucket choice does not block other saves', async () => {
+    saved({ storage: { cover_storage: 'bucket' }, storage_status: { bucketReady: false, bucketName: null } });
+    render(<SettingsPage />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Events/ }));
+    await screen.findByDisplayValue('7');
+    await user.click(screen.getByTitle('Increase Events per host per day'));
+    await user.click(screen.getByRole('button', { name: /Save Changes/ }));
+    await waitFor(() => expect(UpdateAdminSettings).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(UpdateAdminSettings).mock.calls[0][0]).toBe('events');
+    expect(await screen.findByText('Settings saved successfully!')).toBeInTheDocument();
   });
 });
