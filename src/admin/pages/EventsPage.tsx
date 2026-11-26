@@ -4,6 +4,7 @@ import { CalendarDays, Flag } from "lucide-react";
 import { DismissEventReports, GetAdminEvents, RemoveAdminEvent, StopEventHost, type AdminEvent } from "../../../api/adminApis";
 import { showToast } from "../../Helper/ShowToast";
 import { getApiError } from "../utils/apiError";
+import { EventFunnelPanel } from "../components/EventFunnelPanel";
 
 type Filter = "all" | "reported" | "removed";
 
@@ -51,6 +52,7 @@ export function EventsPage() {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-5">
       <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2"><CalendarDays className="w-6 h-6" /> Events</h1>
+      <EventFunnelPanel />
       <div role="tablist" className="flex gap-2">
         {(["reported", "all", "removed"] as Filter[]).map((f) => (
           <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}

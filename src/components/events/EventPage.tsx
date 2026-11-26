@@ -20,11 +20,12 @@ import {
   GetPublicEvent,
   RegisterForEvent,
   RevealEventDetails,
+  eventCoverUrl,
 } from "../../../api/eventApis";
-import { eventWhen } from "../../utils/eventTime";
+import { eventWhen, phaseOf } from "../../utils/eventTime";
 import { CodeSignIn } from "../auth/CodeSignIn";
 import { showToast } from "../../Helper/ShowToast";
-import { Card, DateTile, InfoRow, ModeBadge, ShareEmailButton, StatusBadge, inputClass, primaryButton } from "./parts";
+import { Card, DateTile, FinishSetupLink, InfoRow, ModeBadge, PhaseBadge, ShareEmailButton, inputClass, primaryButton } from "./parts";
 
 const errorText = (error: unknown, fallback: string) => {
   const e = error as { response?: { data?: { message?: string | string[] } } };
@@ -37,7 +38,7 @@ const REGISTERED_EVENT = "affinity:event-registered";
 
 export function EventPage() {
   const { slug = "" } = useParams();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, hasCompletedOnboarding } = useAuth();
   const [event, setEvent] = useState<EventSummary | EventForMember | null>(null);
   const [missing, setMissing] = useState(false);
   const [attendance, setAttendance] = useState<Attendance>("in_person");
@@ -104,7 +105,8 @@ export function EventPage() {
     }
   };
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
-  const ended = new Date(event.endsAt).getTime() < Date.now();
+  const phase = phaseOf(event);
+  const cover = eventCoverUrl(event.slug, event.coverVersion);
   const inPersonFull = event.placesLeft?.inPerson === 0;
   const onlineFull = event.placesLeft?.online === 0;
   const choices: Attendance[] =
@@ -142,14 +144,24 @@ export function EventPage() {
 
       {/* Hero */}
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 text-white shadow-xl">
-        <div className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-purple-500/30 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-10 w-96 h-96 rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="relative p-6 sm:p-8 md:p-10 flex flex-col sm:flex-row gap-5 sm:gap-7 sm:items-end">
+        {cover ? (
+          <>
+            <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            {/* Keeps the title readable on any picture. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/55 to-slate-900/20" />
+          </>
+        ) : (
+          <>
+            <div className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-purple-500/30 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-32 -left-10 w-96 h-96 rounded-full bg-indigo-500/20 blur-3xl" />
+          </>
+        )}
+        <div className={`relative p-6 sm:p-8 md:p-10 flex flex-col sm:flex-row gap-5 sm:gap-7 sm:items-end ${cover ? "min-h-[260px] sm:min-h-[320px]" : ""}`}>
           <DateTile iso={event.startsAt} size="lg" tone="glass" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <ModeBadge mode={event.mode} tone="glass" />
-              {(event.status !== "published" || ended) && <StatusBadge status={event.status} ended={ended} />}
+              <PhaseBadge phase={phase} />
             </div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">{event.title}</h1>
             <p className="mt-3 text-white/75">
@@ -246,6 +258,15 @@ export function EventPage() {
                       : "Use it on this page to see the join link from any device."}
                   </p>
                 </div>
+                {!hasCompletedOnboarding && (
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200">
+                    <p className="text-sm font-semibold text-slate-900">Finish setting up so you can join the conversation</p>
+                    <p className="mt-1 text-sm text-slate-600">Forums, Nooks and the feed open once your profile is set up. You'll come back here after.</p>
+                    <FinishSetupLink returnTo={`/events/${event.slug}`} className={`${primaryButton} w-full mt-3`}>
+                      Finish setting up
+                    </FinishSetupLink>
+                  </div>
+                )}
                 <Link to="/events" className="block text-center text-sm font-semibold text-purple-700 hover:underline">Manage in My Events</Link>
               </div>
             ) : revealed ? (
@@ -254,7 +275,15 @@ export function EventPage() {
                 <p className="text-sm text-slate-600">The address or join link for your place now shows in the event details.</p>
               </div>
             ) : !event.registrationOpen ? (
-              <p className="text-slate-600">{event.status === "cancelled" ? "This event was cancelled." : "Registration is closed."}</p>
+              <p className="text-slate-600">
+                {phase === "cancelled"
+                  ? "This event was cancelled."
+                  : phase === "ended"
+                    ? "This event has ended."
+                    : phase === "live"
+                      ? "This event is happening now. Registration has closed."
+                      : "Registration is closed."}
+              </p>
             ) : (
               <div className="space-y-5">
                 <div>
@@ -311,7 +340,7 @@ export function EventPage() {
                 ) : (
                   <div className="pt-1 border-t border-slate-100">
                     <p className="text-sm text-slate-600 my-3">We'll email you a code to register. No password needed.</p>
-                    <CodeSignIn askName submitLabel="Email me a code" onSignedIn={() => register(true)} />
+                    <CodeSignIn askName eventSlug={slug} submitLabel="Email me a code" onSignedIn={() => register(true)} />
                   </div>
                 )}
               </div>

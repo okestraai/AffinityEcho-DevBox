@@ -1,3 +1,4 @@
+import type { EventPhase } from "../../api/eventApis";
 // Event times in the viewer's own time zone, with the event's zone when it differs.
 export function eventWhen(startsAt: string, endsAt: string, eventZone: string, viewerZone?: string) {
   const zone = viewerZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -27,3 +28,13 @@ export function eventWhen(startsAt: string, endsAt: string, eventZone: string, v
 }
 
 export const modeLabel = { virtual: "Online", physical: "In person", hybrid: "In person and online" } as const;
+
+// The server sends the phase; older answers fall back to the times.
+export function phaseOf(e: { phase?: EventPhase; status: string; startsAt: string; endsAt: string }, now = Date.now()): EventPhase {
+  if (e.phase) return e.phase;
+  if (e.status === "cancelled") return "cancelled";
+  if (now >= new Date(e.endsAt).getTime()) return "ended";
+  if (now >= new Date(e.startsAt).getTime()) return "live";
+  return "upcoming";
+}
+

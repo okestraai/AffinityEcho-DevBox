@@ -12,6 +12,8 @@ interface Props {
   submitLabel?: string;
   // Sign-in screen: only emails that already have an account get a code.
   existingOnly?: boolean;
+  // The event page this sign-in starts from, so sign-ups from events can be counted.
+  eventSlug?: string;
 }
 
 const errorText = (error: unknown, fallback: string) => {
@@ -21,7 +23,7 @@ const errorText = (error: unknown, fallback: string) => {
 };
 
 // "Email me a code": email (and name), then the 6-digit code. New emails get an account unless existingOnly.
-export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email me a code", existingOnly = false }: Props) {
+export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email me a code", existingOnly = false, eventSlug }: Props) {
   const { signInWithCode } = useAuth();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -40,7 +42,7 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
     setBusy(true);
     setError(null);
     try {
-      const res = await SendSignInCode(email.trim(), existingOnly);
+      const res = await SendSignInCode(email.trim(), existingOnly, eventSlug);
       setNote(
         existingOnly
           ? "If this email has an Affinity Echo account, a code is on its way."
@@ -64,6 +66,7 @@ export function CodeSignIn({ onSignedIn, askName = false, submitLabel = "Email m
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         ...(existingOnly ? { existingOnly: true } : { termsAccepted: terms }),
+        ...(eventSlug && { eventSlug }),
       })) as CodeSignInData;
       await signInWithCode(data);
       onSignedIn(data);

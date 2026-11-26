@@ -8,10 +8,9 @@ import {
   GetMyEvents,
   SetEmailSharing,
 } from "../../../api/eventApis";
-import { eventWhen } from "../../utils/eventTime";
-import { rememberReturnTo } from "../../utils/returnTo";
+import { eventWhen, phaseOf } from "../../utils/eventTime";
 import { showToast } from "../../Helper/ShowToast";
-import { Card, DateTile, ModeBadge, PageHeading, ShareEmailButton, StatusBadge, primaryButton } from "./parts";
+import { Card, DateTile, FinishSetupLink, ModeBadge, PageHeading, PhaseBadge, ShareEmailButton, primaryButton } from "./parts";
 
 type Tab = "active" | "past" | "hosting";
 const TABS: { id: Tab; label: string }[] = [
@@ -61,9 +60,9 @@ export function MyEventsPage() {
           <Sparkles className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-slate-700">
             Your events work now. To join forums, Nooks and the feed,{" "}
-            <Link to="/onboarding" onClick={() => rememberReturnTo("/events")} className="font-semibold text-purple-700 hover:underline">
+            <FinishSetupLink returnTo="/events" className="font-semibold text-purple-700 hover:underline">
               finish setting up your profile
-            </Link>
+            </FinishSetupLink>
             .
           </p>
         </Card>
@@ -122,7 +121,7 @@ function EventRow({ event, hosting, editable, onChange }: { event: EventSummary;
   const [sharing, setSharing] = useState<boolean>(!!event.shareEmail);
   const [busy, setBusy] = useState(false);
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
-  const ended = new Date(event.endsAt).getTime() < Date.now();
+  const phase = phaseOf(event);
   const href = hosting ? `/events/manage/${event.id}` : `/events/${event.slug}`;
 
   const toggleSharing = async (value: boolean) => {
@@ -160,7 +159,7 @@ function EventRow({ event, hosting, editable, onChange }: { event: EventSummary;
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="font-semibold text-slate-900 group-hover:text-purple-700 truncate">{event.title}</h3>
-              {(event.status !== "published" || ended) && <StatusBadge status={event.status} ended={ended} />}
+              <PhaseBadge phase={phase} />
             </div>
             <p className="text-sm text-slate-600 truncate">{when.local}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">

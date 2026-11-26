@@ -4,6 +4,7 @@ import { getAuthInstance, API_URL, unwrap } from "./base";
 
 export type EventMode = "virtual" | "physical" | "hybrid";
 export type Attendance = "in_person" | "online";
+export type EventPhase = "upcoming" | "live" | "ended" | "cancelled";
 
 export interface EventSummary {
   id: string;
@@ -18,6 +19,10 @@ export interface EventSummary {
   venueCity: string | null;
   organiserName: string;
   status: "published" | "cancelled" | "removed";
+  // Worked out by the server: upcoming, live (running now), ended or cancelled.
+  phase?: EventPhase;
+  // Changes when the host replaces the picture; null when there is none.
+  coverVersion?: number | null;
   registrationOpen: boolean;
   placesLeft?: { inPerson: number | null; online: number | null };
   attendance?: Attendance | null;
@@ -165,5 +170,21 @@ export const RevealEventDetails = async (
   code: string,
 ): Promise<{ attendance: Attendance; venueAddress: string | null; mapUrl: string | null; joinUrl: string | null }> => {
   const res = await axios.post(`${API_URL}/events/public/${encodeURIComponent(slug)}/reveal`, { code });
+  return unwrap(res);
+};
+
+// The cover picture's address; the version makes a new picture load instead of a cached one.
+export const eventCoverUrl = (slug: string, version?: number | null): string | null =>
+  version ? `${API_URL}/events/public/${encodeURIComponent(slug)}/cover?v=${version}` : null;
+
+export const UploadEventCover = async (eventId: string, file: Blob): Promise<{ coverVersion: number }> => {
+  const form = new FormData();
+  form.append("cover", file, "cover.jpg");
+  const res = await getAuthInstance().put(`${API_URL}/events/${eventId}/cover`, form);
+  return unwrap(res);
+};
+
+export const RemoveEventCover = async (eventId: string): Promise<{ coverVersion: null }> => {
+  const res = await getAuthInstance().delete(`${API_URL}/events/${eventId}/cover`);
   return unwrap(res);
 };

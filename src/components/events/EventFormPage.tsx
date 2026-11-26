@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, MapPin, MonitorPlay } from "lucide-react";
-import { CreateEvent, EventInput, EventMode, GetHostPage, UpdateEvent } from "../../../api/eventApis";
+import { CreateEvent, EventInput, EventMode, GetHostPage, RemoveEventCover, UpdateEvent, UploadEventCover, eventCoverUrl } from "../../../api/eventApis";
+import { CoverPicker, type CoverChoice } from "./CoverPicker";
 import { showToast } from "../../Helper/ShowToast";
 import { Card, PageHeading, inputClass, primaryButton, secondaryButton } from "./parts";
 
@@ -88,12 +89,15 @@ export function EventFormPage() {
   const [needsPolicy, setNeedsPolicy] = useState(false);
   const [policy, setPolicy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [cover, setCover] = useState<CoverChoice>({ file: null, remove: false });
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
   useEffect(() => {
     if (!eventId) return;
     GetHostPage(eventId)
-      .then(({ event: e }) =>
+      .then(({ event: e }) => {
+        setCoverUrl(eventCoverUrl(e.slug, e.coverVersion));
         setForm({
           title: e.title, description: e.description ?? "", mode: e.mode, timeZone: e.timeZone,
           start: isoToZoned(e.startsAt, e.timeZone), end: isoToZoned(e.endsAt, e.timeZone),
@@ -103,8 +107,8 @@ export function EventFormPage() {
           capacityInPerson: e.capacityInPerson ? String(e.capacityInPerson) : "",
           capacityOnline: e.capacityOnline ? String(e.capacityOnline) : "",
           organiserName: e.organiserName,
-        }),
-      )
+        });
+      })
       .catch(() => showToast("Couldn't load the event.", "error"));
   }, [eventId]);
 
@@ -138,8 +142,16 @@ export function EventFormPage() {
     } as EventInput;
     try {
       const saved = editing ? await UpdateEvent(eventId!, payload) : await CreateEvent(payload);
+      const id = saved.id ?? eventId!;
       showToast(editing ? "Event saved. Guests are told about changes." : "Event created.", "success");
-      navigate(`/events/manage/${saved.id ?? eventId}`);
+      // The picture goes up after the event exists; a failed upload doesn't undo the event.
+      try {
+        if (cover.file) await UploadEventCover(id, cover.file);
+        else if (cover.remove) await RemoveEventCover(id);
+      } catch (e) {
+        showToast(`The event is saved, but the picture wasn't: ${errorOf(e).message}`, "error");
+      }
+      navigate(`/events/manage/${id}`);
     } catch (e) {
       const { message, code } = errorOf(e);
       if (code === "EVENT_POLICY_REQUIRED") setNeedsPolicy(true);
@@ -171,6 +183,10 @@ export function EventFormPage() {
           <Field id="ev-desc" label="Description">
             <textarea id="ev-desc" rows={5} maxLength={5000} className={`${inputClass} resize-y`} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="What will happen, who it's for, anything guests should bring." />
           </Field>
+        </Section>
+
+        <Section title="Cover picture" note="Shown at the top of the event page.">
+          <CoverPicker currentUrl={coverUrl} onChange={setCover} />
         </Section>
 
         <Section title="Where it happens">

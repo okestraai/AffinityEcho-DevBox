@@ -813,6 +813,32 @@ export const GetAdminEvents = async (params: { status?: string; reported?: strin
   return res.data as { success: boolean; data: AdminEvent[]; meta: { page: number; limit: number; total: number } };
 };
 
+export interface EventFunnel {
+  days: number;
+  linkOpens: number;
+  codesRequested: number;
+  codesVerified: number;
+  newAccounts: number;
+  registrations: number;
+  onboardingStarted: number;
+  onboarded: number;
+  onboardedIn7Days: number;
+  eventsCreated: number;
+  guestsNotified: number;
+  allSignups: number;
+  rates: {
+    openToCode: number | null;
+    codeToVerified: number | null;
+    newAccountsOnboardedIn7Days: number | null;
+    signupsFromEvents: number | null;
+  };
+}
+
+export const GetEventFunnel = async (days = 30): Promise<EventFunnel> => {
+  const api = getAuthInstance();
+  return unwrap(await api.get(`${BASE}/events/funnel?days=${days}`));
+};
+
 export const RemoveAdminEvent = async (eventId: string, reason: string) => {
   const api = getAuthInstance();
   return unwrap(await api.post(`${BASE}/events/${eventId}/remove`, { reason }));

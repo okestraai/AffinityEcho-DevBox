@@ -16,12 +16,15 @@ import {
 import { SendSignInCode, VerifySignInCode } from '../../api/authApis';
 import { useAuth } from '../hooks/useAuth';
 import { useAuth as useContextAuth } from '../contexts/AuthContext';
+import { trackCustomEvent } from '../utils/visitorTracking';
+import { phaseOf } from '../utils/eventTime';
 
 vi.mock('../../api/eventApis', () => ({
   GetPublicEvent: vi.fn(),
   GetEventForMember: vi.fn(),
   RegisterForEvent: vi.fn(),
   RevealEventDetails: vi.fn(),
+  eventCoverUrl: (slug: string, v?: number | null) => (v ? `/cover/${slug}?v=${v}` : null),
 }));
 vi.mock('../../api/authApis', () => ({
   SendSignInCode: vi.fn().mockResolvedValue({ message: 'If this email can sign in, a code is on its way.' }),
@@ -30,6 +33,7 @@ vi.mock('../../api/authApis', () => ({
 vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../Helper/ShowToast', () => ({ showToast: vi.fn() }));
+vi.mock('../utils/visitorTracking', () => ({ trackCustomEvent: vi.fn() }));
 
 const event = {
   id: 'e1',
@@ -144,7 +148,7 @@ describe('email code sign-in', () => {
     expect(screen.getByRole('button', { name: /Email me a code/ })).toBeDisabled();
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /Email me a code/ }));
-    expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com', false);
+    expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com', false, undefined);
     await user.type(await screen.findByLabelText('6-digit code'), '12a3456');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() =>
@@ -173,7 +177,7 @@ describe('email code sign-in', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Email'), 'ada@example.com');
     await user.click(screen.getByRole('button', { name: /Email me a code/ }));
-    expect(SendSignInCode).toHaveBeenCalledWith('ada@example.com', true);
+    expect(SendSignInCode).toHaveBeenCalledWith('ada@example.com', true, undefined);
     expect(await screen.findByText(/If this email has an Affinity Echo account/)).toBeInTheDocument();
     await user.type(screen.getByLabelText('6-digit code'), '123456');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -182,7 +186,78 @@ describe('email code sign-in', () => {
         expect.objectContaining({ email: 'ada@example.com', existingOnly: true }),
       ),
     );
-    expect(vi.mocked(VerifySignInCode).mock.calls.at(-1)?.[0]).not.toHaveProperty('termsAccepted');
+    const calls = vi.mocked(VerifySignInCode).mock.calls;
+    expect(calls[calls.length - 1]?.[0]).not.toHaveProperty('termsAccepted');
+  });
+});
+
+describe('event phases, cover and finishing setup', () => {
+  it('shows Live now while the event runs, and closes registration', async () => {
+    asVisitor(false);
+    vi.mocked(GetPublicEvent).mockResolvedValue({ ...event, phase: 'live', registrationOpen: false } as never);
+    openEvent();
+    expect(await screen.findByText('Live now')).toBeInTheDocument();
+    expect(screen.getByText('This event is happening now. Registration has closed.')).toBeInTheDocument();
+  });
+
+  it('says the event has ended instead of only that registration is closed', async () => {
+    asVisitor(false);
+    vi.mocked(GetPublicEvent).mockResolvedValue({ ...event, phase: 'ended', registrationOpen: false } as never);
+    openEvent();
+    expect(await screen.findByText('This event has ended.')).toBeInTheDocument();
+    expect(screen.getByText('Ended')).toBeInTheDocument();
+  });
+
+  it('shows the cover picture when the event has one', async () => {
+    asVisitor(false);
+    vi.mocked(GetPublicEvent).mockResolvedValue({ ...event, coverVersion: 42 } as never);
+    const { container } = openEvent();
+    await screen.findByText('Career night');
+    expect(container.querySelector('header img')?.getAttribute('src')).toBe('/cover/career-night-abcdef?v=42');
+  });
+
+  it('works out the phase from the times when the server sends none', () => {
+    const at = (iso: string) => new Date(iso).getTime();
+    expect(phaseOf(event as never, at('2026-12-10T16:00:00Z'))).toBe('upcoming');
+    expect(phaseOf(event as never, at('2026-12-10T18:00:00Z'))).toBe('live');
+    expect(phaseOf(event as never, at('2026-12-10T20:00:00Z'))).toBe('ended');
+    expect(phaseOf({ ...event, status: 'cancelled' } as never, at('2026-12-10T18:00:00Z'))).toBe('cancelled');
+  });
+
+  it('asks a registered guest to finish setting up, and counts the step', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      hasCompletedOnboarding: false,
+      user: { id: 'u1', first_name: 'Ada' },
+    } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(GetEventForMember).mockResolvedValue({
+      ...event,
+      isHost: false,
+      registration: { id: 'r1', attendance: 'online', shareEmail: false, checkInCode: 'ABCD2345', checkedIn: false },
+      details: { venueAddress: null, mapUrl: null, joinUrl: null },
+    } as never);
+    openEvent();
+    const link = await screen.findByRole('link', { name: 'Finish setting up' });
+    expect(link).toHaveAttribute('href', '/onboarding');
+    await userEvent.setup().click(link);
+    expect(trackCustomEvent).toHaveBeenCalledWith('event_onboarding_started', { from: 'event_page' });
+    expect(takeReturnTo()).toBe('/events/career-night-abcdef');
+  });
+
+  it('sends the event link with the code, so sign-ups from events are counted', async () => {
+    asVisitor(false);
+    render(
+      <MemoryRouter>
+        <CodeSignIn askName eventSlug="career-night-abcdef" onSignedIn={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('First name'), 'Tolu');
+    await user.type(screen.getByLabelText('Email'), 'tolu@example.com');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /Email me a code/ }));
+    expect(SendSignInCode).toHaveBeenCalledWith('tolu@example.com', false, 'career-night-abcdef');
   });
 });
 

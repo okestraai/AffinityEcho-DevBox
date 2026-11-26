@@ -108,10 +108,11 @@ export const CheckOnboardingStatus = async () => {
 };
 
 // Email code sign-in. The reply is the same whether or not the email has an account.
-export const SendSignInCode = async (email: string, existingOnly = false) => {
+export const SendSignInCode = async (email: string, existingOnly = false, eventSlug?: string) => {
   const res = await axios.post(`${API_URL}/auth/code/send`, {
     email,
     ...(existingOnly && { existingOnly: true }),
+    ...(eventSlug && { eventSlug }),
   });
   return unwrap(res);
 };
@@ -123,6 +124,7 @@ export const VerifySignInCode = async (payload: {
   lastName?: string;
   termsAccepted?: boolean;
   existingOnly?: boolean;
+  eventSlug?: string;
 }) => {
   const res = await axios.post(`${API_URL}/auth/code/verify`, payload);
   return unwrap(res);

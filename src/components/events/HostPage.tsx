@@ -17,10 +17,10 @@ import {
   XCircle,
   Trash2,
 } from "lucide-react";
-import { CancelEvent, CheckInGuest, DeleteEvent, DownloadGuestCsv, GetHostPage } from "../../../api/eventApis";
-import { eventWhen } from "../../utils/eventTime";
+import { CancelEvent, CheckInGuest, DeleteEvent, DownloadGuestCsv, GetHostPage, eventCoverUrl } from "../../../api/eventApis";
+import { eventWhen, phaseOf } from "../../utils/eventTime";
 import { showToast } from "../../Helper/ShowToast";
-import { Card, DateTile, ModeBadge, StatusBadge, dangerButton, inputClass, primaryButton, secondaryButton } from "./parts";
+import { Card, DateTile, ModeBadge, PhaseBadge, dangerButton, inputClass, primaryButton, secondaryButton } from "./parts";
 
 type Page = Awaited<ReturnType<typeof GetHostPage>>;
 
@@ -61,7 +61,8 @@ export function HostPage() {
   const active = guests.filter((g) => g.status === "registered");
   const shown = active.filter((g) => g.name.toLowerCase().includes(filter.trim().toLowerCase()));
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
-  const ended = new Date(event.endsAt).getTime() < Date.now();
+  const phase = phaseOf(event);
+  const cover = eventCoverUrl(event.slug, event.coverVersion);
 
   const checkIn = async (payload: { code?: string; registrationId?: string }) => {
     setBusy(true);
@@ -149,13 +150,14 @@ export function HostPage() {
         <ArrowLeft className="w-4 h-4" /> My Events
       </Link>
 
-      <Card className="p-5 sm:p-6">
+      <Card className="p-5 sm:p-6 overflow-hidden">
+        {cover && <img src={cover} alt="" className="-mx-5 -mt-5 sm:-mx-6 sm:-mt-6 mb-5 w-[calc(100%+2.5rem)] sm:w-[calc(100%+3rem)] max-w-none aspect-[16/5] object-cover" />}
         <div className="flex flex-col md:flex-row md:items-center gap-5">
           <DateTile iso={event.startsAt} timeZone={event.timeZone} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-600">Host page</span>
-              <StatusBadge status={event.status} ended={ended} />
+              <PhaseBadge phase={phase} showUpcoming />
               <ModeBadge mode={event.mode} />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">{event.title}</h1>

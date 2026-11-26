@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { rememberReturnTo } from "../../utils/returnTo";
+import { trackCustomEvent } from "../../utils/visitorTracking";
 import { Check, Globe2, Mail, MapPin, MonitorPlay } from "lucide-react";
-import type { EventMode } from "../../../api/eventApis";
+import type { EventMode, EventPhase } from "../../../api/eventApis";
 
 // Shared pieces of the event screens, so they read as one set.
 
@@ -55,6 +58,21 @@ export function StatusBadge({ status, ended }: { status: string; ended?: boolean
   if (ended)
     return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">Ended</span>;
   return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Upcoming</span>;
+}
+
+export function PhaseBadge({ phase, showUpcoming = false }: { phase: EventPhase; showUpcoming?: boolean }) {
+  if (phase === "live")
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="relative flex w-2 h-2" aria-hidden="true">
+          <span className="absolute inline-flex w-full h-full rounded-full bg-rose-500 opacity-75 animate-ping motion-reduce:animate-none" />
+          <span className="relative inline-flex w-2 h-2 rounded-full bg-rose-500" />
+        </span>
+        Live now
+      </span>
+    );
+  if (phase === "upcoming" && !showUpcoming) return null;
+  return <StatusBadge status={phase === "cancelled" ? "cancelled" : "published"} ended={phase === "ended"} />;
 }
 
 // A row in an info card: an icon tile, a small label and the value.
@@ -127,5 +145,21 @@ export function ShareEmailButton({ shared, onToggle, disabled, size = "md" }: {
       {shared ? <Check className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
       {shared ? "Email shared with host" : "Share my email with host"}
     </button>
+  );
+}
+
+// Starts onboarding and brings the member back here afterwards. Counted as a funnel step.
+export function FinishSetupLink({ returnTo, className, children }: { returnTo: string; className?: string; children: ReactNode }) {
+  return (
+    <Link
+      to="/onboarding"
+      onClick={() => {
+        rememberReturnTo(returnTo);
+        trackCustomEvent("event_onboarding_started", { from: returnTo.startsWith("/events/") ? "event_page" : "my_events" });
+      }}
+      className={className}
+    >
+      {children}
+    </Link>
   );
 }
