@@ -11,6 +11,7 @@ import {
   GetEventForMember,
   GetPublicEvent,
   RegisterForEvent,
+  RevealEventDetails,
 } from '../../api/eventApis';
 import { SendSignInCode, VerifySignInCode } from '../../api/authApis';
 import { useAuth } from '../hooks/useAuth';
@@ -20,6 +21,7 @@ vi.mock('../../api/eventApis', () => ({
   GetPublicEvent: vi.fn(),
   GetEventForMember: vi.fn(),
   RegisterForEvent: vi.fn(),
+  RevealEventDetails: vi.fn(),
 }));
 vi.mock('../../api/authApis', () => ({
   SendSignInCode: vi.fn().mockResolvedValue({ message: 'If this email can sign in, a code is on its way.' }),
@@ -101,6 +103,19 @@ describe('public event page', () => {
     expect(screen.getByText(/12 Allen Avenue, Lagos/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Join the event/ })).toHaveAttribute('href', 'https://meet.example.com/a');
     expect(screen.getByText('ABCD2345')).toBeInTheDocument();
+  });
+
+  it("shows a guest's join link after they enter their event code", async () => {
+    asVisitor(false);
+    vi.mocked(GetPublicEvent).mockResolvedValue(event as never);
+    vi.mocked(RevealEventDetails).mockResolvedValue({ attendance: 'online', venueAddress: null, mapUrl: null, joinUrl: 'https://meet.example.com/x' });
+    openEvent();
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('Already registered?'), 'abcd-2345');
+    await user.click(screen.getByRole('button', { name: 'Show' }));
+    expect(RevealEventDetails).toHaveBeenCalledWith(event.slug, 'ABCD2345');
+    expect(await screen.findByRole('link', { name: /Join the event/ })).toHaveAttribute('href', 'https://meet.example.com/x');
+    expect(document.body.textContent).not.toContain('Allen Avenue');
   });
 
   it('says when registration is closed', async () => {

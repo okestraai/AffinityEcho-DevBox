@@ -132,7 +132,7 @@ export function EventFormPage() {
           }
         : {}),
       ...(online
-        ? { joinUrl: form.joinUrl.trim(), capacityOnline: optional(form.capacityOnline ? Number(form.capacityOnline) : undefined) }
+        ? { joinUrl: optional(form.joinUrl.trim()), capacityOnline: optional(form.capacityOnline ? Number(form.capacityOnline) : undefined) }
         : {}),
       ...(policy ? { acceptPolicy: true } : {}),
     } as EventInput;
@@ -205,7 +205,7 @@ export function EventFormPage() {
             </div>
           )}
           {online && (
-            <Field id="ev-join" label="Join link" hint="Only guests see the join link.">
+            <Field id="ev-join" label="Join link (optional for now)" hint="Only guests see it. You can add it later; guests get an email when you do.">
               <input id="ev-join" type="url" placeholder="https://" className={inputClass} value={form.joinUrl} onChange={(e) => set({ joinUrl: e.target.value })} />
             </Field>
           )}

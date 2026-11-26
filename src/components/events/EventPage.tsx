@@ -19,6 +19,7 @@ import {
   GetEventForMember,
   GetPublicEvent,
   RegisterForEvent,
+  RevealEventDetails,
 } from "../../../api/eventApis";
 import { eventWhen } from "../../utils/eventTime";
 import { CodeSignIn } from "../auth/CodeSignIn";
@@ -41,6 +42,8 @@ export function EventPage() {
   const [shareEmail, setShareEmail] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [revealCode, setRevealCode] = useState("");
+  const [revealed, setRevealed] = useState<Awaited<ReturnType<typeof RevealEventDetails>> | null>(null);
   // Only the newest answer is shown, so a slow page load can't undo a registration.
   const latest = useRef(0);
 
@@ -75,6 +78,17 @@ export function EventPage() {
   if (!event) return <EventSkeleton />;
 
   const member = "isHost" in event ? (event as EventForMember) : null;
+  // Details come from being a guest or host, or from a guest's event code.
+  const details = member?.details ?? (revealed ? { venueAddress: revealed.venueAddress, mapUrl: revealed.mapUrl, joinUrl: revealed.joinUrl } : null);
+  const isGuest = !!member?.registration || !!revealed;
+
+  const reveal = async () => {
+    try {
+      setRevealed(await RevealEventDetails(slug, revealCode.trim()));
+    } catch {
+      showToast("That code doesn't match a guest of this event.", "error");
+    }
+  };
   const when = eventWhen(event.startsAt, event.endsAt, event.timeZone);
   const ended = new Date(event.endsAt).getTime() < Date.now();
   const inPersonFull = event.placesLeft?.inPerson === 0;
@@ -146,13 +160,13 @@ export function EventPage() {
             {event.mode !== "virtual" && (
               <InfoRow icon={<MapPin className="w-5 h-5" />} label="Where">
                 <p className="font-medium">{event.venueName}</p>
-                {member?.details?.venueAddress ? (
-                  <p className="text-sm text-slate-600">{member.details.venueAddress}, {event.venueCity}</p>
+                {details?.venueAddress ? (
+                  <p className="text-sm text-slate-600">{details.venueAddress}, {event.venueCity}</p>
                 ) : (
                   <p className="text-sm text-slate-600">{event.venueCity} · full address shared with guests</p>
                 )}
-                {member?.details?.mapUrl && (
-                  <a href={member.details.mapUrl} target="_blank" rel="noopener noreferrer"
+                {details?.mapUrl && (
+                  <a href={details.mapUrl} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 mt-1 text-sm font-semibold text-purple-700 hover:underline">
                     Open the map <ExternalLink className="w-3.5 h-3.5" />
                   </a>
@@ -161,11 +175,13 @@ export function EventPage() {
             )}
             {event.mode !== "physical" && (
               <InfoRow icon={<MonitorPlay className="w-5 h-5" />} label="Online">
-                {member?.details?.joinUrl ? (
-                  <a href={member.details.joinUrl} target="_blank" rel="noopener noreferrer"
+                {details?.joinUrl ? (
+                  <a href={details.joinUrl} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-medium text-purple-700 hover:underline break-all">
                     Join the event <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                   </a>
+                ) : isGuest && (member?.registration?.attendance ?? revealed?.attendance) === "online" ? (
+                  <p className="text-slate-600">The host hasn't added the join link yet. You'll get an email when they do.</p>
                 ) : (
                   <p className="text-slate-600">The join link is shared with guests.</p>
                 )}
@@ -202,16 +218,23 @@ export function EventPage() {
                     </p>
                   </div>
                 </div>
-                {member.registration.attendance === "in_person" && (
-                  <div className="rounded-2xl border border-dashed border-purple-200 bg-purple-50/60 p-4 text-center">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-purple-700 flex items-center justify-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5" /> Check-in code
-                    </p>
-                    <p className="mt-1 text-2xl font-bold tracking-[0.3em] text-slate-900">{member.registration.checkInCode}</p>
-                    <p className="mt-1 text-xs text-slate-500">The QR code is in your confirmation email.</p>
-                  </div>
-                )}
+                <div className="rounded-2xl border border-dashed border-purple-200 bg-purple-50/60 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-700 flex items-center justify-center gap-1.5">
+                    <Ticket className="w-3.5 h-3.5" /> {member.registration.attendance === "in_person" ? "Check-in code" : "Event code"}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tracking-[0.3em] text-slate-900">{member.registration.checkInCode}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {member.registration.attendance === "in_person"
+                      ? "Show it, or the QR in your email, at the door."
+                      : "Use it on this page to see the join link from any device."}
+                  </p>
+                </div>
                 <Link to="/events" className="block text-center text-sm font-semibold text-purple-700 hover:underline">Manage in My Events</Link>
+              </div>
+            ) : revealed ? (
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 font-semibold text-slate-900"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> Code accepted</p>
+                <p className="text-sm text-slate-600">The details for your place are shown on the left.</p>
               </div>
             ) : !event.registrationOpen ? (
               <p className="text-slate-600">{event.status === "cancelled" ? "This event was cancelled." : "Registration is closed."}</p>
@@ -281,6 +304,20 @@ export function EventPage() {
               </div>
             )}
           </Card>
+          {!member?.isHost && !member?.registration && !revealed && event.status === "published" && (
+            <Card className="mt-4 p-5">
+              <form onSubmit={(e) => { e.preventDefault(); if (revealCode.trim().length >= 4) reveal(); }}>
+                <label htmlFor="reveal-code" className="block text-sm font-semibold text-slate-900">Already registered?</label>
+                <p className="text-xs text-slate-500 mt-0.5 mb-3">Enter the event code from your email to see the address or join link.</p>
+                <div className="flex gap-2">
+                  <input id="reveal-code" value={revealCode} maxLength={12}
+                    onChange={(e) => setRevealCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                    placeholder="ABCD2345" className={`${inputClass} tracking-[0.2em] font-semibold`} />
+                  <button type="submit" disabled={revealCode.trim().length < 4} className={`${primaryButton} px-4`}>Show</button>
+                </div>
+              </form>
+            </Card>
+          )}
         </aside>
       </div>
     </div>

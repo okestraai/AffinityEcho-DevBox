@@ -152,3 +152,17 @@ export const ReportEvent = async (eventId: string, reason: string) => {
   const res = await getAuthInstance().post(`${API_URL}/events/${eventId}/report`, { reason });
   return unwrap(res);
 };
+
+export const DeleteEvent = async (eventId: string) => {
+  const res = await getAuthInstance().delete(`${API_URL}/events/${eventId}`);
+  return unwrap(res);
+};
+
+// A guest's event code brings back their address or join link, without signing in.
+export const RevealEventDetails = async (
+  slug: string,
+  code: string,
+): Promise<{ attendance: Attendance; venueAddress: string | null; mapUrl: string | null; joinUrl: string | null }> => {
+  const res = await axios.post(`${API_URL}/events/public/${encodeURIComponent(slug)}/reveal`, { code });
+  return unwrap(res);
+};

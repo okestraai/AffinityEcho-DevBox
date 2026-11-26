@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -14,8 +14,9 @@ import {
   UserCheck,
   Users,
   XCircle,
+  Trash2,
 } from "lucide-react";
-import { CancelEvent, CheckInGuest, DownloadGuestCsv, GetHostPage } from "../../../api/eventApis";
+import { CancelEvent, CheckInGuest, DeleteEvent, DownloadGuestCsv, GetHostPage } from "../../../api/eventApis";
 import { eventWhen } from "../../utils/eventTime";
 import { showToast } from "../../Helper/ShowToast";
 import { Card, DateTile, ModeBadge, StatusBadge, dangerButton, inputClass, primaryButton, secondaryButton } from "./parts";
@@ -32,6 +33,7 @@ export function HostPage() {
   const [code, setCode] = useState("");
   const [filter, setFilter] = useState("");
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     try {
@@ -99,6 +101,20 @@ export function HostPage() {
     }
   };
 
+  const remove = async () => {
+    const warn = page && page.stats.registered > 0 && page.event.status === "published"
+      ? "Delete this event? It disappears for everyone, and the guests still coming are told it's off."
+      : "Delete this event? It disappears for everyone.";
+    if (!window.confirm(warn)) return;
+    try {
+      await DeleteEvent(eventId);
+      showToast("Event deleted.", "success");
+      navigate("/events", { replace: true });
+    } catch {
+      showToast("Couldn't delete the event.", "error");
+    }
+  };
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
@@ -144,6 +160,7 @@ export function HostPage() {
               <button type="button" onClick={cancel} className={dangerButton}><XCircle className="w-4 h-4" /> Cancel event</button>
             </>
           )}
+          <button type="button" onClick={remove} className={dangerButton}><Trash2 className="w-4 h-4" /> Delete</button>
         </div>
       </Card>
 
