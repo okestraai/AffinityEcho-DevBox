@@ -63,6 +63,7 @@ export interface User {
   show_school?: boolean;
 }
 
+import { takeReturnTo } from "../utils/returnTo";
 interface LoginResponseData {
   access_token: string;
   refresh_token: string;
@@ -97,6 +98,23 @@ interface AuthContextType {
   loadUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   completeOnboarding: (data?: unknown) => Promise<void>;
+  signInWithCode: (data: CodeSignInData) => Promise<User | null>;
+}
+
+// What a successful email code sign-in returns.
+export interface CodeSignInData {
+  access_token: string;
+  refresh_token: string;
+  created?: boolean;
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    role: "user" | "admin" | "super_admin";
+    has_completed_onboarding: boolean;
+    is_deactivated?: boolean;
+    has_password?: boolean;
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -420,6 +438,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // Code sign-in: the caller decides where to go next, so a guest can stay on the event page.
+  const signInWithCode = async (data: CodeSignInData): Promise<User | null> => {
+    saveTokens(data.access_token, data.refresh_token);
+    setUser({
+      id: data.user.id,
+      email: data.user.email,
+      username: data.user.username,
+      avatar: null,
+      role: data.user.role,
+      permissions: [],
+      has_completed_onboarding: data.user.has_completed_onboarding,
+      is_deactivated: data.user.is_deactivated,
+      demographics: {},
+    } as User);
+    return loadUser();
+  };
+
   const signup = async (email: string, password: string, termsAccepted?: boolean) => {
     setActionLoading(true);
     try {
@@ -530,8 +565,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       showToast(MSG.AUTH.ONBOARDING_COMPLETE, "success");
 
-      // After onboarding, redirect based on role
-      if (user?.role === "admin" || user?.role === "super_admin") {
+      // Someone who joined through an event goes back to it.
+      const returnTo = takeReturnTo();
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+      } else if (user?.role === "admin" || user?.role === "super_admin") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
@@ -572,6 +610,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         loadUser,
         updateUser,
         completeOnboarding,
+        signInWithCode,
       }}
     >
       {children}

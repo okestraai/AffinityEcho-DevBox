@@ -7,6 +7,7 @@ import {
   Users,
   MessageCircle,
   Zap,
+  CalendarDays,
   Target,
   Bell,
   User,
@@ -32,6 +33,7 @@ const desktopNavItems = [
   { id: "feeds", label: "Home", icon: Home },
   { id: "forums", label: "Forums", icon: Users },
   { id: "nooks", label: "Nooks", icon: Zap },
+  { id: "events", label: "Events", icon: CalendarDays },
   { id: "mentorship", label: "Mentorship", icon: Target },
   { id: "messages", label: "Messages", icon: MessageCircle },
 ] as const;

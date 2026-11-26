@@ -791,3 +791,39 @@ export const GetAIDisagreements = async (
   const res = await api.get(`${BASE}/moderation/disagreements${buildQS(params)}`);
   return res.data;
 };
+
+/* ─── Events ─── */
+export interface AdminEvent {
+  id: string;
+  slug: string;
+  title: string;
+  mode: string;
+  starts_at: string;
+  venue_city: string | null;
+  organiser_name: string;
+  status: string;
+  host_id: string;
+  removed_reason: string | null;
+  reports: { reason: string; created_at: string }[];
+}
+
+export const GetAdminEvents = async (params: { status?: string; reported?: string; page?: number; limit?: number } = {}) => {
+  const api = getAuthInstance();
+  const res = await api.get(`${BASE}/events${buildQS(params)}`);
+  return res.data as { success: boolean; data: AdminEvent[]; meta: { page: number; limit: number; total: number } };
+};
+
+export const RemoveAdminEvent = async (eventId: string, reason: string) => {
+  const api = getAuthInstance();
+  return unwrap(await api.post(`${BASE}/events/${eventId}/remove`, { reason }));
+};
+
+export const DismissEventReports = async (eventId: string) => {
+  const api = getAuthInstance();
+  return unwrap(await api.post(`${BASE}/events/${eventId}/reports/dismiss`));
+};
+
+export const StopEventHost = async (userId: string, reason: string) => {
+  const api = getAuthInstance();
+  return unwrap(await api.post(`${BASE}/events/hosts/${userId}/stop`, { reason }));
+};

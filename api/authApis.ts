@@ -106,3 +106,26 @@ export const CheckOnboardingStatus = async () => {
   const res = await authFetch.get(`${API_URL}/auth/onboarding/status`);
   return unwrap(res);
 };
+
+// Email code sign-in. The reply is the same whether or not the email has an account.
+export const SendSignInCode = async (email: string) => {
+  const res = await axios.post(`${API_URL}/auth/code/send`, { email });
+  return unwrap(res);
+};
+
+export const VerifySignInCode = async (payload: {
+  email: string;
+  code: string;
+  firstName?: string;
+  lastName?: string;
+  termsAccepted?: boolean;
+}) => {
+  const res = await axios.post(`${API_URL}/auth/code/verify`, payload);
+  return unwrap(res);
+};
+
+export const SetPassword = async (password: string) => {
+  const authFetch = getAuthInstance();
+  const res = await authFetch.post(`${API_URL}/auth/password/set`, { password });
+  return unwrap(res);
+};

@@ -45,6 +45,10 @@ export const PERMISSIONS = {
   NOOKS_REMOVE_MEMBER: 'nooks:remove_member',
   NOOKS_EXPORT: 'nooks:export',
 
+  // Events
+  EVENTS_VIEW: 'events:view',
+  EVENTS_MANAGE: 'events:manage',
+
   // Broadcast Notifications
   NOTIFICATIONS_VIEW: 'notifications:view',
   NOTIFICATIONS_CREATE: 'notifications:create',
@@ -279,6 +283,23 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         key: PERMISSIONS.NOOKS_EXPORT,
         label: 'Export Nooks',
         description: 'Download nook data as CSV or PDF',
+      },
+    ],
+  },
+  {
+    id: 'events',
+    label: 'Events',
+    icon: 'Calendar',
+    permissions: [
+      {
+        key: PERMISSIONS.EVENTS_VIEW,
+        label: 'View Events',
+        description: 'Browse events and their reports',
+      },
+      {
+        key: PERMISSIONS.EVENTS_MANAGE,
+        label: 'Manage Events',
+        description: 'Remove events, dismiss reports, and stop or allow hosts',
       },
     ],
   },

@@ -3,6 +3,7 @@ import React, { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import ProtectedRoute from "./ProtectedRoute";
+import SignedInRoute from "./SignedInRoute";
 import PublicOnlyRoute from "./publicOnlyRoute";
 import { ProtectedAdminRoute } from "../admin/layout/AdminLayout";
 import { VisitorTracker } from "../components/VisitorTracker";
@@ -54,6 +55,24 @@ const LoginScreen = React.lazy(() =>
   import("../components/auth/LoginScreen").then((m) => ({
     default: m.LoginScreen,
   })),
+);
+const EventPage = React.lazy(() =>
+  import("../components/events/EventPage").then((m) => ({ default: m.EventPage })),
+);
+const MyEventsPage = React.lazy(() =>
+  import("../components/events/MyEventsPage").then((m) => ({ default: m.MyEventsPage })),
+);
+const EventFormPage = React.lazy(() =>
+  import("../components/events/EventFormPage").then((m) => ({ default: m.EventFormPage })),
+);
+const HostPage = React.lazy(() =>
+  import("../components/events/HostPage").then((m) => ({ default: m.HostPage })),
+);
+const SetPasswordPage = React.lazy(() =>
+  import("../components/auth/SetPasswordPage").then((m) => ({ default: m.SetPasswordPage })),
+);
+const AdminEventsPage = React.lazy(() =>
+  import("../admin/pages/EventsPage").then((m) => ({ default: m.EventsPage })),
 );
 const GetAppPage = React.lazy(() =>
   import("../components/getApp/GetAppPage").then((m) => ({ default: m.GetAppPage })),
@@ -360,6 +379,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/forums/:id" element={<ShareRedirect build={(id) => `/dashboard/forums/topic/${id}`} />} />
         <Route path="/nooks/:id" element={<ShareRedirect build={(id) => `/dashboard/nooks/${id}`} />} />
 
+        {/* EVENTS — the event page is open to everyone; the rest needs sign-in, not onboarding */}
+        <Route path="/events" element={<SignedInRoute><MyEventsPage /></SignedInRoute>} />
+        <Route path="/events/new" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
+        <Route path="/events/manage/:eventId" element={<SignedInRoute><HostPage /></SignedInRoute>} />
+        <Route path="/events/manage/:eventId/edit" element={<SignedInRoute><EventFormPage /></SignedInRoute>} />
+        <Route path="/events/:slug" element={<EventPage />} />
+        <Route path="/set-password" element={<SignedInRoute><SetPasswordPage /></SignedInRoute>} />
+
         {/* ONBOARDING — only for logged-in users who haven't completed it */}
         <Route
           path="/onboarding"
@@ -393,6 +420,7 @@ const AppRoutes: React.FC = () => {
           <Route path="content-flags" element={<AdminContentFlagsPage />} />
           <Route path="forums" element={<AdminForumsPage />} />
           <Route path="companies" element={<AdminCompaniesPage />} />
+          <Route path="events" element={<AdminEventsPage />} />
           <Route path="nooks" element={<AdminNooksPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="logs" element={<AdminLogsPage />} />

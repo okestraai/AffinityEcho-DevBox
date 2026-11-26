@@ -25,6 +25,7 @@ import {
   Bot,
   ShieldAlert,
   Building2,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { PERMISSIONS } from "../types/permissions";
@@ -125,6 +126,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Companies",
     icon: <Building2 className="w-4.5 h-4.5" />,
     permission: PERMISSIONS.FORUMS_VIEW,
+    section: "Management",
+  },
+  {
+    to: "/admin/events",
+    label: "Events",
+    icon: <CalendarDays className="w-4.5 h-4.5" />,
+    permission: PERMISSIONS.EVENTS_VIEW,
     section: "Management",
   },
   {

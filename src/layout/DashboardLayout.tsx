@@ -95,7 +95,8 @@ export function DashboardLayout() {
   }, [location.pathname, fetchUnreadCount]);
 
   const handleTabChange = useCallback((tab: string) => {
-    navigate(`/dashboard/${tab}`);
+    // Events live outside the dashboard, so they also work before onboarding.
+    navigate(tab === "events" ? "/events" : `/dashboard/${tab}`);
     if (tab === 'messages') {
       setMessageUnreadCount(0);
     }

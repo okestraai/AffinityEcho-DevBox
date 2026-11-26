@@ -20,6 +20,9 @@ import { validatePassword } from "../../utils/passwordUtils";
 import PasswordStrengthIndicator from "../shared/PasswordStrengthIndicator";
 import { TrimInput } from "../shared/TrimInput";
 
+import { useNavigate } from "react-router-dom";
+import { CodeSignIn } from "./CodeSignIn";
+import type { CodeSignInData } from "../../contexts/AuthContext";
 export function LoginScreen() {
   const { login, signup, socialLogin, forgotPassword, actionLoading } = useAuth();
 
@@ -34,6 +37,19 @@ export function LoginScreen() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [useCode, setUseCode] = useState(false);
+  const navigateTo = useNavigate();
+
+  // After a code sign-in: the optional password step, then onboarding or the app.
+  const afterCodeSignIn = (data: CodeSignInData) => {
+    const next = !data.user.has_completed_onboarding
+      ? "/onboarding"
+      : data.user.role === "admin" || data.user.role === "super_admin"
+        ? "/admin"
+        : "/dashboard";
+    if (data.user.has_password) navigateTo(next, { replace: true });
+    else navigateTo("/set-password", { replace: true, state: { next } });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,6 +324,15 @@ export function LoginScreen() {
                       </div>
                     )}
 
+                    {useCode ? (
+                      <div className="space-y-4">
+                        <CodeSignIn onSignedIn={afterCodeSignIn} />
+                        <button type="button" onClick={() => setUseCode(false)} className="w-full text-sm text-gray-600 underline min-h-[44px]">
+                          Use a password instead
+                        </button>
+                      </div>
+                    ) : (
+                    <>
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -443,6 +468,13 @@ export function LoginScreen() {
                         )}
                       </button>
                     </form>
+                    {isLogin && (
+                      <button type="button" onClick={() => setUseCode(true)} className="mt-4 w-full px-4 py-3 rounded-xl border-2 border-purple-200 text-purple-700 font-semibold hover:bg-purple-50 min-h-[48px]">
+                        Email me a code instead
+                      </button>
+                    )}
+                    </>
+                    )}
 
                     <div className="mt-6">
                       <div className="relative">
