@@ -1,5 +1,5 @@
 // src/components/onboarding/OnboardingFlow.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -38,6 +38,16 @@ export function OnboardingFlow() {
     ageConfirmed: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // The account may load after this page opens (a refresh); fill empty names then, never over typing.
+  useEffect(() => {
+    if (!user?.first_name && !user?.last_name) return;
+    setFormData((prev) => ({
+      ...prev,
+      firstName: prev.firstName || user?.first_name || "",
+      lastName: prev.lastName || user?.last_name || "",
+    }));
+  }, [user?.first_name, user?.last_name]);
 
   const steps = [
     {
