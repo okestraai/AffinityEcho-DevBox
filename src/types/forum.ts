@@ -112,7 +112,7 @@ export interface UserProfile {
 export interface NookFilters {
   // Filter options
   urgency?: 'high' | 'medium' | 'low' | 'all';
-  scope?: 'company' | 'global' | 'all';
+  scope?: 'company' | 'global' | 'students' | 'all';
   temperature?: 'hot' | 'warm' | 'cool' | 'all';
   hashtag?: string;
   

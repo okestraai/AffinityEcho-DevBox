@@ -1,10 +1,11 @@
 import React from "react";
 import { Hash } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
 
 interface NooksFiltersProps {
   filters: {
     urgency: "all" | "high" | "medium" | "low";
-    scope: "all" | "company" | "global";
+    scope: "all" | "company" | "global" | "students";
     temperature: "all" | "hot" | "warm" | "cool";
     hashtag: string;
   };
@@ -17,6 +18,8 @@ export function NooksFilters({
   onFilterChange,
   onReset,
 }: NooksFiltersProps) {
+  // Only students can open Students Nooks, so only they get the option.
+  const { user } = useAuth();
   return (
     <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm mb-4 md:mb-6">
       <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 mb-3 md:mb-4">
@@ -64,6 +67,7 @@ export function NooksFilters({
             <option value="all">All Scopes</option>
             <option value="company">Company Only</option>
             <option value="global">Global</option>
+            {user?.is_student && <option value="students">Students</option>}
           </select>
         </div>
 

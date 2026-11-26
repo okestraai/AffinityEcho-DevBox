@@ -6,6 +6,7 @@ import { renderWithRouter } from './testUtils';
 import { CreateTopicModal } from '../components/Modals/ForumModals/CreateTopicModal';
 import { AudiencePicker } from '../components/shared/AudiencePicker';
 import { StudentCheckPrompt } from '../components/dashboard/Profile/StudentCheckPrompt';
+import { NooksFilters } from '../components/dashboard/Nooks/NooksFilters';
 import { CreateForumTopic, GetGlobalScopeMetrics } from '../../api/forumApis';
 import { AnswerStudentCheck } from '../../api/profileApis';
 import { useAuth } from '../hooks/useAuth';
@@ -123,5 +124,20 @@ describe('Still a student?', () => {
     await user.click(screen.getByText("No, I've finished"));
     await waitFor(() => expect(AnswerStudentCheck).toHaveBeenCalledWith({ stillStudent: false }));
     expect(updateUser).toHaveBeenCalledWith({ is_student: false, expected_grad_year: null });
+  });
+});
+
+describe('Nooks filter', () => {
+  const filters = { urgency: 'all', scope: 'all', temperature: 'all', hashtag: '' } as const;
+
+  it('offers Students only to students', () => {
+    asUser({ is_student: false });
+    const first = renderWithRouter(<NooksFilters filters={filters} onFilterChange={() => {}} onReset={() => {}} />);
+    expect(screen.queryByRole('option', { name: 'Students' })).toBeNull();
+    first.unmount();
+
+    asUser({ is_student: true });
+    renderWithRouter(<NooksFilters filters={filters} onFilterChange={() => {}} onReset={() => {}} />);
+    expect(screen.getByRole('option', { name: 'Students' })).toBeInTheDocument();
   });
 });

@@ -73,7 +73,7 @@ export function NooksView() {
   // Filter State
   const [filters, setFilters] = useState({
     urgency: "all" as "all" | "high" | "medium" | "low",
-    scope: "all" as "all" | "company" | "global",
+    scope: "all" as "all" | "company" | "global" | "students",
     temperature: "all" as "all" | "hot" | "warm" | "cool",
     hashtag: "",
   });
