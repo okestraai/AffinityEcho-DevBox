@@ -595,7 +595,7 @@ export const GetAdminSettings = async () => {
 };
 
 export const UpdateAdminSettings = async (
-  key: 'general' | 'security' | 'notifications' | 'moderation',
+  key: 'general' | 'security' | 'notifications' | 'moderation' | 'events' | 'storage',
   data: Record<string, unknown>,
 ) => {
   const api = getAuthInstance();

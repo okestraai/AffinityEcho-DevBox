@@ -15,6 +15,8 @@ import {
   Lock,
   Plus,
   Trash2,
+  CalendarDays,
+  HardDrive,
 } from 'lucide-react';
 import { GetAdminSettings, UpdateAdminSettings } from '../../../api/adminApis';
 
@@ -65,6 +67,25 @@ interface ModerationSettings {
   require_review_for_new_users: boolean;
 }
 
+interface EventSettings {
+  events_per_day: number;
+  covers_enabled: boolean;
+  cover_max_mb: number;
+  update_grouping_minutes: number;
+}
+
+interface StorageSettings {
+  cover_storage: 'database' | 'bucket';
+}
+
+// Set on the server; shown so admins know whether the bucket can be chosen.
+interface StorageStatus {
+  bucketReady: boolean;
+  bucketName: string | null;
+}
+
+const COVER_SIZES = [0.5, 1, 1.5, 2] as const;
+
 /* ─── Toggle ─── */
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: () => void; label?: string }) {
   return (
@@ -97,9 +118,10 @@ function ToggleRow({ label, desc, checked, onChange, danger }: {
 }
 
 /* ─── NumberField ─── */
-function NumberField({ label, hint, value, onChange, min = 1 }: {
-  label: string; hint?: string; value: number; onChange: (v: number) => void; min?: number;
+function NumberField({ label, hint, value, onChange, min = 1, max = Infinity }: {
+  label: string; hint?: string; value: number; onChange: (v: number) => void; min?: number; max?: number;
 }) {
+  const clamp = (v: number) => Math.min(max, Math.max(min, Number.isFinite(v) ? Math.round(v) : min));
   return (
     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{label}</p>
@@ -107,20 +129,20 @@ function NumberField({ label, hint, value, onChange, min = 1 }: {
         <button
           type="button"
           title={`Decrease ${label}`}
-          onClick={() => onChange(Math.max(min, value - 1))}
+          onClick={() => onChange(clamp(value - 1))}
           className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors text-lg font-medium"
         >−</button>
         <input
           type="number"
           title={label}
           value={value}
-          onChange={e => onChange(Math.max(min, +e.target.value))}
+          onChange={e => onChange(clamp(+e.target.value))}
           className="w-16 text-center py-1.5 text-sm font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 text-gray-800"
         />
         <button
           type="button"
           title={`Increase ${label}`}
-          onClick={() => onChange(value + 1)}
+          onClick={() => onChange(clamp(value + 1))}
           className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors text-lg font-medium"
         >+</button>
       </div>
@@ -184,6 +206,13 @@ const DEFAULTS = {
     report_auto_resolve_days: 7,
     require_review_for_new_users: false,
   } as ModerationSettings,
+  events: {
+    events_per_day: 5,
+    covers_enabled: true,
+    cover_max_mb: 2,
+    update_grouping_minutes: 2,
+  } as EventSettings,
+  storage: { cover_storage: 'database' } as StorageSettings,
 };
 
 const NAV = [
@@ -191,6 +220,8 @@ const NAV = [
   { id: 'security',      label: 'Security',       icon: Shield,  desc: 'Auth & access control' },
   { id: 'notifications', label: 'Notifications',  icon: Bell,    desc: 'Alert preferences' },
   { id: 'moderation',    label: 'Moderation',     icon: Flag,    desc: 'Content filtering' },
+  { id: 'events',        label: 'Events',         icon: CalendarDays, desc: 'Hosting and covers' },
+  { id: 'storage',       label: 'Storage',        icon: HardDrive, desc: 'Where pictures are kept' },
 ] as const;
 
 type SectionId = typeof NAV[number]['id'];
@@ -205,6 +236,10 @@ export function SettingsPage() {
   const [security, setSecurity] = useState<SecuritySettings>(DEFAULTS.security);
   const [notifications, setNotifications] = useState<NotificationSettings>(DEFAULTS.notifications);
   const [moderation, setModeration] = useState<ModerationSettings>(DEFAULTS.moderation);
+  const [events, setEvents] = useState<EventSettings>(DEFAULTS.events);
+  const [storage, setStorage] = useState<StorageSettings>(DEFAULTS.storage);
+  const [storageStatus, setStorageStatus] = useState<StorageStatus>({ bucketReady: false, bucketName: null });
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [newIp, setNewIp] = useState('');
 
   useEffect(() => {
@@ -214,22 +249,35 @@ export function SettingsPage() {
         if (data?.security)      setSecurity(s => ({ ...s, ...data.security }));
         if (data?.notifications) setNotifications(n => ({ ...n, ...data.notifications }));
         if (data?.moderation)    setModeration(m => ({ ...m, ...data.moderation }));
+        if (data?.events)        setEvents(e => ({ ...e, ...data.events }));
+        if (data?.storage)       setStorage(s => ({ ...s, ...data.storage }));
+        if (data?.storage_status) setStorageStatus(data.storage_status);
       })
       .catch(() => {/* keep defaults on error */});
   }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
-      await Promise.all([
+      // Each section saves on its own, so one refused value doesn't hide the others' result.
+      const results = await Promise.allSettled([
         UpdateAdminSettings('general',       general       as unknown as Record<string, unknown>),
         UpdateAdminSettings('security',      security      as unknown as Record<string, unknown>),
         UpdateAdminSettings('notifications', notifications as unknown as Record<string, unknown>),
         UpdateAdminSettings('moderation',    moderation    as unknown as Record<string, unknown>),
+        UpdateAdminSettings('events',        events        as unknown as Record<string, unknown>),
+        UpdateAdminSettings('storage',       storage       as unknown as Record<string, unknown>),
       ]);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch { /* errors surfaced via API toast */ } finally {
+      const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failed) {
+        const m = (failed.reason as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+        setSaveError((Array.isArray(m) ? m[0] : m) || 'Some settings could not be saved.');
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } finally {
       setIsSaving(false);
     }
   };
@@ -272,6 +320,13 @@ export function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div role="alert" className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-700 font-medium">{saveError}</p>
+        </div>
+      )}
 
       {saveSuccess && (
         <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -680,6 +735,93 @@ export function SettingsPage() {
             </>
           )}
 
+          {/* ── Events ── */}
+          {active === 'events' && (
+            <>
+              <SectionCard title="Hosting">
+                <div className="py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <NumberField
+                    label="Events per host per day"
+                    hint="How many events one member can create in 24 hours (1 to 50)"
+                    value={events.events_per_day}
+                    min={1}
+                    max={50}
+                    onChange={v => setEvents(p => ({ ...p, events_per_day: v }))}
+                  />
+                  <NumberField
+                    label="Update grouping (minutes)"
+                    hint="Edits within this window reach guests as one message (0 sends each edit at once)"
+                    value={events.update_grouping_minutes}
+                    min={0}
+                    max={30}
+                    onChange={v => setEvents(p => ({ ...p, update_grouping_minutes: v }))}
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Cover pictures">
+                <div>
+                  <ToggleRow
+                    label="Allow cover pictures"
+                    desc="Turning this off stops new uploads and hides every cover at once. Pictures aren't checked by content safety, so use this if they're misused."
+                    checked={events.covers_enabled}
+                    onChange={() => setEvents(p => ({ ...p, covers_enabled: !p.covers_enabled }))}
+                  />
+                </div>
+                <div className="py-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Largest picture</p>
+                  <div className="flex gap-2">
+                    {COVER_SIZES.map(size => (
+                      <button
+                        key={size}
+                        type="button"
+                        aria-pressed={events.cover_max_mb === size}
+                        onClick={() => setEvents(p => ({ ...p, cover_max_mb: size }))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${events.cover_max_mb === size ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                      >
+                        {size} MB
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">The web app shrinks photos before upload, so most covers are well under 1 MB.</p>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* ── Storage ── */}
+          {active === 'storage' && (
+            <SectionCard title="Where new cover pictures are kept">
+              <div className="py-4 space-y-3" role="radiogroup" aria-label="Cover storage">
+                {([
+                  { id: 'database', title: 'Database', note: 'Kept with the rest of the data. Fine to start with; backups grow with every picture.', disabled: false },
+                  {
+                    id: 'bucket',
+                    title: storageStatus.bucketName ? `Bucket (${storageStatus.bucketName})` : 'Bucket',
+                    note: storageStatus.bucketReady
+                      ? 'Kept in the S3-style bucket set up on the server (Cloudflare R2 or AWS S3).'
+                      : 'Not set up on the server yet. The server team adds the bucket and its keys; then it can be chosen here.',
+                    disabled: !storageStatus.bucketReady,
+                  },
+                ] as const).map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={storage.cover_storage === o.id}
+                    disabled={o.disabled}
+                    onClick={() => setStorage({ cover_storage: o.id })}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${storage.cover_storage === o.id ? 'border-purple-500 bg-purple-50/60' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <p className="text-sm font-semibold text-gray-900">{o.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{o.note}</p>
+                  </button>
+                ))}
+                <p className="text-xs text-gray-500">Changing this affects new and replaced pictures only. Pictures already saved keep working where they are.</p>
+              </div>
+            </SectionCard>
+          )}
+
         </div>
       </div>
 
@@ -710,6 +852,8 @@ export function SettingsPage() {
                   setSecurity(DEFAULTS.security);
                   setNotifications(DEFAULTS.notifications);
                   setModeration(DEFAULTS.moderation);
+                  setEvents(DEFAULTS.events);
+                  setStorage(DEFAULTS.storage);
                   setShowResetConfirm(false);
                 }}
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors"

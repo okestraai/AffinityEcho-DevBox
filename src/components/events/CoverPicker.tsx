@@ -6,10 +6,9 @@ import { secondaryButton } from "./parts";
 export type CoverChoice = { file: Blob | null; remove: boolean };
 
 const MAX_SIDE = 1600;
-const MAX_BYTES = 2 * 1024 * 1024;
 
 // Redraws the photo at most 1600px wide as a JPEG. That keeps it small and drops camera and location data.
-async function shrinkImage(file: File): Promise<Blob> {
+async function shrinkImage(file: File, maxBytes: number): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -17,15 +16,15 @@ async function shrinkImage(file: File): Promise<Blob> {
   canvas.height = Math.round(bitmap.height * scale);
   canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  for (const quality of [0.85, 0.7, 0.55]) {
+  for (const quality of [0.85, 0.7, 0.55, 0.4]) {
     const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", quality));
-    if (blob && blob.size <= MAX_BYTES) return blob;
+    if (blob && blob.size <= maxBytes) return blob;
   }
   throw new Error("too big");
 }
 
 // The optional cover picture: choose, preview, replace or remove. It uploads when the event is saved.
-export function CoverPicker({ currentUrl, onChange }: { currentUrl: string | null; onChange: (choice: CoverChoice) => void }) {
+export function CoverPicker({ currentUrl, onChange, maxMb = 2 }: { currentUrl: string | null; onChange: (choice: CoverChoice) => void; maxMb?: number }) {
   const input = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [removed, setRemoved] = useState(false);
@@ -39,7 +38,7 @@ export function CoverPicker({ currentUrl, onChange }: { currentUrl: string | nul
     if (!file) return;
     if (!file.type.startsWith("image/")) return showToast("Choose a picture file.", "error");
     try {
-      const blob = await shrinkImage(file);
+      const blob = await shrinkImage(file, maxMb * 1024 * 1024);
       setPreview(URL.createObjectURL(blob));
       setRemoved(false);
       onChange({ file: blob, remove: false });

@@ -188,3 +188,9 @@ export const RemoveEventCover = async (eventId: string): Promise<{ coverVersion:
   const res = await getAuthInstance().delete(`${API_URL}/events/${eventId}/cover`);
   return unwrap(res);
 };
+
+// Set by admins in the console; read by the event form.
+export const GetEventOptions = async (): Promise<{ coversEnabled: boolean; coverMaxMb: number }> => {
+  const res = await axios.get(`${API_URL}/events/options`);
+  return unwrap(res);
+};

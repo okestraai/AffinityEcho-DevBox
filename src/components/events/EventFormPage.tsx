@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, MapPin, MonitorPlay } from "lucide-react";
-import { CreateEvent, EventInput, EventMode, GetHostPage, RemoveEventCover, UpdateEvent, UploadEventCover, eventCoverUrl } from "../../../api/eventApis";
+import { CreateEvent, EventInput, EventMode, GetEventOptions, GetHostPage, RemoveEventCover, UpdateEvent, UploadEventCover, eventCoverUrl } from "../../../api/eventApis";
 import { CoverPicker, type CoverChoice } from "./CoverPicker";
 import { showToast } from "../../Helper/ShowToast";
 import { Card, PageHeading, inputClass, primaryButton, secondaryButton } from "./parts";
@@ -91,6 +91,11 @@ export function EventFormPage() {
   const [busy, setBusy] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [cover, setCover] = useState<CoverChoice>({ file: null, remove: false });
+  const [options, setOptions] = useState({ coversEnabled: true, coverMaxMb: 2 });
+
+  useEffect(() => {
+    GetEventOptions().then(setOptions).catch(() => undefined);
+  }, []);
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
   useEffect(() => {
@@ -185,9 +190,11 @@ export function EventFormPage() {
           </Field>
         </Section>
 
-        <Section title="Cover picture" note="Shown at the top of the event page.">
-          <CoverPicker currentUrl={coverUrl} onChange={setCover} />
-        </Section>
+        {options.coversEnabled && (
+          <Section title="Cover picture" note="Shown at the top of the event page.">
+            <CoverPicker currentUrl={coverUrl} onChange={setCover} maxMb={options.coverMaxMb} />
+          </Section>
+        )}
 
         <Section title="Where it happens">
           <div role="radiogroup" aria-label="Where" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
