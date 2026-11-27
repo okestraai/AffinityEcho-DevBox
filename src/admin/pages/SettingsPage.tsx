@@ -72,6 +72,8 @@ interface EventSettings {
   covers_enabled: boolean;
   cover_max_mb: number;
   update_grouping_minutes: number;
+  reminders_enabled: boolean;
+  host_notices_enabled: boolean;
 }
 
 interface StorageSettings {
@@ -211,6 +213,8 @@ const DEFAULTS = {
     covers_enabled: true,
     cover_max_mb: 2,
     update_grouping_minutes: 2,
+    reminders_enabled: true,
+    host_notices_enabled: true,
   } as EventSettings,
   storage: { cover_storage: 'database' } as StorageSettings,
 };
@@ -765,6 +769,23 @@ export function SettingsPage() {
                     min={0}
                     max={30}
                     onChange={v => setEvents(p => ({ ...p, update_grouping_minutes: v }))}
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Notices">
+                <div>
+                  <ToggleRow
+                    label="Remind guests before events"
+                    desc="Guests get a notice about a day before (with the calendar file by email) and again within the hour, with their check-in code or join link."
+                    checked={events.reminders_enabled}
+                    onChange={() => setEvents(p => ({ ...p, reminders_enabled: !p.reminders_enabled }))}
+                  />
+                  <ToggleRow
+                    label="Tell hosts about new guests"
+                    desc="Hosts get one notice per grouping window saying who joined or left and how many are going."
+                    checked={events.host_notices_enabled}
+                    onChange={() => setEvents(p => ({ ...p, host_notices_enabled: !p.host_notices_enabled }))}
                   />
                 </div>
               </SectionCard>

@@ -38,9 +38,28 @@ describe('admin event settings', () => {
         covers_enabled: false,
         cover_max_mb: 0.5,
         update_grouping_minutes: 5,
+        reminders_enabled: true,
+        host_notices_enabled: true,
       }),
     );
     expect(await screen.findByText('Settings saved successfully!')).toBeInTheDocument();
+  });
+
+  it('turns guest reminders and host notices off', async () => {
+    saved();
+    render(<SettingsPage />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Events/ }));
+    await screen.findByDisplayValue('7');
+    await user.click(screen.getByRole('switch', { name: 'Remind guests before events' }));
+    await user.click(screen.getByRole('switch', { name: 'Tell hosts about new guests' }));
+    await user.click(screen.getByRole('button', { name: /Save Changes/ }));
+    await waitFor(() =>
+      expect(UpdateAdminSettings).toHaveBeenCalledWith(
+        'events',
+        expect.objectContaining({ reminders_enabled: false, host_notices_enabled: false }),
+      ),
+    );
   });
 
   it('keeps the events-per-day value inside 1 to 50', async () => {

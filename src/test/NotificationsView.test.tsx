@@ -410,6 +410,17 @@ describe('NotificationsView', () => {
     });
   });
 
+  it.each([
+    ['event_reminder', 'Starting soon: Demo night', '/events/demo-night'],
+    ['event_host_activity', 'Guests: Demo night', '/events/manage/e1'],
+  ])('opens the event page for a %s notice', async (type, title, url) => {
+    setup([{ ...mockNotifications[0], id: 'ev', type, title, action_url: url, actor_id: null }]);
+    renderWithRouter(<NotificationsView />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByText(title));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(url));
+  });
+
   it('handles API error gracefully', async () => {
     mockedUseAuth.mockReturnValue({ user: { id: 'u1' } } as any);
     mockedGetNotifications.mockRejectedValue(new Error('Network'));

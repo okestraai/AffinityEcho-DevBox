@@ -16,6 +16,7 @@ import {
   Shield,
   Mail,
   Reply,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -205,6 +206,8 @@ export function NotificationsView() {
 
   // Normalize backend action_url to frontend route paths
   const normalizeActionUrl = (actionUrl: string): string => {
+    // Event pages live outside the dashboard.
+    if (/^\/events(\/|$)/.test(actionUrl)) return actionUrl;
     let url = actionUrl;
     // Strip leading /dashboard if present — we'll re-add it
     url = url.replace(/^\/dashboard/, "");
@@ -508,6 +511,11 @@ export function NotificationsView() {
       case "identity_reveal_request":
       case "identity_reveal_rejected":
         return <Eye className="w-5 h-5 text-yellow-600" />;
+      case "event_updated":
+      case "event_cancelled":
+      case "event_reminder":
+      case "event_host_activity":
+        return <CalendarDays className="w-5 h-5 text-purple-600" />;
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
     }
