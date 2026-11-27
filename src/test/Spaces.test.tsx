@@ -10,6 +10,7 @@ import { NooksFilters } from '../components/dashboard/Nooks/NooksFilters';
 import { CreateForumTopic, GetGlobalScopeMetrics } from '../../api/forumApis';
 import { AnswerStudentCheck } from '../../api/profileApis';
 import { useAuth } from '../hooks/useAuth';
+import { DecryptData } from '../../api/EncrytionApis';
 
 vi.mock('../../api/forumApis', () => ({
   CreateForumTopic: vi.fn().mockResolvedValue({}),
@@ -110,6 +111,25 @@ describe('new topic from a space page', () => {
     asUser();
     renderWithRouter(<CreateTopicModal isOpen onClose={() => {}} forumName="Google" space="Google" />);
     await waitFor(() => expect(screen.getByText('My company').closest('button')).toHaveAttribute('aria-pressed', 'true'));
+  });
+
+  it("doesn't claim a past company's space in the heading", async () => {
+    asUser();
+    renderWithRouter(<CreateTopicModal isOpen onClose={() => {}} forumName="OldCo" space="OldCo" />);
+    await waitFor(() => expect(DecryptData).toHaveBeenCalled());
+    expect(screen.getByText('Create New Topic')).toBeInTheDocument();
+    expect(screen.queryByText(/in OldCo/)).toBeNull();
+    expect(screen.getByText('Everyone').closest('button')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it("can't post from a company space until the member's company is known", async () => {
+    asUser();
+    vi.mocked(DecryptData).mockReturnValueOnce(new Promise(() => {}));
+    renderWithRouter(<CreateTopicModal isOpen onClose={() => {}} forumName="Google" space="Google" />);
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("What's on your mind?"), 'Hello');
+    await user.type(screen.getByPlaceholderText(/Share your thoughts/), 'Body');
+    expect(screen.getByText('Post Topic').closest('button')).toBeDisabled();
   });
 });
 

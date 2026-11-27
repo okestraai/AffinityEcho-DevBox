@@ -1,5 +1,5 @@
 // src/components/Modals/ForumModals/CreateTopicModal.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   AlertCircle,
@@ -72,15 +72,25 @@ export function CreateTopicModal({
   const isStudent = !!user?.is_student;
   const fixedForum = !!forumId;
 
-  // Each opening starts from the space it was opened in.
+  // Each opening starts from the space it was opened in, once the member's company is known.
+  const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+  const spaceLoading =
+    !fixedForum && !!space && !same(space, STUDENTS_SPACE) && !!user?.company_encrypted && !companySpace;
   const startAudience: Audience =
-    space === STUDENTS_SPACE ? "students" : space && space === companySpace ? "company" : "everyone";
+    same(space, STUDENTS_SPACE) && isStudent ? "students" : same(space, companySpace) ? "company" : "everyone";
+  // Only name the space in the heading when the topic really goes there.
+  const headingSpace = fixedForum || startAudience !== "everyone" ? forumName : undefined;
+  const started = useRef(false);
   useEffect(() => {
-    if (isOpen) {
-      setAudience(startAudience);
-      setSelectedForumId("");
+    if (!isOpen) {
+      started.current = false;
+      return;
     }
-  }, [isOpen, startAudience]);
+    if (started.current || spaceLoading) return;
+    started.current = true;
+    setAudience(startAudience);
+    setSelectedForumId("");
+  }, [isOpen, spaceLoading, startAudience]);
 
   // Forums the member can post in for the chosen audience; Other topics is the "no forum" choice.
   useEffect(() => {
@@ -186,7 +196,7 @@ export function CreateTopicModal({
       <div className="bg-white w-full sm:max-w-md md:max-w-4xl rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Create New Topic {forumName && `in ${forumName}`}
+            Create New Topic {headingSpace && `in ${headingSpace}`}
           </h3>
           <button
             type="button"
@@ -406,6 +416,7 @@ export function CreateTopicModal({
               type="submit"
               disabled={
                 isSubmitting ||
+                spaceLoading ||
                 !title.trim() ||
                 !content.trim() ||
                 (!fixedForum && audience === "company" && !companySpace)
