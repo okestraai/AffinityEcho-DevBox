@@ -199,6 +199,19 @@ describe('UserProfilePage', () => {
     expect(screen.getByText('#test')).toBeInTheDocument();
   });
 
+  it('lists posts marked anonymous too, since everyone posts under their username', async () => {
+    const post = { ...mockProfileData.recent_activity.posts[0], is_anonymous: true };
+    setup();
+    mockedGetFullProfile.mockResolvedValue({
+      data: { ...mockProfileData, recent_activity: { ...mockProfileData.recent_activity, posts: [post] } },
+    });
+    renderWithRouter(<UserProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Hello world post')).toBeInTheDocument();
+    });
+  });
+
   it('switches to topics tab and shows topics', async () => {
     setup();
     renderWithRouter(<UserProfilePage />);

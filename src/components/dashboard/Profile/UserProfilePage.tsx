@@ -176,9 +176,8 @@ export function UserProfilePage() {
         setIdentityRevealed(data.identity_revealed ?? false);
 
         const activity = data.recent_activity ?? {};
-        // Show all posts (filter anonymous — anonymous posts don't appear attributed)
-        setPosts((activity.posts ?? []).filter((post: ActivityPost) => !post.is_anonymous));
-        // Show ALL topics the backend returns — backend already handles privacy
+        // Everyone posts under their username, so a profile lists all their posts; the server limits them to the viewer's spaces.
+        setPosts(activity.posts ?? []);
         setTopics(activity.topics ?? []);
         setNooks(activity.nooks ?? []);
       } else {
